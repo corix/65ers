@@ -3,19 +3,19 @@
 ## Overview
 This is a data entry tool used to digitize and store paper scoresheets from a family card game we call "65." 
 
-Each game of 65 consists of 11 rounds, with a winner for each round (called a "tunk"), and a final list of total scores after the 11th round. No matter how many tunks a player gets, the game final winner must have the lowest total score. Sometimes, a player will have a "false tunk," and will be penalized by adding 65 points to their score for that round. The rounds are named: 3, 4, 5, 6, 7, 8, 9, 10, J (for Jacks), Q (for Queens), and K (for Kings).
+Each game of 65 consists of 11 rounds, and the goal is to get the lowest points possible. There is a winner for each round (called a "tunk" and worth 0 points), and a final list of total scores after the 11th round. No matter how many tunks a player gets, the game final winner must have the lowest total score. In rare cases, a player will have a "false tunk," and will be penalized by adding 65 points to their score for that round. When a player gets exactly 65 points in a round, that counts as 0 points for that round, but is not a tunk. The rounds are named: 3, 4, 5, 6, 7, 8, 9, 10, J (for Jacks), Q (for Queens), and K (for Kings).
 
 ### Features
 This website ultimately will consists of 3 major features:
 1. Web form to create new entries Each entry consists of:
 	* Calendar date (usually 1 entry per date, but in rare cases there may be multiple games in a day)
-	* Number of players (this varies)
-	* Names of players — typically 4 to 7, rarely fewer or more
-	* 11 rounds, with score per player per round — 
+	* Number of players (varies, typically 4 to 7, rarely fewer or more)
+	* Names of players (Available defaults: Asha, Will, Clancy, Pete, Tim, Larry, Cori, and include ability to add and save new player names)
+	* 11 rounds, with score per player per round
 	* Winning player of each round (called a "Tunk")
 	* Total scores per player, with winning player having the lowest score
 	* Any penalties incurred by a player, and when (note: penalties are rare)
-	* A "special" score when a player gets exactly 65 points in a round, which counts as zero toward the final score (can be indicated by an asterisk or other visual symbol)
+	* Any instances of a player scoring exactly 65 points in a round, which counts as zero toward the final score (can be indicated by an asterisk or other visual symbol)
 2. Archive of entries (first stored locally, then on a database) — displayed as tabular data
 3. Data insights and visualizations see ("Ideas" below)
 
