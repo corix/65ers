@@ -8,13 +8,14 @@ Each game of 65 consists of 11 rounds, with a winner for each round (called a "t
 ### Features
 This website ultimately will consists of 3 major features:
 1. Web form to create new entries Each entry consists of:
-	* Calendar date (1 entry per date)
+	* Calendar date (usually 1 entry per date, but in rare cases there may be multiple games in a day)
 	* Number of players (this varies)
-	* Names of players
+	* Names of players — typically 4 to 7, rarely fewer or more
 	* 11 rounds, with score per player per round — 
 	* Winning player of each round (called a "Tunk")
 	* Total scores per player, with winning player having the lowest score
-	* Any penalties incurred by a player, and when
+	* Any penalties incurred by a player, and when (note: penalties are rare)
+	* A "special" score when a player gets exactly 65 points in a round, which counts as zero toward the final score (can be indicated by an asterisk or other visual symbol)
 2. Archive of entries (first stored locally, then on a database) — displayed as tabular data
 3. Data insights and visualizations see ("Ideas" below)
 
