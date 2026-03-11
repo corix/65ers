@@ -2,5 +2,522 @@
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
+  color: #1a1a2e;
+  background: #f0f0f5;
+  --accent: #4361ee;
+  --accent-hover: #3a56d4;
+  --green: #2a9d4e;
+  --gold: #e6a817;
+  --red: #d64045;
+  --card-bg: #ffffff;
+  --border: #d8d8e0;
+  --radius: 8px;
+}
 
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100dvh;
+}
+
+/* Header & Nav */
+
+header {
+  background: var(--accent);
+  color: #fff;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  letter-spacing: 0.02em;
+}
+
+nav {
+  display: flex;
+  gap: 0.25rem;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius);
+  padding: 3px;
+}
+
+.nav-btn {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  border: none;
+  padding: 0.4rem 1rem;
+  border-radius: calc(var(--radius) - 2px);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.nav-btn:hover {
+  color: #fff;
+}
+
+.nav-btn.active {
+  background: #fff;
+  color: var(--accent);
+}
+
+/* Main container */
+
+#app {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1.25rem 1rem;
+}
+
+/* Cards */
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.card h2 {
+  margin: 0 0 1rem;
+  font-size: 1.15rem;
+}
+
+/* Form fields */
+
+.field {
+  margin-bottom: 1rem;
+}
+
+.field label,
+.field legend {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.3rem;
+}
+
+fieldset.field {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+}
+
+input[type="date"],
+input[type="text"] {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  font-size: 0.95rem;
+  font-family: inherit;
+  width: 100%;
+  max-width: 260px;
+}
+
+.player-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.player-check {
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+}
+
+.add-player-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.add-player-row input {
+  max-width: 180px;
+}
+
+.add-player-row button {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--card-bg);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.add-player-row button:hover {
+  background: #eee;
+}
+
+/* Primary button */
+
+.primary-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.5rem;
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.primary-btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.primary-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Game setup collapsed */
+
+.game-setup.collapsed {
+  padding: 0.6rem 1.25rem;
+  cursor: default;
+}
+
+.game-setup.collapsed h2,
+.game-setup.collapsed .field,
+.game-setup.collapsed fieldset,
+.game-setup.collapsed #start-game-btn {
+  display: none;
+}
+
+/* Scoresheet table */
+
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -1.25rem;
+  padding: 0 1.25rem;
+}
+
+.scoresheet-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  min-width: 400px;
+}
+
+.scoresheet-table th,
+.scoresheet-table td {
+  padding: 0.4rem 0.5rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.scoresheet-table thead th {
+  background: #f5f6fa;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+
+.scoresheet-table tbody tr:nth-child(even) {
+  background: #fafbfd;
+}
+
+.round-label {
+  font-weight: 600;
+  text-align: left !important;
+  min-width: 50px;
+}
+
+.round-col {
+  text-align: left !important;
+}
+
+.score-input {
+  width: 56px;
+  padding: 0.3rem 0.25rem;
+  text-align: center;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.score-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+
+.score-input.tunk-locked {
+  background: #e8f5e9;
+  color: var(--green);
+  font-weight: 700;
+  border-color: #c8e6c9;
+}
+
+.tunk-select {
+  padding: 0.25rem 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.82rem;
+  font-family: inherit;
+  background: var(--card-bg);
+}
+
+.tunk-col {
+  min-width: 80px;
+}
+
+/* Totals row */
+
+.totals-row {
+  font-weight: 700;
+  background: #f5f6fa !important;
+}
+
+.totals-row td {
+  border-top: 2px solid var(--accent);
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.winner-cell {
+  color: var(--green);
+  background: #e8f5e9 !important;
+  border-radius: 4px;
+}
+
+/* Archive cells */
+
+.cell-tunk {
+  color: var(--gold);
+  font-size: 1.15rem;
+}
+
+.cell-tink {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.cell-magic {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.magic-marker {
+  font-size: 0.75em;
+  vertical-align: super;
+}
+
+.ft-badge {
+  font-size: 0.65rem;
+  background: var(--red);
+  color: #fff;
+  padding: 1px 4px;
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
+.cell-false-tunk {
+  color: var(--red);
+}
+
+/* False tunks section */
+
+.false-tunks-section {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+}
+
+.false-tunks-section summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #666;
+}
+
+.false-tunks-grid {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.ft-round {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.8rem;
+}
+
+.ft-round-label {
+  font-weight: 600;
+  min-width: 65px;
+}
+
+.ft-check {
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  cursor: pointer;
+}
+
+/* Form actions */
+
+.form-actions {
+  margin-top: 1.25rem;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.players-label {
+  color: #666;
+  font-size: 0.85rem;
+  margin: -0.5rem 0 1rem;
+}
+
+/* Feedback */
+
+.feedback {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.feedback.success {
+  background: #e8f5e9;
+  color: var(--green);
+  border: 1px solid #c8e6c9;
+}
+
+.feedback.error {
+  background: #fdecea;
+  color: var(--red);
+  border: 1px solid #f5c6c6;
+}
+
+/* Archive */
+
+.archive-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.archive-item {
+  padding: 0;
+  overflow: hidden;
+}
+
+.archive-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.archive-header:hover {
+  background: #f5f6fa;
+}
+
+.archive-header[aria-expanded="true"] {
+  border-bottom: 1px solid var(--border);
+}
+
+.archive-date {
+  font-weight: 700;
+  min-width: 85px;
+}
+
+.archive-players {
+  color: #666;
+  flex: 1;
+}
+
+.archive-winner {
+  font-weight: 600;
+  color: var(--green);
+  white-space: nowrap;
+}
+
+.archive-chevron {
+  transition: transform 0.2s;
+  font-size: 0.75rem;
+  color: #999;
+}
+
+.archive-header[aria-expanded="true"] .archive-chevron {
+  transform: rotate(180deg);
+}
+
+.archive-body {
+  padding: 1rem;
+}
+
+.archive-table td,
+.archive-table th {
+  padding: 0.35rem 0.6rem;
+}
+
+/* Empty state */
+
+.empty-state {
+  text-align: center;
+  color: #888;
+  padding: 3rem 1rem;
+}
+
+/* Responsive */
+
+@media (max-width: 500px) {
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .score-input {
+    width: 46px;
+    font-size: 0.82rem;
+  }
+
+  .scoresheet-table {
+    font-size: 0.82rem;
+  }
+
+  .archive-header {
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  .archive-players {
+    width: 100%;
+    order: 3;
+    font-size: 0.82rem;
+  }
 }
