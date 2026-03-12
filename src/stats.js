@@ -1,16 +1,10 @@
 import './stats.css';
 import { loadGames } from './api.js';
-import { ROUNDS } from './constants.js';
+import { ROUNDS, PLAYER_COLORS } from './constants.js';
 import { computeStats, linearRegression, formatDate } from './stats-compute.js';
 import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
-
-const AVG_CHART_COLORS = [
-  '#4361ee', '#2a9d4e', '#e6a817', '#d64045',
-  '#8b5cf6', '#06b6d4', '#f97316', '#ec4899',
-  '#14b8a6', '#6366f1',
-];
 
 let activeCharts = [];
 
@@ -40,7 +34,7 @@ export async function renderStats(container) {
   const allPlayerNames = [...new Set(games.flatMap(g => g.players))];
   const playerColorMap = {};
   allPlayerNames.forEach((p, i) => {
-    playerColorMap[p] = AVG_CHART_COLORS[i % AVG_CHART_COLORS.length];
+    playerColorMap[p] = PLAYER_COLORS[i % PLAYER_COLORS.length];
   });
 
   renderRecentGameChart(wrapper.querySelector('#recent-game-chart'), games, playerColorMap);

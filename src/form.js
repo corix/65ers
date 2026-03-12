@@ -1,6 +1,6 @@
 import './form.css';
 import { getPlayerRows, getAllPlayerNames, addCustomPlayer, saveGame } from './api.js';
-import { ROUNDS } from './constants.js';
+import { ROUNDS, PLAYER_COLORS } from './constants.js';
 
 let selectedPlayers = [];
 
@@ -30,23 +30,23 @@ function parseShortDate(str) {
   return `${fullYear}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
-function pillHTML(name, selected) {
-  return `<button type="button" class="pill${selected ? ' selected' : ''}" draggable="true" data-player="${name}">${name}</button>`;
+function pillHTML(name, selected, colorIndex) {
+  const color = PLAYER_COLORS[colorIndex % PLAYER_COLORS.length];
+  return `<button type="button" class="pill${selected ? ' selected' : ''}" draggable="true" data-player="${name}" style="--pill-color: ${color}">${name}<span class="pill-remove" aria-label="Deselect">×</span></button>`;
 }
 
 async function buildSetupHTML() {
   const { players } = await getPlayerRows();
   return `
     <section class="game-setup card">
-      <h2>Game Setup</h2>
       <div class="field">
         <label for="game-date">Date <span class="hint">(M/D/YY)</span></label>
         <input type="text" id="game-date" value="${todayShort()}" placeholder="3/11/26" inputmode="numeric">
       </div>
       <fieldset class="field">
-        <legend>Players <span class="hint">tap to select, drag to reorder</span></legend>
-        <div class="player-pills">
-          ${players.map(n => pillHTML(n, false)).join('')}
+        <legend>Players <span class="hint">tap to select, drag to reorder</span> · <button type="button" class="players-clear-link" id="players-clear-btn">clear</button></legend>
+        <div class="player-pills" data-original-order="${JSON.stringify(players).replace(/"/g, '&quot;')}">
+          ${players.map((n, i) => pillHTML(n, false, i)).join('')}
           <button type="button" class="pill pill-add" id="add-pill-btn">+</button>
         </div>
         <div class="add-player-row" hidden>
@@ -67,6 +67,15 @@ function syncSelectedPlayers(wrapper, reorder = true) {
   if (reorder) {
     const selected = [...container.querySelectorAll('.pill.selected')];
     const unselected = [...container.querySelectorAll('.pill:not(.selected):not(.pill-add)')];
+    const originalOrder = JSON.parse(container?.dataset.originalOrder || '[]');
+    unselected.sort((a, b) => {
+      const ai = originalOrder.indexOf(a.dataset.player);
+      const bi = originalOrder.indexOf(b.dataset.player);
+      if (ai === -1 && bi === -1) return 0;
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
     selected.forEach(p => container.insertBefore(p, addBtn));
     unselected.forEach(p => container.insertBefore(p, addBtn));
   }
@@ -83,6 +92,11 @@ function bindSetupEvents(wrapper) {
   pillsContainer.addEventListener('click', (e) => {
     const pill = e.target.closest('.pill');
     if (!pill || pill.classList.contains('pill-add')) return;
+    if (e.target.closest('.pill-remove')) {
+      pill.classList.remove('selected');
+      syncSelectedPlayers(wrapper);
+      return;
+    }
     pill.classList.toggle('selected');
     syncSelectedPlayers(wrapper);
   });
@@ -98,16 +112,21 @@ function bindSetupEvents(wrapper) {
   });
 
   pillsContainer.addEventListener('dragend', () => {
-    if (draggedPill) draggedPill.classList.remove('dragging');
-    draggedPill = null;
-    syncSelectedPlayers(wrapper, false);
+    if (draggedPill) {
+      const wasUnselected = !draggedPill.classList.contains('selected');
+      if (wasUnselected) draggedPill.classList.add('selected');
+      draggedPill.classList.remove('dragging');
+      syncSelectedPlayers(wrapper, wasUnselected);
+      draggedPill = null;
+    }
   });
 
   pillsContainer.addEventListener('dragover', (e) => {
     e.preventDefault();
     if (!draggedPill) return;
     const target = e.target.closest('.pill');
-    if (!target || target === draggedPill) return;
+    if (!target || target === draggedPill || target.classList.contains('pill-add')) return;
+    if (draggedPill.classList.contains('selected') && !target.classList.contains('selected')) return;
     const rect = target.getBoundingClientRect();
     const midX = rect.left + rect.width / 2;
     if (e.clientX < midX) {
@@ -145,7 +164,7 @@ function bindSetupEvents(wrapper) {
     touchClone.style.top = `${touch.clientY - touchClone.offsetHeight / 2}px`;
 
     const target = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.pill');
-    if (target && target !== draggedPill && pillsContainer.contains(target)) {
+    if (target && target !== draggedPill && pillsContainer.contains(target) && !target.classList.contains('pill-add') && (draggedPill.classList.contains('selected') ? target.classList.contains('selected') : true)) {
       const rect = target.getBoundingClientRect();
       const midX = rect.left + rect.width / 2;
       if (touch.clientX < midX) {
@@ -167,11 +186,31 @@ function bindSetupEvents(wrapper) {
         draggedPill.classList.toggle('selected');
         syncSelectedPlayers(wrapper);
       } else {
-        syncSelectedPlayers(wrapper, false);
+        const wasUnselected = !draggedPill.classList.contains('selected');
+        if (wasUnselected) draggedPill.classList.add('selected');
+        syncSelectedPlayers(wrapper, wasUnselected);
       }
       draggedPill = null;
     }
     touchStarted = false;
+  });
+
+  wrapper.querySelector('#players-clear-btn')?.addEventListener('click', () => {
+    pillsContainer.querySelectorAll('.pill.selected').forEach(p => p.classList.remove('selected'));
+    const originalOrder = JSON.parse(pillsContainer.dataset.originalOrder || '[]');
+    const addBtn = pillsContainer.querySelector('.pill-add');
+    const pillsByPlayer = new Map();
+    pillsContainer.querySelectorAll('.pill:not(.pill-add)').forEach(p => {
+      pillsByPlayer.set(p.dataset.player, p);
+    });
+    const customPills = [...pillsContainer.querySelectorAll('.pill:not(.pill-add)')]
+      .filter(p => !originalOrder.includes(p.dataset.player));
+    const targetOrder = [...originalOrder, ...customPills.map(p => p.dataset.player)];
+    targetOrder.reverse().forEach(name => {
+      const pill = pillsByPlayer.get(name);
+      if (pill) pillsContainer.insertBefore(pill, addBtn);
+    });
+    syncSelectedPlayers(wrapper);
   });
 
   const addRow = wrapper.querySelector('.add-player-row');
@@ -195,7 +234,10 @@ function bindSetupEvents(wrapper) {
     pill.className = 'pill selected';
     pill.draggable = true;
     pill.dataset.player = name;
-    pill.textContent = name;
+    const colorIndex = pillsContainer.querySelectorAll('.pill:not(.pill-add)').length;
+    const color = PLAYER_COLORS[colorIndex % PLAYER_COLORS.length];
+    pill.style.setProperty('--pill-color', color);
+    pill.innerHTML = `${name}<span class="pill-remove" aria-label="Deselect">×</span>`;
     pillsContainer.insertBefore(pill, addPillBtn);
     syncSelectedPlayers(wrapper);
     input.value = '';
@@ -239,13 +281,15 @@ function renderScoresheet(container, date, displayDate, players) {
               <tr data-round="${round}">
                 <td class="round-label">${round}</td>
                 ${players.map(p => `
-                  <td>
+                  <td class="score-cell" data-player="${p}">
+                    <span class="player-col-label">${p}</span>
                     <input type="text" class="score-input"
                       data-round="${round}" data-player="${p}"
                       inputmode="numeric">
                   </td>
                 `).join('')}
-                <td>
+                <td class="tunk-cell">
+                  <span class="tunk-col-label">Tunk</span>
                   <select class="tunk-select" data-round="${round}">
                     <option value="">—</option>
                     ${players.map(p => `<option value="${p}">${p}</option>`).join('')}
@@ -257,7 +301,7 @@ function renderScoresheet(container, date, displayDate, players) {
           <tfoot>
             <tr class="totals-row">
               <td class="round-label">Total</td>
-              ${players.map(p => `<td class="total-cell" data-player="${p}">0</td>`).join('')}
+              ${players.map(p => `<td class="total-cell" data-player="${p}"><span class="player-col-label">${p}</span><span class="total-value">0</span></td>`).join('')}
               <td></td>
             </tr>
           </tfoot>
@@ -446,7 +490,8 @@ function recalcTotals(table, players) {
 
   players.forEach(p => {
     const cell = table.querySelector(`.total-cell[data-player="${p}"]`);
-    cell.textContent = totals[p];
+    const valEl = cell.querySelector('.total-value');
+    (valEl || cell).textContent = totals[p];
     cell.classList.toggle('winner-cell', showWinner && totals[p] === minScore);
   });
 }

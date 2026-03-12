@@ -16,3 +16,9 @@
  */
 
 export const ROUNDS = ['3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+export const PLAYER_COLORS = [
+  '#6b8aef', '#5aad6e', '#ecc04a', '#e07679',
+  '#a88bf8', '#4fc9dc', '#fb9a5a', '#f27ab3',
+  '#5ac9bf', '#8b8df4',
+];
