@@ -5,6 +5,7 @@ const FIXTURE_PLAYERS = testData?.players ?? [];
 const GAMES_KEY = '65ers_games';
 const PLAYERS_KEY = '65ers_custom_players';
 const TEST_DATA_FLAG = '65ers_test_data';
+const DRAFT_KEY = '65ers_draft';
 
 export function hasTestData() {
   return !!(testData?.games?.length);
@@ -23,13 +24,6 @@ export function clearData() {
   localStorage.removeItem(TEST_DATA_FLAG);
 }
 
-/** Clear test data on page load/refresh so the app starts fresh. */
-export function clearTestDataOnLoad() {
-  if (localStorage.getItem(TEST_DATA_FLAG)) {
-    clearData();
-  }
-}
-
 export async function saveGame(game) {
   const games = await loadGames();
   games.push(game);
@@ -40,6 +34,23 @@ export async function saveGame(game) {
 export async function loadGames() {
   const raw = localStorage.getItem(GAMES_KEY);
   return raw ? JSON.parse(raw) : [];
+}
+
+export function saveDraft(draft) {
+  if (draft) {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  } else {
+    localStorage.removeItem(DRAFT_KEY);
+  }
+}
+
+export function loadDraft() {
+  const raw = localStorage.getItem(DRAFT_KEY);
+  return raw ? JSON.parse(raw) : null;
+}
+
+export function clearDraft() {
+  localStorage.removeItem(DRAFT_KEY);
 }
 
 export async function getPlayerRows() {

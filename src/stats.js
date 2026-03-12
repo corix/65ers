@@ -23,9 +23,9 @@ export async function renderStats(container) {
   const stats = computeStats(games);
   const wrapper = document.createElement('div');
   wrapper.className = 'stats-view';
-  wrapper.innerHTML = buildRecordsHTML(stats)
+  wrapper.innerHTML = buildChartHTML('Most Recent Game', 'recent-game-chart')
     + buildLeaderboardHTML(stats)
-    + buildChartHTML('Most Recent Game', 'recent-game-chart')
+    + buildRecordsHTML(stats)
     + buildChartHTML('Average Score by Round', 'avg-round-chart');
   container.appendChild(wrapper);
 

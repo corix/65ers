@@ -1,5 +1,5 @@
 import './form.css';
-import { getPlayerRows, getAllPlayerNames, addCustomPlayer, saveGame } from './api.js';
+import { getPlayerRows, getAllPlayerNames, addCustomPlayer, saveGame, saveDraft, loadDraft, clearDraft } from './api.js';
 import { ROUNDS, PLAYER_COLORS } from './constants.js';
 
 let selectedPlayers = [];
@@ -8,12 +8,22 @@ export async function renderForm(container) {
   container.innerHTML = '';
   selectedPlayers = [];
 
+  const draft = loadDraft();
   const wrapper = document.createElement('div');
   wrapper.className = 'form-view';
-  wrapper.innerHTML = await buildSetupHTML();
+  wrapper.innerHTML = await buildSetupHTML(draft);
   container.appendChild(wrapper);
 
   bindSetupEvents(wrapper);
+
+  if (draft?.players?.length >= 2) {
+    const raw = wrapper.querySelector('#game-date').value;
+    const date = parseShortDate(raw) || draft.date;
+    const displayDate = raw || draft.displayDate;
+    renderScoresheet(wrapper.querySelector('#scoresheet-area'), date, displayDate, draft.players);
+    wrapper.querySelector('.game-setup')?.classList.add('collapsed');
+    restoreDraft(wrapper, draft);
+  }
 }
 
 function todayShort() {
@@ -35,18 +45,23 @@ function pillHTML(name, selected, colorIndex) {
   return `<button type="button" class="pill${selected ? ' selected' : ''}" draggable="true" data-player="${name}" style="--pill-color: ${color}">${name}<span class="pill-remove" aria-label="Deselect">×</span></button>`;
 }
 
-async function buildSetupHTML() {
+async function buildSetupHTML(draft = null) {
   const { players } = await getPlayerRows();
+  const initialDate = draft?.displayDate ?? todayShort();
+  const selectedSet = draft?.players ? new Set(draft.players) : new Set();
+  const pillOrder = draft?.players?.length
+    ? [...draft.players, ...players.filter(p => !selectedSet.has(p))]
+    : players;
   return `
     <section class="game-setup card">
       <div class="field">
         <label for="game-date">Date <span class="hint">(M/D/YY)</span></label>
-        <input type="text" id="game-date" value="${todayShort()}" placeholder="3/11/26" inputmode="numeric">
+        <input type="text" id="game-date" value="${initialDate}" placeholder="3/11/26" inputmode="numeric">
       </div>
       <fieldset class="field">
         <legend>Players <span class="hint">tap to select, drag to reorder</span> · <button type="button" class="players-clear-link" id="players-clear-btn">clear</button></legend>
         <div class="player-pills" data-original-order="${JSON.stringify(players).replace(/"/g, '&quot;')}">
-          ${players.map((n, i) => pillHTML(n, false, i)).join('')}
+          ${pillOrder.map((n, i) => pillHTML(n, selectedSet.has(n), i)).join('')}
           <button type="button" class="pill pill-add" id="add-pill-btn">+</button>
         </div>
         <div class="add-player-row" hidden>
@@ -257,40 +272,50 @@ function bindSetupEvents(wrapper) {
       return;
     }
     wrapper.querySelector('#game-date').classList.remove('input-error');
+    clearDraft();
     renderScoresheet(wrapper.querySelector('#scoresheet-area'), date, raw, selectedPlayers);
     wrapper.querySelector('.game-setup').classList.add('collapsed');
+    persistDraft(wrapper);
   });
 }
 
 function renderScoresheet(container, date, displayDate, players) {
   container.innerHTML = `
     <section class="scoresheet card">
-      <h2>Scoresheet &mdash; ${displayDate}</h2>
-      <p class="players-label">${players.join(', ')}</p>
-      <div class="table-wrap">
+      <div class="scoresheet-header">
+        <h2>Scoresheet &mdash; ${displayDate}</h2>
+        <button type="button" id="start-over-btn" class="text-btn start-over-btn">Start over</button>
+      </div>
+      <div class="rounds-accordion" data-collapsed="true">
+        <div class="table-wrap">
         <table class="scoresheet-table">
           <thead>
             <tr>
               <th class="round-col">Round</th>
-              ${players.map(p => `<th>${p}</th>`).join('')}
+              ${players.map(p => `<th class="player-col-header" data-player="${p}" draggable="true">${p}</th>`).join('')}
               <th class="tunk-col">Tunk</th>
             </tr>
           </thead>
           <tbody>
-            ${ROUNDS.map(round => `
-              <tr data-round="${round}">
-                <td class="round-label">${round}</td>
+            ${ROUNDS.map((round, i) => `
+              <tr data-round="${round}" class="round-row" aria-expanded="${i === 0}">
+                <td class="round-label" data-round="${round}">
+                  <button type="button" class="round-toggle" aria-expanded="${i === 0}" tabindex="-1"><span class="round-title" data-round="${round}">Round ${round}</span></button>
+                </td>
                 ${players.map(p => `
                   <td class="score-cell" data-player="${p}">
                     <span class="player-col-label">${p}</span>
-                    <input type="text" class="score-input"
-                      data-round="${round}" data-player="${p}"
-                      inputmode="numeric">
+                    <span class="score-input-wrap">
+                      <input type="text" class="score-input"
+                        data-round="${round}" data-player="${p}"
+                        inputmode="numeric">
+                      <span class="penalty-suffix" hidden>+65</span>
+                    </span>
                   </td>
                 `).join('')}
                 <td class="tunk-cell">
                   <span class="tunk-col-label">Tunk</span>
-                  <select class="tunk-select" data-round="${round}">
+                  <select class="tunk-select" data-round="${round}" tabindex="-1">
                     <option value="">—</option>
                     ${players.map(p => `<option value="${p}">${p}</option>`).join('')}
                   </select>
@@ -302,27 +327,30 @@ function renderScoresheet(container, date, displayDate, players) {
             <tr class="totals-row">
               <td class="round-label">Total</td>
               ${players.map(p => `<td class="total-cell" data-player="${p}"><span class="player-col-label">${p}</span><span class="total-value">0</span></td>`).join('')}
-              <td></td>
+              <td class="tunk-col-spacer"></td>
             </tr>
           </tfoot>
         </table>
+        <button type="button" class="rounds-toggle" aria-expanded="false">Rounds</button>
+        </div>
       </div>
 
-      <details class="penalties-section">
-        <summary>Penalties</summary>
-        <div class="penalty-add-row">
-          <select id="penalty-round">
-            <option value="">Round</option>
-            ${ROUNDS.map(r => `<option value="${r}">${r}</option>`).join('')}
-          </select>
+      <div class="penalties-section">
+        <ul class="penalty-list"></ul>
+        <button type="button" class="penalties-heading" id="add-penalty-toggle">+ Add Penalty</button>
+        <div class="penalty-add-row" hidden>
           <select id="penalty-player">
             <option value="">Player</option>
             ${players.map(p => `<option value="${p}">${p}</option>`).join('')}
           </select>
+          <select id="penalty-round">
+            <option value="">Round</option>
+            ${ROUNDS.map(r => `<option value="${r}">${r}</option>`).join('')}
+          </select>
           <button type="button" id="add-penalty-btn">Add</button>
+          <button type="button" id="cancel-penalty-btn" class="cancel-x-btn" aria-label="Cancel">×</button>
         </div>
-        <ul class="penalty-list"></ul>
-      </details>
+      </div>
 
       <div class="form-actions">
         <button type="button" id="save-game-btn" class="primary-btn">Save Game</button>
@@ -332,6 +360,153 @@ function renderScoresheet(container, date, displayDate, players) {
   `;
 
   bindScoresheetEvents(container, date, players);
+}
+
+function getDraftFromScoresheet(wrapper) {
+  const scoresheet = wrapper.querySelector('.scoresheet');
+  if (!scoresheet) return null;
+  const table = scoresheet.querySelector('.scoresheet-table');
+  const dateInput = wrapper.querySelector('#game-date');
+  const players = getPlayersFromTable(table);
+  if (!players.length) return null;
+
+  const parts = (dateInput?.value || '').trim().split('/').map(Number);
+  const [m, d, y] = parts.length === 3 ? parts : [0, 0, 0];
+  const fullYear = y < 100 ? 2000 + (y || 0) : y;
+  const date = dateInput?.value ? `${fullYear}-${String(m || 0).padStart(2, '0')}-${String(d || 0).padStart(2, '0')}` : null;
+  if (!date) return null;
+
+  const scores = {};
+  const tunks = {};
+  ROUNDS.forEach(round => {
+    scores[round] = {};
+    const tunkSelect = table.querySelector(`.tunk-select[data-round="${round}"]`);
+    if (tunkSelect?.value) tunks[round] = tunkSelect.value;
+    players.forEach(p => {
+      const input = table.querySelector(`.score-input[data-round="${round}"][data-player="${p}"]`);
+      scores[round][p] = input?.value ?? '';
+    });
+  });
+
+  const penalties = [...getPenalties(table)];
+
+  return { date, displayDate: dateInput?.value ?? '', players, scores, tunks, penalties };
+}
+
+function restoreDraft(wrapper, draft) {
+  const table = wrapper.querySelector('.scoresheet-table');
+  if (!table || !draft) return;
+
+  ROUNDS.forEach(round => {
+    const tunkSelect = table.querySelector(`.tunk-select[data-round="${round}"]`);
+    if (tunkSelect && draft.tunks?.[round]) tunkSelect.value = draft.tunks[round];
+    (draft.players || []).forEach(p => {
+      const input = table.querySelector(`.score-input[data-round="${round}"][data-player="${p}"]`);
+      const val = draft.scores?.[round]?.[p];
+      if (input && val !== undefined) input.value = val;
+    });
+  });
+
+  const list = wrapper.querySelector('.penalty-list');
+  if (list && draft.penalties?.length) {
+    draft.penalties.forEach(key => {
+      const [round, player] = key.split('::');
+      if (round && player && draft.players?.includes(player)) {
+        addPenalty(wrapper, table, round, player, draft.players);
+      }
+    });
+  }
+
+  recalcTotals(table, draft.players || []);
+}
+
+function getPlayersFromTable(table) {
+  return [...table.querySelectorAll('thead .player-col-header')].map(th => th.dataset.player);
+}
+
+function bindColumnReorder(table, wrapper) {
+  const headers = table.querySelectorAll('.player-col-header');
+  if (headers.length === 0) return;
+
+  let draggedPlayer = null;
+
+  headers.forEach(th => {
+    th.addEventListener('dragstart', (e) => {
+      if (!window.matchMedia('(min-width: 541px)').matches) return;
+      draggedPlayer = th.dataset.player;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', draggedPlayer);
+      th.classList.add('dragging');
+    });
+
+    th.addEventListener('dragend', () => {
+      th.classList.remove('dragging');
+      table.querySelectorAll('.player-col-header').forEach(h => h.classList.remove('drag-over'));
+      draggedPlayer = null;
+    });
+
+    th.addEventListener('dragover', (e) => {
+      if (!window.matchMedia('(min-width: 541px)').matches) return;
+      if (!draggedPlayer || th.dataset.player === draggedPlayer) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      th.classList.add('drag-over');
+    });
+
+    th.addEventListener('dragleave', () => {
+      th.classList.remove('drag-over');
+    });
+
+    th.addEventListener('drop', (e) => {
+      if (!window.matchMedia('(min-width: 541px)').matches) return;
+      e.preventDefault();
+      th.classList.remove('drag-over');
+      const dropPlayer = th.dataset.player;
+      if (!draggedPlayer || dropPlayer === draggedPlayer) return;
+
+      const players = getPlayersFromTable(table);
+      const fromIdx = players.indexOf(draggedPlayer);
+      const toIdx = players.indexOf(dropPlayer);
+      if (fromIdx === -1 || toIdx === -1) return;
+
+      const reordered = [...players];
+      reordered.splice(fromIdx, 1);
+      reordered.splice(toIdx, 0, draggedPlayer);
+
+      reorderColumns(table, reordered);
+      persistDraft(wrapper);
+    });
+  });
+}
+
+function reorderColumns(table, players) {
+  const rows = [
+    ...table.querySelectorAll('thead tr'),
+    ...table.querySelectorAll('tbody tr'),
+    ...table.querySelectorAll('tfoot tr'),
+  ];
+
+  rows.forEach(tr => {
+    const roundCell = tr.querySelector('.round-col, .round-label');
+    const tunkCell = tr.querySelector('.tunk-col, .tunk-cell');
+    const emptyCell = tr.querySelector('.tunk-col-spacer');
+
+    const playerCells = players.map(p => {
+      const cell = tr.querySelector(`[data-player="${p}"]`);
+      return cell;
+    }).filter(Boolean);
+
+    const fragment = document.createDocumentFragment();
+    if (roundCell) fragment.appendChild(roundCell);
+    playerCells.forEach(cell => fragment.appendChild(cell));
+    if (tunkCell) fragment.appendChild(tunkCell);
+    if (emptyCell) fragment.appendChild(emptyCell);
+
+    while (tr.firstChild) tr.removeChild(tr.firstChild);
+    tr.appendChild(fragment);
+  });
+
+  recalcTotals(table, players);
 }
 
 function setTunk(table, round, tunkPlayer, players) {
@@ -359,17 +534,61 @@ function addPenalty(container, table, round, player, players) {
 
   const li = document.createElement('li');
   li.dataset.penalty = key;
-  li.innerHTML = `Round ${round} &mdash; ${player} (+65) <button type="button" class="remove-penalty">&times;</button>`;
+  li.innerHTML = `${player} (+65) in Round ${round} <button type="button" class="remove-penalty">&times;</button>`;
+  const wrapper = container.closest('.form-view');
   li.querySelector('.remove-penalty').addEventListener('click', () => {
     li.remove();
     recalcTotals(table, players);
+    persistDraft(wrapper);
   });
   list.appendChild(li);
   recalcTotals(table, players);
+  persistDraft(wrapper);
+}
+
+let persistDraftTimer = null;
+function persistDraft(wrapper) {
+  if (!wrapper) return;
+  clearTimeout(persistDraftTimer);
+  persistDraftTimer = setTimeout(() => {
+    const draft = getDraftFromScoresheet(wrapper);
+    if (draft) saveDraft(draft);
+  }, 300);
 }
 
 function bindScoresheetEvents(container, date, players) {
   const table = container.querySelector('.scoresheet-table');
+  const wrapper = container.closest('.form-view');
+
+  const roundsAccordion = container.querySelector('.rounds-accordion');
+  const roundsToggle = container.querySelector('.rounds-toggle');
+  if (roundsAccordion && roundsToggle) {
+    roundsToggle.addEventListener('click', () => {
+      const collapsed = roundsAccordion.dataset.collapsed === 'true';
+      roundsAccordion.dataset.collapsed = String(!collapsed);
+      roundsToggle.setAttribute('aria-expanded', String(collapsed));
+    });
+  }
+
+  bindColumnReorder(table, wrapper);
+
+  table.querySelectorAll('.round-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!window.matchMedia('(max-width: 540px)').matches) return;
+      const row = btn.closest('.round-row');
+      const isExpanded = row.getAttribute('aria-expanded') === 'true';
+      table.querySelectorAll('.round-row').forEach(r => {
+        r.setAttribute('aria-expanded', 'false');
+      });
+      table.querySelectorAll('.round-toggle').forEach(b => {
+        b.setAttribute('aria-expanded', 'false');
+      });
+      if (!isExpanded) {
+        row.setAttribute('aria-expanded', 'true');
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    });
+  });
 
   table.querySelectorAll('.tunk-select').forEach(select => {
     select.addEventListener('change', () => {
@@ -383,28 +602,54 @@ function bindScoresheetEvents(container, date, players) {
         });
         recalcTotals(table, players);
       }
+      persistDraft(wrapper);
     });
   });
 
+  const validScoreChars = /^[0-9*\u2605tunkx!]*$/i;
   table.querySelectorAll('.score-input').forEach(input => {
     input.addEventListener('input', () => {
       const val = input.value;
       const round = input.dataset.round;
       const player = input.dataset.player;
 
-      if (val.includes('***')) {
-        const score = parseInt(val.replace(/\*/g, ''), 10) || 0;
-        input.value = score;
-        input.classList.remove('tunk-locked', 'magic-65');
-        const tunkSelect = table.querySelector(`.tunk-select[data-round="${round}"]`);
-        if (tunkSelect.value === player) {
-          tunkSelect.value = '';
-        }
-        addPenalty(container, table, round, player, players);
+      if (!validScoreChars.test(val)) {
+        input.value = '';
+        const key = `${round}::${player}`;
+        const penaltyLi = container.querySelector(`.penalty-list [data-penalty="${key}"]`);
+        if (penaltyLi) penaltyLi.remove();
+        recalcTotals(table, players);
+        persistDraft(wrapper);
         return;
       }
 
-      if (val.includes('*')) {
+      if (val.includes('x')) {
+        const score = parseInt(val.replace(/x/gi, ''), 10) || 0;
+        input.value = String(score);
+        input.classList.remove('tunk-locked', 'magic-65');
+        const tunkSelect = table.querySelector(`.tunk-select[data-round="${round}"]`);
+        if (tunkSelect?.value === player) {
+          tunkSelect.value = '';
+        }
+        addPenalty(container, table, round, player, players);
+        recalcTotals(table, players);
+        persistDraft(wrapper);
+        return;
+      }
+
+      if (val.includes('!')) {
+        const parsed = parseInt(val.replace(/!/g, ''), 10);
+        const score = isNaN(parsed) ? 65 : parsed;
+        input.value = String(score);
+        input.classList.remove('tunk-locked');
+        input.classList.toggle('magic-65', score === 65);
+        recalcTotals(table, players);
+        persistDraft(wrapper);
+        return;
+      }
+
+      const isTunkShortcut = val.includes('*') || /^t(unk)?$/i.test(val.trim());
+      if (isTunkShortcut) {
         input.classList.remove('magic-65');
         setTunk(table, round, player, players);
         return;
@@ -412,15 +657,51 @@ function bindScoresheetEvents(container, date, players) {
 
       if (input.classList.contains('tunk-locked') && val !== '\u2605') {
         input.classList.remove('tunk-locked');
+        input.value = val.replace(/\u2605/g, '');
         const tunkSelect = table.querySelector(`.tunk-select[data-round="${round}"]`);
-        if (tunkSelect.value === player) {
+        if (tunkSelect?.value === player) {
           tunkSelect.value = '';
         }
       }
 
+      if (val === '' || val.trim() === '') {
+        const key = `${round}::${player}`;
+        const penaltyLi = container.querySelector(`.penalty-list [data-penalty="${key}"]`);
+        if (penaltyLi) penaltyLi.remove();
+      }
+
       input.classList.toggle('magic-65', parseInt(val, 10) === 65);
       recalcTotals(table, players);
+      persistDraft(wrapper);
     });
+
+    input.addEventListener('focus', () => {
+      if (input.classList.contains('tunk-locked')) {
+        input.value = '';
+        input.classList.remove('tunk-locked');
+        const round = input.dataset.round;
+        const player = input.dataset.player;
+        const tunkSelect = table.querySelector(`.tunk-select[data-round="${round}"]`);
+        if (tunkSelect?.value === player) {
+          tunkSelect.value = '';
+        }
+        recalcTotals(table, players);
+        persistDraft(wrapper);
+      }
+    });
+  });
+
+  const addPenaltyToggle = container.querySelector('#add-penalty-toggle');
+  const penaltyAddRow = container.querySelector('.penalty-add-row');
+
+  addPenaltyToggle.addEventListener('click', () => {
+    addPenaltyToggle.hidden = true;
+    penaltyAddRow.hidden = false;
+  });
+
+  container.querySelector('#cancel-penalty-btn').addEventListener('click', () => {
+    penaltyAddRow.hidden = true;
+    addPenaltyToggle.hidden = false;
   });
 
   container.querySelector('#add-penalty-btn').addEventListener('click', () => {
@@ -430,10 +711,21 @@ function bindScoresheetEvents(container, date, players) {
     addPenalty(container, table, roundSel.value, playerSel.value, players);
     roundSel.value = '';
     playerSel.value = '';
+    penaltyAddRow.hidden = true;
+    addPenaltyToggle.hidden = false;
   });
 
   container.querySelector('#save-game-btn').addEventListener('click', () => {
     handleSave(container, date, players);
+  });
+
+  container.querySelector('#start-over-btn').addEventListener('click', () => {
+    clearDraft();
+    const entryContainer = container.closest('#view-entry');
+    if (entryContainer) {
+      entryContainer.innerHTML = '';
+      renderForm(entryContainer);
+    }
   });
 }
 
@@ -461,6 +753,7 @@ function recalcTotals(table, players) {
       const input = table.querySelector(`.score-input[data-round="${round}"][data-player="${p}"]`);
       const isTunk = tunkPlayer === p;
       let val = parseInt(input.value, 10) || 0;
+      const isMagic65 = val === 65 && !isTunk;
 
       if (isTunk) {
         val = 0;
@@ -473,7 +766,16 @@ function recalcTotals(table, players) {
         if (val === 65) val = 0;
       }
 
-      if (penalties.has(`${round}::${p}`)) {
+      const isTink = val === 0 && !isTunk && !isMagic65 && input.value?.trim() === '0';
+      input.classList.toggle('tink', isTink);
+
+      const hasPenalty = penalties.has(`${round}::${p}`);
+      const cell = input.closest('.score-cell');
+      const suffix = cell?.querySelector('.penalty-suffix');
+      cell?.classList.toggle('has-penalty', hasPenalty);
+      if (suffix) suffix.hidden = !hasPenalty;
+
+      if (hasPenalty) {
         val += 65;
       }
 
@@ -499,6 +801,7 @@ function recalcTotals(table, players) {
 async function handleSave(container, date, players) {
   const table = container.querySelector('.scoresheet-table');
   const feedback = container.querySelector('#save-feedback');
+  const currentPlayers = getPlayersFromTable(table);
 
   const rounds = [];
   let allFilled = true;
@@ -513,7 +816,7 @@ async function handleSave(container, date, players) {
 
     const penalties = getPenalties(table);
 
-    players.forEach(p => {
+    currentPlayers.forEach(p => {
       const input = table.querySelector(`.score-input[data-round="${round}"][data-player="${p}"]`);
       const raw = input.value;
       const isTunk = p === tunkPlayer;
@@ -546,16 +849,33 @@ async function handleSave(container, date, players) {
     });
   });
 
+  const roundsMissingTunk = ROUNDS.filter(round => {
+    const tunkSelect = table.querySelector(`.tunk-select[data-round="${round}"]`);
+    if (tunkSelect?.value) return false;
+    const hasValues = currentPlayers.some(p => {
+      const input = table.querySelector(`.score-input[data-round="${round}"][data-player="${p}"]`);
+      return input?.value?.trim() !== '';
+    });
+    return hasValues;
+  });
+
+  const errors = [];
+  if (roundsMissingTunk.length > 0) {
+    errors.push(`Select a tunk for round${roundsMissingTunk.length > 1 ? 's' : ''} ${roundsMissingTunk.join(', ')}.`);
+  }
   if (!allFilled) {
-    feedback.textContent = 'Please fill in all scores before saving.';
+    errors.push('Please fill in all scores before saving.');
+  }
+  if (errors.length > 0) {
+    feedback.innerHTML = errors.map(e => `<p class="feedback-message">${e}</p>`).join('');
     feedback.className = 'feedback error';
     return;
   }
 
   const totals = {};
-  players.forEach(p => { totals[p] = 0; });
+  currentPlayers.forEach(p => { totals[p] = 0; });
   rounds.forEach(r => {
-    players.forEach(p => {
+    currentPlayers.forEach(p => {
       let val = r.scores[p];
       if (r.magic65s.includes(p)) val = 0;
       if (r.falseTunks.includes(p)) val += 65;
@@ -565,7 +885,7 @@ async function handleSave(container, date, players) {
 
   let minScore = Infinity;
   let winner = '';
-  players.forEach(p => {
+  currentPlayers.forEach(p => {
     if (totals[p] < minScore) {
       minScore = totals[p];
       winner = p;
@@ -575,13 +895,14 @@ async function handleSave(container, date, players) {
   const game = {
     id: crypto.randomUUID(),
     date,
-    players,
+    players: currentPlayers,
     rounds,
     totals,
     winner,
   };
 
   await saveGame(game);
+  clearDraft();
   feedback.textContent = `Game saved! Winner: ${winner} (${minScore} pts)`;
   feedback.className = 'feedback success';
   container.querySelector('#save-game-btn').disabled = true;

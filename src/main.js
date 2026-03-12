@@ -2,7 +2,7 @@ import './shared.css';
 import { renderForm } from './form.js';
 import { renderArchive } from './archive.js';
 import { renderStats } from './stats.js';
-import { hasTestData, loadTestData, clearData, clearTestDataOnLoad } from './api.js';
+import { hasTestData, loadTestData, clearData } from './api.js';
 
 const app = document.getElementById('app');
 const nav = document.querySelector('nav');
@@ -11,6 +11,16 @@ const navSlider = document.querySelector('.nav-slider');
 const testDataEl = document.getElementById('test-data-control');
 
 let currentView = 'entry';
+
+const viewContainers = {};
+['entry', 'archive', 'stats'].forEach(view => {
+  const el = document.createElement('div');
+  el.id = `view-${view}`;
+  el.className = 'view-container';
+  el.hidden = view !== 'entry';
+  app.appendChild(el);
+  viewContainers[view] = el;
+});
 
 function updateNavSlider(animate = false) {
   const active = nav?.querySelector('.nav-btn.active');
@@ -39,12 +49,20 @@ async function showView(view, { animateNav = false } = {}) {
   currentView = view;
   navBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.view === view));
   updateNavSlider(animateNav);
-  if (view === 'entry') {
-    await renderForm(app);
-  } else if (view === 'archive') {
-    await renderArchive(app);
-  } else if (view === 'stats') {
-    await renderStats(app);
+
+  Object.entries(viewContainers).forEach(([v, el]) => {
+    el.hidden = v !== view;
+  });
+
+  const container = viewContainers[view];
+  if (container.children.length === 0) {
+    if (view === 'entry') {
+      await renderForm(container);
+    } else if (view === 'archive') {
+      await renderArchive(container);
+    } else if (view === 'stats') {
+      await renderStats(container);
+    }
   }
   renderTestDataControl();
 }
@@ -64,6 +82,9 @@ function renderTestDataControl() {
     } else {
       clearData();
     }
+    viewContainers.entry.innerHTML = '';
+    viewContainers.archive.innerHTML = '';
+    viewContainers.stats.innerHTML = '';
     await showView(currentView);
   });
   testDataEl.appendChild(link);
@@ -73,7 +94,7 @@ navBtns.forEach(btn => {
   btn.addEventListener('click', () => showView(btn.dataset.view, { animateNav: true }));
 });
 
-clearTestDataOnLoad();
+loadTestData();
 showView('entry');
 requestAnimationFrame(() => updateNavSlider());
 

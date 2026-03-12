@@ -15,22 +15,32 @@
   font-weight: 600;
 }
 
-.magic-marker {
-  font-size: 0.75em;
-  vertical-align: super;
-}
-
 .ft-badge {
-  font-size: 0.65rem;
+  font-size: 0.8em;
+  line-height: 1.2;
   background: var(--red);
   color: #fff;
-  padding: 1px 4px;
+  padding: 0.1em 0.3em;
   border-radius: 3px;
   vertical-align: middle;
 }
 
 .cell-false-tunk {
-  color: var(--red);
+  color: #000;
+  position: relative;
+}
+
+.cell-false-tunk .cell-value {
+  display: block;
+  text-align: center;
+}
+
+.cell-false-tunk .ft-badge {
+  position: absolute;
+  left: 50%;
+  margin-left: 0.9em;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 /* Archive list */
@@ -43,14 +53,17 @@
 
 .archive-item {
   padding: 0;
+  container-type: inline-size;
 }
 
 .archive-header {
   width: 100%;
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 0.75rem;
   padding: 0.85rem 1rem;
+  padding-right: 10rem;
   background: none;
   border: none;
   cursor: pointer;
@@ -58,6 +71,7 @@
   font-size: 0.9rem;
   text-align: left;
   transition: background 0.1s;
+  position: relative;
 }
 
 .archive-header:hover {
@@ -76,6 +90,26 @@
 .archive-players {
   color: #666;
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@container (max-width: 380px) {
+  .archive-players {
+    display: none;
+  }
+}
+
+.archive-header-right {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .archive-winner {
@@ -85,13 +119,7 @@
 }
 
 .archive-chevron {
-  transition: transform 0.2s;
-  font-size: 0.75rem;
-  color: #999;
-}
-
-.archive-header[aria-expanded="true"] .archive-chevron {
-  transform: rotate(180deg);
+  display: none;
 }
 
 .archive-body {
@@ -110,14 +138,55 @@
 /* Responsive */
 
 @media (max-width: 500px) {
-  .archive-header {
-    flex-wrap: wrap;
-    gap: 0.3rem;
+  .archive-players {
+    font-size: 0.82rem;
+  }
+}
+
+/* Stacked view: round accordion (matches scoresheet at 540px) */
+
+@media (max-width: 540px) {
+  .archive-table .round-row[aria-expanded="true"] {
+    border-color: var(--border);
+    border-width: 1px;
   }
 
-  .archive-players {
-    width: 100%;
-    order: 3;
-    font-size: 0.82rem;
+  .archive-table .round-row[aria-expanded="false"] .archive-score-cell {
+    display: none;
+  }
+
+  .archive-table .archive-score-cell,
+  .archive-table .total-cell {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.3rem 0;
+    border: none;
+    min-height: 36px;
+  }
+
+  .archive-table .archive-score-cell:not(:last-child),
+  .archive-table .total-cell:not(:last-child) {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .archive-table .cell-value {
+    margin-left: auto;
+  }
+
+  .archive-table .total-cell .total-value {
+    font-weight: 700;
+    margin-left: auto;
+  }
+}
+
+@media (min-width: 541px) {
+  .archive-table .player-col-label {
+    display: none;
+  }
+
+  .archive-table .cell-value {
+    margin-left: 0;
   }
 }
