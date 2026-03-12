@@ -62,15 +62,15 @@ For now, stored locally, later on in a database — displayed as tabular data
 ## PRODUCT ROADMAP
 These are the building stages for this project.
 
-### 1. Phase One — Testing web form [WE ARE HERE]
+### 1. Phase One — Testing web form
 * Web form with player pill selection, scoresheet grid, tunk/penalty shortcuts, and auto-computed totals
 * Archive view with expandable game cards
 * All data persisted in localStorage
 * Vanilla JS and Vite, no framework
 
-### 2. Phase 2 — Testing data insights
+### 2. Phase 2 — Testing data insights [WE ARE HERE]
 * Create a separate page for stats and verify accuracy
-* Use chart.js to generate line graphs, scatter plots, other insights using the aggregated data
+* Use chart.js (https://www.chartjs.org/docs/) to generate line graphs, scatter plots, other insights using the aggregated data
 
 ### 3. Phase 3 — Set up database on the back end
 * TBD, likely Supabase
