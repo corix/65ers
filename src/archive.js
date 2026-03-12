@@ -1,5 +1,5 @@
 import './archive.css';
-import { loadGames, hasTestData, loadTestData } from './api.js';
+import { loadGames, hasTestData, loadTestData, clearData } from './api.js';
 
 export async function renderArchive(container) {
   const games = (await loadGames()).sort((a, b) => b.date.localeCompare(a.date));
@@ -9,19 +9,18 @@ export async function renderArchive(container) {
     const emptyEl = document.createElement('div');
     emptyEl.className = 'card empty-state';
     emptyEl.innerHTML = '<p>No games saved yet. Go to <strong>New Game</strong> to add one.</p>';
+    container.appendChild(emptyEl);
     if (hasTestData()) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'primary-btn';
-      btn.textContent = 'Load test data';
-      btn.style.marginTop = '1rem';
-      btn.addEventListener('click', async () => {
+      const loadBtn = document.createElement('button');
+      loadBtn.type = 'button';
+      loadBtn.className = 'clear-data-btn';
+      loadBtn.textContent = 'Load test data';
+      loadBtn.addEventListener('click', async () => {
         await loadTestData();
         await renderArchive(container);
       });
-      emptyEl.appendChild(btn);
+      container.appendChild(loadBtn);
     }
-    container.appendChild(emptyEl);
     return;
   }
 
@@ -60,6 +59,16 @@ export async function renderArchive(container) {
   });
 
   container.appendChild(list);
+
+  const clearBtn = document.createElement('button');
+  clearBtn.type = 'button';
+  clearBtn.className = 'clear-data-btn';
+  clearBtn.textContent = 'Ignore test data';
+  clearBtn.addEventListener('click', async () => {
+    clearData();
+    await renderArchive(container);
+  });
+  container.appendChild(clearBtn);
 }
 
 function formatDate(dateStr) {

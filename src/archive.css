@@ -108,6 +108,24 @@
   padding: 0.35rem 0.6rem;
 }
 
+.clear-data-btn {
+  display: block;
+  margin-top: 1rem;
+  padding: 0.4rem 0.8rem;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  color: #888;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.clear-data-btn:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+
 /* Responsive */
 
 @media (max-width: 500px) {

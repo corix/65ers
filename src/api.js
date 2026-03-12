@@ -19,6 +19,11 @@ export async function loadTestData() {
   }
 }
 
+export function clearData() {
+  localStorage.removeItem(GAMES_KEY);
+  localStorage.removeItem(PLAYERS_KEY);
+}
+
 export async function saveGame(game) {
   const games = await loadGames();
   games.push(game);
