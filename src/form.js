@@ -1,4 +1,4 @@
-import { getPlayerNames, addCustomPlayer, saveGame, ROUNDS } from './store.js';
+import { getPlayerRows, getAllPlayerNames, addCustomPlayer, saveGame, ROUNDS } from './store.js';
 
 let selectedPlayers = [];
 
@@ -14,82 +14,215 @@ export function renderForm(container) {
   bindSetupEvents(wrapper);
 }
 
-function todayString() {
-  return new Date().toISOString().slice(0, 10);
+function todayShort() {
+  const d = new Date();
+  return `${d.getMonth() + 1}/${d.getDate()}/${String(d.getFullYear()).slice(-2)}`;
+}
+
+function parseShortDate(str) {
+  const parts = str.trim().split('/');
+  if (parts.length !== 3) return null;
+  const [m, d, y] = parts.map(Number);
+  if (!m || !d || isNaN(y)) return null;
+  const fullYear = y < 100 ? 2000 + y : y;
+  return `${fullYear}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+function pillHTML(name, selected) {
+  return `<button type="button" class="pill${selected ? ' selected' : ''}" draggable="true" data-player="${name}">${name}</button>`;
 }
 
 function buildSetupHTML() {
-  const players = getPlayerNames();
+  const { primary, secondary } = getPlayerRows();
   return `
     <section class="game-setup card">
       <h2>Game Setup</h2>
       <div class="field">
-        <label for="game-date">Date</label>
-        <input type="date" id="game-date" value="${todayString()}">
+        <label for="game-date">Date <span class="hint">(M/D/YY)</span></label>
+        <input type="text" id="game-date" value="${todayShort()}" placeholder="3/11/26" inputmode="numeric">
       </div>
       <fieldset class="field">
-        <legend>Players</legend>
-        <div class="player-checkboxes">
-          ${players.map(name => `
-            <label class="player-check">
-              <input type="checkbox" value="${name}"> ${name}
-            </label>
-          `).join('')}
+        <legend>Players <span class="hint">tap to select, drag to reorder</span></legend>
+        <div class="player-pills">
+          ${primary.map(n => pillHTML(n, false)).join('')}
+          ${secondary.map(n => pillHTML(n, false)).join('')}
+          <button type="button" class="pill pill-add" id="add-pill-btn">+</button>
         </div>
-        <div class="add-player-row">
-          <input type="text" id="new-player-name" placeholder="Add new player…">
+        <div class="add-player-row" hidden>
+          <input type="text" id="new-player-name" placeholder="New player name…">
           <button type="button" id="add-player-btn">Add</button>
         </div>
       </fieldset>
-      <button type="button" id="start-game-btn" class="primary-btn" disabled>Start Scoresheet</button>
+      <button type="button" id="start-game-btn" class="primary-btn">Start Scoresheet</button>
     </section>
     <section id="scoresheet-area"></section>
   `;
 }
 
+function syncSelectedPlayers(wrapper, reorder = true) {
+  const container = wrapper.querySelector('.player-pills');
+  const addBtn = container.querySelector('.pill-add');
+
+  if (reorder) {
+    const selected = [...container.querySelectorAll('.pill.selected')];
+    const unselected = [...container.querySelectorAll('.pill:not(.selected):not(.pill-add)')];
+    selected.forEach(p => container.insertBefore(p, addBtn));
+    unselected.forEach(p => container.insertBefore(p, addBtn));
+  }
+
+  selectedPlayers = [...container.querySelectorAll('.pill.selected')].map(p => p.dataset.player);
+  wrapper.querySelector('#start-game-btn').disabled = selectedPlayers.length < 2;
+}
+
 function bindSetupEvents(wrapper) {
-  const checkboxes = wrapper.querySelectorAll('.player-checkboxes input[type="checkbox"]');
+  const pillsContainer = wrapper.querySelector('.player-pills');
   const startBtn = wrapper.querySelector('#start-game-btn');
+  syncSelectedPlayers(wrapper);
 
-  checkboxes.forEach(cb => cb.addEventListener('change', () => {
-    selectedPlayers = [...wrapper.querySelectorAll('.player-checkboxes input:checked')].map(c => c.value);
-    startBtn.disabled = selectedPlayers.length < 2;
-  }));
+  pillsContainer.addEventListener('click', (e) => {
+    const pill = e.target.closest('.pill');
+    if (!pill || pill.classList.contains('pill-add')) return;
+    pill.classList.toggle('selected');
+    syncSelectedPlayers(wrapper);
+  });
 
-  wrapper.querySelector('#add-player-btn').addEventListener('click', () => {
+  let draggedPill = null;
+
+  pillsContainer.addEventListener('dragstart', (e) => {
+    const pill = e.target.closest('.pill');
+    if (!pill || pill.classList.contains('pill-add')) return;
+    draggedPill = pill;
+    pill.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+
+  pillsContainer.addEventListener('dragend', () => {
+    if (draggedPill) draggedPill.classList.remove('dragging');
+    draggedPill = null;
+    syncSelectedPlayers(wrapper, false);
+  });
+
+  pillsContainer.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    if (!draggedPill) return;
+    const target = e.target.closest('.pill');
+    if (!target || target === draggedPill) return;
+    const rect = target.getBoundingClientRect();
+    const midX = rect.left + rect.width / 2;
+    if (e.clientX < midX) {
+      pillsContainer.insertBefore(draggedPill, target);
+    } else {
+      pillsContainer.insertBefore(draggedPill, target.nextSibling);
+    }
+  });
+
+  // Touch-based drag for mobile
+  let touchClone = null;
+  let touchStarted = false;
+
+  pillsContainer.addEventListener('touchstart', (e) => {
+    const pill = e.target.closest('.pill');
+    if (!pill || pill.classList.contains('pill-add')) return;
+    draggedPill = pill;
+    touchStarted = false;
+  }, { passive: true });
+
+  pillsContainer.addEventListener('touchmove', (e) => {
+    if (!draggedPill) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+
+    if (!touchStarted) {
+      touchStarted = true;
+      draggedPill.classList.add('dragging');
+      touchClone = draggedPill.cloneNode(true);
+      touchClone.classList.add('pill-ghost');
+      document.body.appendChild(touchClone);
+    }
+
+    touchClone.style.left = `${touch.clientX - touchClone.offsetWidth / 2}px`;
+    touchClone.style.top = `${touch.clientY - touchClone.offsetHeight / 2}px`;
+
+    const target = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.pill');
+    if (target && target !== draggedPill && pillsContainer.contains(target)) {
+      const rect = target.getBoundingClientRect();
+      const midX = rect.left + rect.width / 2;
+      if (touch.clientX < midX) {
+        pillsContainer.insertBefore(draggedPill, target);
+      } else {
+        pillsContainer.insertBefore(draggedPill, target.nextSibling);
+      }
+    }
+  }, { passive: false });
+
+  pillsContainer.addEventListener('touchend', () => {
+    if (touchClone) {
+      touchClone.remove();
+      touchClone = null;
+    }
+    if (draggedPill) {
+      draggedPill.classList.remove('dragging');
+      if (!touchStarted) {
+        draggedPill.classList.toggle('selected');
+        syncSelectedPlayers(wrapper);
+      } else {
+        syncSelectedPlayers(wrapper, false);
+      }
+      draggedPill = null;
+    }
+    touchStarted = false;
+  });
+
+  const addRow = wrapper.querySelector('.add-player-row');
+  const addPillBtn = wrapper.querySelector('#add-pill-btn');
+
+  addPillBtn.addEventListener('click', () => {
+    addRow.hidden = !addRow.hidden;
+    if (!addRow.hidden) wrapper.querySelector('#new-player-name').focus();
+  });
+
+  function commitNewPlayer() {
     const input = wrapper.querySelector('#new-player-name');
     const name = input.value.trim();
     if (!name) return;
     addCustomPlayer(name);
-    const allNames = getPlayerNames();
+    const allNames = getAllPlayerNames();
     if (!allNames.includes(name)) return;
 
-    const container = wrapper.querySelector('.player-checkboxes');
-    const label = document.createElement('label');
-    label.className = 'player-check';
-    label.innerHTML = `<input type="checkbox" value="${name}" checked> ${name}`;
-    container.appendChild(label);
-    label.querySelector('input').addEventListener('change', () => {
-      selectedPlayers = [...wrapper.querySelectorAll('.player-checkboxes input:checked')].map(c => c.value);
-      startBtn.disabled = selectedPlayers.length < 2;
-    });
-
-    selectedPlayers.push(name);
-    startBtn.disabled = selectedPlayers.length < 2;
+    const pill = document.createElement('button');
+    pill.type = 'button';
+    pill.className = 'pill selected';
+    pill.draggable = true;
+    pill.dataset.player = name;
+    pill.textContent = name;
+    pillsContainer.insertBefore(pill, addPillBtn);
+    syncSelectedPlayers(wrapper);
     input.value = '';
+    input.focus();
+  }
+
+  wrapper.querySelector('#add-player-btn').addEventListener('click', commitNewPlayer);
+  wrapper.querySelector('#new-player-name').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); commitNewPlayer(); }
   });
 
   startBtn.addEventListener('click', () => {
-    const date = wrapper.querySelector('#game-date').value;
-    renderScoresheet(wrapper.querySelector('#scoresheet-area'), date, selectedPlayers);
+    const raw = wrapper.querySelector('#game-date').value;
+    const date = parseShortDate(raw);
+    if (!date) {
+      wrapper.querySelector('#game-date').classList.add('input-error');
+      return;
+    }
+    wrapper.querySelector('#game-date').classList.remove('input-error');
+    renderScoresheet(wrapper.querySelector('#scoresheet-area'), date, raw, selectedPlayers);
     wrapper.querySelector('.game-setup').classList.add('collapsed');
   });
 }
 
-function renderScoresheet(container, date, players) {
+function renderScoresheet(container, date, displayDate, players) {
   container.innerHTML = `
     <section class="scoresheet card">
-      <h2>Scoresheet &mdash; ${date}</h2>
+      <h2>Scoresheet &mdash; ${displayDate}</h2>
       <p class="players-label">${players.join(', ')}</p>
       <div class="table-wrap">
         <table class="scoresheet-table">
@@ -106,7 +239,7 @@ function renderScoresheet(container, date, players) {
                 <td class="round-label">${round}</td>
                 ${players.map(p => `
                   <td>
-                    <input type="number" min="0" class="score-input"
+                    <input type="text" class="score-input"
                       data-round="${round}" data-player="${p}"
                       inputmode="numeric">
                   </td>
@@ -130,21 +263,20 @@ function renderScoresheet(container, date, players) {
         </table>
       </div>
 
-      <details class="false-tunks-section">
-        <summary>False Tunks (rare)</summary>
-        <div class="false-tunks-grid">
-          ${ROUNDS.map(round => `
-            <div class="ft-round">
-              <span class="ft-round-label">Round ${round}:</span>
-              ${players.map(p => `
-                <label class="ft-check">
-                  <input type="checkbox" class="false-tunk-cb"
-                    data-round="${round}" data-player="${p}"> ${p}
-                </label>
-              `).join('')}
-            </div>
-          `).join('')}
+      <details class="penalties-section">
+        <summary>Penalties</summary>
+        <div class="penalty-add-row">
+          <select id="penalty-round">
+            <option value="">Round</option>
+            ${ROUNDS.map(r => `<option value="${r}">${r}</option>`).join('')}
+          </select>
+          <select id="penalty-player">
+            <option value="">Player</option>
+            ${players.map(p => `<option value="${p}">${p}</option>`).join('')}
+          </select>
+          <button type="button" id="add-penalty-btn">Add</button>
         </div>
+        <ul class="penalty-list"></ul>
       </details>
 
       <div class="form-actions">
@@ -157,33 +289,102 @@ function renderScoresheet(container, date, players) {
   bindScoresheetEvents(container, date, players);
 }
 
+function setTunk(table, round, tunkPlayer, players) {
+  const select = table.querySelector(`.tunk-select[data-round="${round}"]`);
+  select.value = tunkPlayer;
+  table.querySelectorAll(`.score-input[data-round="${round}"]`).forEach(input => {
+    if (input.dataset.player === tunkPlayer) {
+      input.value = '\u2605';
+      input.classList.add('tunk-locked');
+      input.classList.remove('magic-65');
+    } else {
+      if (input.classList.contains('tunk-locked')) {
+        input.value = '';
+      }
+      input.classList.remove('tunk-locked');
+    }
+  });
+  recalcTotals(table, players);
+}
+
+function addPenalty(container, table, round, player, players) {
+  const list = container.querySelector('.penalty-list');
+  const key = `${round}::${player}`;
+  if (list.querySelector(`[data-penalty="${key}"]`)) return;
+
+  const li = document.createElement('li');
+  li.dataset.penalty = key;
+  li.innerHTML = `Round ${round} &mdash; ${player} (+65) <button type="button" class="remove-penalty">&times;</button>`;
+  li.querySelector('.remove-penalty').addEventListener('click', () => {
+    li.remove();
+    recalcTotals(table, players);
+  });
+  list.appendChild(li);
+  recalcTotals(table, players);
+}
+
 function bindScoresheetEvents(container, date, players) {
   const table = container.querySelector('.scoresheet-table');
 
   table.querySelectorAll('.tunk-select').forEach(select => {
     select.addEventListener('change', () => {
       const round = select.dataset.round;
-      const tunkPlayer = select.value;
-      table.querySelectorAll(`.score-input[data-round="${round}"]`).forEach(input => {
-        if (input.dataset.player === tunkPlayer) {
-          input.value = 0;
-          input.readOnly = true;
-          input.classList.add('tunk-locked');
-        } else {
-          input.readOnly = false;
+      if (select.value) {
+        setTunk(table, round, select.value, players);
+      } else {
+        table.querySelectorAll(`.score-input[data-round="${round}"]`).forEach(input => {
           input.classList.remove('tunk-locked');
-        }
-      });
-      recalcTotals(table, players);
+          if (input.value === '\u2605') input.value = '';
+        });
+        recalcTotals(table, players);
+      }
     });
   });
 
   table.querySelectorAll('.score-input').forEach(input => {
-    input.addEventListener('input', () => recalcTotals(table, players));
+    input.addEventListener('input', () => {
+      const val = input.value;
+      const round = input.dataset.round;
+      const player = input.dataset.player;
+
+      if (val.includes('***')) {
+        const score = parseInt(val.replace(/\*/g, ''), 10) || 0;
+        input.value = score;
+        input.classList.remove('tunk-locked', 'magic-65');
+        const tunkSelect = table.querySelector(`.tunk-select[data-round="${round}"]`);
+        if (tunkSelect.value === player) {
+          tunkSelect.value = '';
+        }
+        addPenalty(container, table, round, player, players);
+        return;
+      }
+
+      if (val.includes('*')) {
+        input.classList.remove('magic-65');
+        setTunk(table, round, player, players);
+        return;
+      }
+
+      if (input.classList.contains('tunk-locked') && val !== '\u2605') {
+        input.classList.remove('tunk-locked');
+        const tunkSelect = table.querySelector(`.tunk-select[data-round="${round}"]`);
+        if (tunkSelect.value === player) {
+          tunkSelect.value = '';
+        }
+      }
+
+      input.classList.toggle('magic-65', parseInt(val, 10) === 65);
+      recalcTotals(table, players);
+    });
   });
 
-  container.querySelectorAll('.false-tunk-cb').forEach(cb => {
-    cb.addEventListener('change', () => recalcTotals(table, players));
+  container.querySelector('#add-penalty-btn').addEventListener('click', () => {
+    const roundSel = container.querySelector('#penalty-round');
+    const playerSel = container.querySelector('#penalty-player');
+    if (!roundSel.value || !playerSel.value) return;
+    addPenalty(container, table, roundSel.value, playerSel.value, players);
+    roundSel.value = '';
+    playerSel.value = '';
   });
 
   container.querySelector('#save-game-btn').addEventListener('click', () => {
@@ -191,46 +392,61 @@ function bindScoresheetEvents(container, date, players) {
   });
 }
 
-function recalcTotals(table, players) {
-  const falseTunkCbs = table.closest('.scoresheet')
-    .querySelectorAll('.false-tunk-cb');
-  const falseTunks = new Set();
-  falseTunkCbs.forEach(cb => {
-    if (cb.checked) falseTunks.add(`${cb.dataset.round}::${cb.dataset.player}`);
+function getPenalties(table) {
+  const penalties = new Set();
+  table.closest('.scoresheet').querySelectorAll('.penalty-list [data-penalty]').forEach(li => {
+    penalties.add(li.dataset.penalty);
   });
+  return penalties;
+}
+
+function recalcTotals(table, players) {
+  const penalties = getPenalties(table);
 
   const totals = {};
   players.forEach(p => { totals[p] = 0; });
+  let allFilled = true;
 
   ROUNDS.forEach(round => {
+    const tunkSelect = table.querySelector(`.tunk-select[data-round="${round}"]`);
+    const tunkPlayer = tunkSelect.value;
+    let roundHasValues = !!tunkPlayer;
+
     players.forEach(p => {
       const input = table.querySelector(`.score-input[data-round="${round}"][data-player="${p}"]`);
+      const isTunk = tunkPlayer === p;
       let val = parseInt(input.value, 10) || 0;
-
-      const tunkSelect = table.querySelector(`.tunk-select[data-round="${round}"]`);
-      const isTunk = tunkSelect.value === p;
 
       if (isTunk) {
         val = 0;
-      } else if (val === 65) {
-        val = 0; // magic 65
+      } else {
+        if (input.value === '' || input.value === '\u2605') {
+          if (!isTunk) allFilled = false;
+        } else {
+          roundHasValues = true;
+        }
+        if (val === 65) val = 0;
       }
 
-      if (falseTunks.has(`${round}::${p}`)) {
+      if (penalties.has(`${round}::${p}`)) {
         val += 65;
       }
 
       totals[p] += val;
     });
+
+    if (!roundHasValues) allFilled = false;
   });
 
   let minScore = Infinity;
   players.forEach(p => { if (totals[p] < minScore) minScore = totals[p]; });
 
+  const showWinner = allFilled && minScore < Infinity;
+
   players.forEach(p => {
     const cell = table.querySelector(`.total-cell[data-player="${p}"]`);
     cell.textContent = totals[p];
-    cell.classList.toggle('winner-cell', totals[p] === minScore && minScore < Infinity);
+    cell.classList.toggle('winner-cell', showWinner && totals[p] === minScore);
   });
 }
 
@@ -249,22 +465,20 @@ function handleSave(container, date, players) {
     const magic65s = [];
     const falseTunksList = [];
 
+    const penalties = getPenalties(table);
+
     players.forEach(p => {
       const input = table.querySelector(`.score-input[data-round="${round}"][data-player="${p}"]`);
       const raw = input.value;
-      if (raw === '' && p !== tunkPlayer) allFilled = false;
-      let val = parseInt(raw, 10) || 0;
+      const isTunk = p === tunkPlayer;
+      if (raw === '' && !isTunk) allFilled = false;
+      let val = isTunk ? 0 : (parseInt(raw, 10) || 0);
 
-      if (p === tunkPlayer) {
-        val = 0;
-      }
-
-      if (val === 0 && p !== tunkPlayer) {
+      if (val === 0 && !isTunk) {
         tinks.push(p);
       }
 
-      const ftCb = container.querySelector(`.false-tunk-cb[data-round="${round}"][data-player="${p}"]`);
-      if (ftCb && ftCb.checked) {
+      if (penalties.has(`${round}::${p}`)) {
         falseTunksList.push(p);
       }
 

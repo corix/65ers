@@ -28,11 +28,16 @@ export function renderArchive(container) {
     `;
 
     item.querySelector('.archive-header').addEventListener('click', () => {
-      const body = item.querySelector('.archive-body');
       const btn = item.querySelector('.archive-header');
       const expanded = btn.getAttribute('aria-expanded') === 'true';
+
+      list.querySelectorAll('.archive-item').forEach(other => {
+        other.querySelector('.archive-header').setAttribute('aria-expanded', 'false');
+        other.querySelector('.archive-body').hidden = true;
+      });
+
       btn.setAttribute('aria-expanded', String(!expanded));
-      body.hidden = expanded;
+      item.querySelector('.archive-body').hidden = expanded;
     });
 
     list.appendChild(item);

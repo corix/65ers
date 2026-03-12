@@ -1,7 +1,8 @@
 const GAMES_KEY = '65ers_games';
 const PLAYERS_KEY = '65ers_custom_players';
 
-const DEFAULT_PLAYERS = ['Asha', 'Will', 'Clancy', 'Pete', 'Tim', 'Larry', 'Cori'];
+const PRIMARY_PLAYERS = ['Asha', 'Clancy', 'Pete', 'Tim', 'Will', 'Larry'];
+const SECONDARY_PLAYERS = ['Cori'];
 
 export function saveGame(game) {
   const games = loadGames();
@@ -14,8 +15,18 @@ export function loadGames() {
   return raw ? JSON.parse(raw) : [];
 }
 
-export function getPlayerNames() {
-  return [...DEFAULT_PLAYERS, ...loadCustomPlayers()];
+export function getPlayerRows() {
+  const custom = loadCustomPlayers().sort((a, b) =>
+    a.localeCompare(b, undefined, { sensitivity: 'base' })
+  );
+  return {
+    primary: PRIMARY_PLAYERS,
+    secondary: [...SECONDARY_PLAYERS, ...custom],
+  };
+}
+
+export function getAllPlayerNames() {
+  return [...PRIMARY_PLAYERS, ...SECONDARY_PLAYERS, ...loadCustomPlayers()];
 }
 
 export function addCustomPlayer(name) {
