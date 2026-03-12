@@ -1,4 +1,5 @@
 {
+  "players": ["Asha", "Clancy", "Pete", "Tim", "Will", "Larry", "Cori", "Kyle"],
   "games": [
     {
       "id": "5c573fbd-19fc-43bd-9849-b43c9e83e1ae",
@@ -789,8 +790,5 @@
       },
       "winner": "Pete"
     }
-  ],
-  "players": [
-    "Kyle"
   ]
 }

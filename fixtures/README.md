@@ -1,17 +1,20 @@
 # Test Data
 
-Replace the contents of `test-data.json` with your exported localStorage data.
+`test-data.json` contains:
+
+- `players` — player names (single list, no primary/secondary distinction)
+- `games` — saved game records
 
 **To export from the browser:** Open DevTools (F12) → Console, then run:
 
 ```javascript
 const data = {
-  games: JSON.parse(localStorage.getItem('65ers_games') || '[]'),
-  players: JSON.parse(localStorage.getItem('65ers_custom_players') || '[]')
+  players: ["Asha", "Clancy", "Pete", "Tim", "Will", "Larry", "Cori"],
+  games: JSON.parse(localStorage.getItem('65ers_games') || '[]')
 };
 copy(JSON.stringify(data, null, 2));
 ```
 
 Paste the result into `test-data.json`, replacing the existing content.
 
-In the **Archive** view, when no games are saved, a "Load test data" button appears. Click it to load this file into localStorage.
+**Load / Ignore test data** buttons appear on the **New Game** and **Archive** views when this file has games.

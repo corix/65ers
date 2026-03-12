@@ -35,7 +35,7 @@ function pillHTML(name, selected) {
 }
 
 async function buildSetupHTML() {
-  const { primary, secondary } = await getPlayerRows();
+  const { players } = await getPlayerRows();
   return `
     <section class="game-setup card">
       <h2>Game Setup</h2>
@@ -46,8 +46,7 @@ async function buildSetupHTML() {
       <fieldset class="field">
         <legend>Players <span class="hint">tap to select, drag to reorder</span></legend>
         <div class="player-pills">
-          ${primary.map(n => pillHTML(n, false)).join('')}
-          ${secondary.map(n => pillHTML(n, false)).join('')}
+          ${players.map(n => pillHTML(n, false)).join('')}
           <button type="button" class="pill pill-add" id="add-pill-btn">+</button>
         </div>
         <div class="add-player-row" hidden>

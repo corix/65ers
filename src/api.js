@@ -1,7 +1,6 @@
 import testData from '../fixtures/test-data.json';
 
-const PRIMARY_PLAYERS = ['Asha', 'Clancy', 'Pete', 'Tim', 'Will', 'Larry'];
-const SECONDARY_PLAYERS = ['Cori'];
+const FIXTURE_PLAYERS = testData?.players ?? [];
 
 const GAMES_KEY = '65ers_games';
 const PLAYERS_KEY = '65ers_custom_players';
@@ -13,9 +12,6 @@ export function hasTestData() {
 export async function loadTestData() {
   if (testData?.games?.length) {
     localStorage.setItem(GAMES_KEY, JSON.stringify(testData.games));
-  }
-  if (testData?.players?.length) {
-    localStorage.setItem(PLAYERS_KEY, JSON.stringify(testData.players));
   }
 }
 
@@ -36,24 +32,28 @@ export async function loadGames() {
 }
 
 export async function getPlayerRows() {
+  const games = await loadGames();
+  if (games.length === 0) return { players: [] };
   const custom = await loadCustomPlayers();
-  custom.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-  return {
-    primary: PRIMARY_PLAYERS,
-    secondary: [...SECONDARY_PLAYERS, ...custom],
-  };
+  const all = [...FIXTURE_PLAYERS, ...custom];
+  all.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  return { players: all };
 }
 
 export async function getAllPlayerNames() {
+  const games = await loadGames();
+  if (games.length === 0) return [];
   const custom = await loadCustomPlayers();
-  return [...PRIMARY_PLAYERS, ...SECONDARY_PLAYERS, ...custom];
+  return [...FIXTURE_PLAYERS, ...custom];
 }
 
 export async function addCustomPlayer(name) {
+  const games = await loadGames();
+  if (games.length === 0) return;
   const custom = await loadCustomPlayers();
   const trimmed = name.trim();
   if (!trimmed) return;
-  const all = [...PRIMARY_PLAYERS, ...SECONDARY_PLAYERS, ...custom];
+  const all = [...FIXTURE_PLAYERS, ...custom];
   if (all.some(n => n.toLowerCase() === trimmed.toLowerCase())) return;
   custom.push(trimmed);
   localStorage.setItem(PLAYERS_KEY, JSON.stringify(custom));
