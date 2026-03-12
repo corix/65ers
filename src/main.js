@@ -2,7 +2,7 @@ import './shared.css';
 import { renderForm } from './form.js';
 import { renderArchive } from './archive.js';
 import { renderStats } from './stats.js';
-import { loadGames, hasTestData, loadTestData, clearData } from './api.js';
+import { hasTestData, loadTestData, clearData, clearTestDataOnLoad } from './api.js';
 
 const app = document.getElementById('app');
 const nav = document.querySelector('nav');
@@ -73,6 +73,7 @@ navBtns.forEach(btn => {
   btn.addEventListener('click', () => showView(btn.dataset.view, { animateNav: true }));
 });
 
+clearTestDataOnLoad();
 showView('entry');
 requestAnimationFrame(() => updateNavSlider());
 

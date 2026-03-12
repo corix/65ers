@@ -4,6 +4,7 @@ const FIXTURE_PLAYERS = testData?.players ?? [];
 
 const GAMES_KEY = '65ers_games';
 const PLAYERS_KEY = '65ers_custom_players';
+const TEST_DATA_FLAG = '65ers_test_data';
 
 export function hasTestData() {
   return !!(testData?.games?.length);
@@ -12,18 +13,28 @@ export function hasTestData() {
 export async function loadTestData() {
   if (testData?.games?.length) {
     localStorage.setItem(GAMES_KEY, JSON.stringify(testData.games));
+    localStorage.setItem(TEST_DATA_FLAG, '1');
   }
 }
 
 export function clearData() {
   localStorage.removeItem(GAMES_KEY);
   localStorage.removeItem(PLAYERS_KEY);
+  localStorage.removeItem(TEST_DATA_FLAG);
+}
+
+/** Clear test data on page load/refresh so the app starts fresh. */
+export function clearTestDataOnLoad() {
+  if (localStorage.getItem(TEST_DATA_FLAG)) {
+    clearData();
+  }
 }
 
 export async function saveGame(game) {
   const games = await loadGames();
   games.push(game);
   localStorage.setItem(GAMES_KEY, JSON.stringify(games));
+  localStorage.removeItem(TEST_DATA_FLAG);
 }
 
 export async function loadGames() {
