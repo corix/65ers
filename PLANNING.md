@@ -12,7 +12,7 @@ Data entry tool for digitizing paper scoresheets from a family card game called 
 - The player with the lowest final score wins
 - The first player to get to 0 in the round is the round winner — this move is called a "tunk"
 - When a player scores 0 points in a round, but is not a tunk, this is called a "tink"
-- If a player scores exactly 65 points in a round, this counts as a "magic 65" and is calculated as 0 points toward their total game score
+- If a player scores exactly 65 points in a round, this counts as a "magic 65" and is calculated as 0 points toward their total game score. A magic 65 is not possible in rounds 3 or 4.
 - Tunks, tinks, and magic 65s are mutually exclusive — players can only tunk, or tink, or get a magic 65 in a round
 - No matter how many tunks, tinks, or magic 65s a player gets, they still must have the lowest total score after the 11th round to be the game winner
 - In rare cases, a player will have a "false tunk," and will be penalized by adding 65 points to their score for that round

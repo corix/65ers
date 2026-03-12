@@ -283,8 +283,22 @@ function renderScoresheet(container, date, displayDate, players) {
   container.innerHTML = `
     <section class="scoresheet card">
       <div class="scoresheet-header">
-        <h2>Scoresheet &mdash; ${displayDate}</h2>
-        <button type="button" id="start-over-btn" class="text-btn start-over-btn">Start over</button>
+        <h2>Scoresheet &mdash; ${displayDate} <button type="button" class="scoresheet-shortcuts-btn" aria-label="Keyboard shortcuts">ℹ</button></h2>
+        <button type="button" class="scoresheet-clear-btn text-btn icon-btn" aria-label="Clear scores"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+      </div>
+      <div class="scoresheet-shortcuts-modal" id="shortcuts-modal" role="dialog" aria-modal="true" aria-labelledby="shortcuts-modal-title" hidden>
+        <div class="scoresheet-shortcuts-modal-backdrop"></div>
+        <div class="scoresheet-shortcuts-modal-content">
+          <h3 id="shortcuts-modal-title">Keyboard Shortcuts</h3>
+          <table class="shortcuts-table">
+            <tbody>
+              <tr><td class="shortcut-desc">Tunk</td><td><kbd>*</kbd> or <kbd>t</kbd></td></tr>
+              <tr><td class="shortcut-desc">Penalty</td><td>Score + x, ex. <kbd>9x</kbd></td></tr>
+              <tr><td class="shortcut-desc">Magic 65</td><td><kbd>65</kbd> or <kbd>!</kbd></td></tr>
+            </tbody>
+          </table>
+          <button type="button" class="shortcuts-modal-close" aria-label="Close">×</button>
+        </div>
       </div>
       <div class="rounds-accordion" data-collapsed="true">
         <div class="table-wrap">
@@ -356,6 +370,10 @@ function renderScoresheet(container, date, displayDate, players) {
         <button type="button" id="save-game-btn" class="primary-btn">Save Game</button>
       </div>
       <div id="save-feedback"></div>
+      <div class="start-over-wrap">
+        <div class="start-over-tooltip" id="start-over-tooltip" hidden>Click to start over</div>
+        <button type="button" id="start-over-btn" class="text-btn start-over-btn icon-btn" aria-label="Start over"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>
+      </div>
     </section>
   `;
 
@@ -560,6 +578,44 @@ function bindScoresheetEvents(container, date, players) {
   const table = container.querySelector('.scoresheet-table');
   const wrapper = container.closest('.form-view');
 
+  const shortcutsBtn = container.querySelector('.scoresheet-shortcuts-btn');
+  const shortcutsModal = container.querySelector('#shortcuts-modal');
+  if (shortcutsBtn && shortcutsModal) {
+    const openModal = () => {
+      shortcutsModal.hidden = false;
+      shortcutsModal.querySelector('.shortcuts-modal-close')?.focus();
+      document.addEventListener('keydown', handleEscape);
+    };
+    const closeModal = () => {
+      shortcutsModal.hidden = true;
+      document.removeEventListener('keydown', handleEscape);
+      shortcutsBtn.focus();
+    };
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') closeModal();
+    };
+    shortcutsBtn.addEventListener('click', openModal);
+    shortcutsModal.querySelector('.shortcuts-modal-close')?.addEventListener('click', closeModal);
+    shortcutsModal.querySelector('.scoresheet-shortcuts-modal-backdrop')?.addEventListener('click', closeModal);
+  }
+
+  const clearBtn = container.querySelector('.scoresheet-clear-btn');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      table.querySelectorAll('.score-input').forEach(input => {
+        input.value = '';
+        input.classList.remove('tunk-locked', 'magic-65');
+      });
+      table.querySelectorAll('.tunk-select').forEach(select => {
+        select.value = '';
+      });
+      container.querySelectorAll('.penalty-list [data-penalty]').forEach(li => li.remove());
+      recalcTotals(table, players);
+      clearDraft();
+      persistDraft(wrapper);
+    });
+  }
+
   const roundsAccordion = container.querySelector('.rounds-accordion');
   const roundsToggle = container.querySelector('.rounds-toggle');
   if (roundsAccordion && roundsToggle) {
@@ -670,7 +726,22 @@ function bindScoresheetEvents(container, date, players) {
         if (penaltyLi) penaltyLi.remove();
       }
 
-      input.classList.toggle('magic-65', parseInt(val, 10) === 65);
+      const parsed = parseInt(val, 10);
+      const round3Over = round === '3' && !isNaN(parsed) && parsed >= 51;
+      const round4Over = round === '4' && !isNaN(parsed) && parsed >= 61;
+      const round5Over = round === '5' && !isNaN(parsed) && parsed >= 71;
+      const round6Over = round === '6' && !isNaN(parsed) && parsed >= 81;
+      const round7Over = round === '7' && !isNaN(parsed) && parsed >= 91;
+      const round8Over = round === '8' && !isNaN(parsed) && parsed >= 101;
+      if (round3Over || round4Over || round5Over || round6Over || round7Over || round8Over) {
+        input.value = '';
+        input.classList.remove('magic-65');
+        recalcTotals(table, players);
+        persistDraft(wrapper);
+        return;
+      }
+
+      input.classList.toggle('magic-65', parsed === 65);
       recalcTotals(table, players);
       persistDraft(wrapper);
     });
@@ -719,14 +790,38 @@ function bindScoresheetEvents(container, date, players) {
     handleSave(container, date, players);
   });
 
-  container.querySelector('#start-over-btn').addEventListener('click', () => {
-    clearDraft();
-    const entryContainer = container.closest('#view-entry');
-    if (entryContainer) {
-      entryContainer.innerHTML = '';
-      renderForm(entryContainer);
-    }
-  });
+  (() => {
+    const btn = container.querySelector('#start-over-btn');
+    const tooltip = container.querySelector('#start-over-tooltip');
+    let confirmTimeout;
+    let awaitingConfirm = false;
+
+    const doStartOver = () => {
+      clearDraft();
+      const entryContainer = container.closest('#view-entry');
+      if (entryContainer) {
+        entryContainer.innerHTML = '';
+        renderForm(entryContainer);
+      }
+    };
+
+    const cancelConfirm = () => {
+      awaitingConfirm = false;
+      tooltip.hidden = true;
+      if (confirmTimeout) clearTimeout(confirmTimeout);
+    };
+
+    btn.addEventListener('click', () => {
+      if (awaitingConfirm) {
+        cancelConfirm();
+        doStartOver();
+      } else {
+        awaitingConfirm = true;
+        tooltip.hidden = false;
+        confirmTimeout = setTimeout(cancelConfirm, 3000);
+      }
+    });
+  })();
 }
 
 function getPenalties(table) {
@@ -859,7 +954,32 @@ async function handleSave(container, date, players) {
     return hasValues;
   });
 
+  const hasRound3OverLimit = rounds.some(r => r.round === '3' && currentPlayers.some(p => r.scores[p] > 50));
+  const hasRound4OverLimit = rounds.some(r => r.round === '4' && currentPlayers.some(p => r.scores[p] > 60));
+  const hasRound5OverLimit = rounds.some(r => r.round === '5' && currentPlayers.some(p => r.scores[p] > 70));
+  const hasRound6OverLimit = rounds.some(r => r.round === '6' && currentPlayers.some(p => r.scores[p] > 80));
+  const hasRound7OverLimit = rounds.some(r => r.round === '7' && currentPlayers.some(p => r.scores[p] > 90));
+  const hasRound8OverLimit = rounds.some(r => r.round === '8' && currentPlayers.some(p => r.scores[p] > 100));
+
   const errors = [];
+  if (hasRound3OverLimit) {
+    errors.push(`Round 3 scores cannot exceed 50 (not counting penalties).`);
+  }
+  if (hasRound4OverLimit) {
+    errors.push(`Round 4 scores cannot exceed 60 (not counting penalties).`);
+  }
+  if (hasRound5OverLimit) {
+    errors.push(`Round 5 scores cannot exceed 70 (not counting penalties).`);
+  }
+  if (hasRound6OverLimit) {
+    errors.push(`Round 6 scores cannot exceed 80 (not counting penalties).`);
+  }
+  if (hasRound7OverLimit) {
+    errors.push(`Round 7 scores cannot exceed 90 (not counting penalties).`);
+  }
+  if (hasRound8OverLimit) {
+    errors.push(`Round 8 scores cannot exceed 100 (not counting penalties).`);
+  }
   if (roundsMissingTunk.length > 0) {
     errors.push(`Select a tunk for round${roundsMissingTunk.length > 1 ? 's' : ''} ${roundsMissingTunk.join(', ')}.`);
   }
