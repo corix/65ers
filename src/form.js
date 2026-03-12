@@ -415,13 +415,35 @@ function restoreDraft(wrapper, draft) {
   const table = wrapper.querySelector('.scoresheet-table');
   if (!table || !draft) return;
 
+  const players = draft.players || [];
+
   ROUNDS.forEach(round => {
     const tunkSelect = table.querySelector(`.tunk-select[data-round="${round}"]`);
     if (tunkSelect && draft.tunks?.[round]) tunkSelect.value = draft.tunks[round];
-    (draft.players || []).forEach(p => {
+    players.forEach(p => {
       const input = table.querySelector(`.score-input[data-round="${round}"][data-player="${p}"]`);
       const val = draft.scores?.[round]?.[p];
       if (input && val !== undefined) input.value = val;
+    });
+  });
+
+  ROUNDS.forEach(round => {
+    const tunkPlayer = draft.tunks?.[round];
+    if (tunkPlayer && players.includes(tunkPlayer)) {
+      setTunk(table, round, tunkPlayer, players);
+    }
+  });
+
+  ROUNDS.forEach(round => {
+    const tunkPlayer = draft.tunks?.[round];
+    const magic65Allowed = round !== '3' && round !== '4';
+    players.forEach(p => {
+      const input = table.querySelector(`.score-input[data-round="${round}"][data-player="${p}"]`);
+      if (!input || input.classList.contains('tunk-locked')) return;
+      const val = parseInt(input.value, 10);
+      if (magic65Allowed && val === 65) {
+        input.classList.add('magic-65');
+      }
     });
   });
 
@@ -696,9 +718,10 @@ function bindScoresheetEvents(container, date, players) {
       if (val.includes('!')) {
         const parsed = parseInt(val.replace(/!/g, ''), 10);
         const score = isNaN(parsed) ? 65 : parsed;
+        const magic65Allowed = round !== '3' && round !== '4';
         input.value = String(score);
         input.classList.remove('tunk-locked');
-        input.classList.toggle('magic-65', score === 65);
+        input.classList.toggle('magic-65', magic65Allowed && score === 65);
         recalcTotals(table, players);
         persistDraft(wrapper);
         return;
@@ -756,6 +779,26 @@ function bindScoresheetEvents(container, date, players) {
         if (tunkSelect?.value === player) {
           tunkSelect.value = '';
         }
+        recalcTotals(table, players);
+        persistDraft(wrapper);
+      }
+    });
+
+    input.addEventListener('blur', () => {
+      if (input.classList.contains('tunk-locked')) return;
+      const val = input.value;
+      const round = input.dataset.round;
+      const parsed = parseInt(val.replace(/[^\d]/g, ''), 10);
+      if (isNaN(parsed)) return;
+      const round3Over = round === '3' && parsed >= 51;
+      const round4Over = round === '4' && parsed >= 61;
+      const round5Over = round === '5' && parsed >= 71;
+      const round6Over = round === '6' && parsed >= 81;
+      const round7Over = round === '7' && parsed >= 91;
+      const round8Over = round === '8' && parsed >= 101;
+      if (round3Over || round4Over || round5Over || round6Over || round7Over || round8Over) {
+        input.value = '';
+        input.classList.remove('magic-65');
         recalcTotals(table, players);
         persistDraft(wrapper);
       }
