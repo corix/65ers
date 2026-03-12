@@ -1,14 +1,16 @@
-import { getPlayerRows, getAllPlayerNames, addCustomPlayer, saveGame, ROUNDS } from './store.js';
+import './form.css';
+import { getPlayerRows, getAllPlayerNames, addCustomPlayer, saveGame } from './api.js';
+import { ROUNDS } from './constants.js';
 
 let selectedPlayers = [];
 
-export function renderForm(container) {
+export async function renderForm(container) {
   container.innerHTML = '';
   selectedPlayers = [];
 
   const wrapper = document.createElement('div');
   wrapper.className = 'form-view';
-  wrapper.innerHTML = buildSetupHTML();
+  wrapper.innerHTML = await buildSetupHTML();
   container.appendChild(wrapper);
 
   bindSetupEvents(wrapper);
@@ -32,8 +34,8 @@ function pillHTML(name, selected) {
   return `<button type="button" class="pill${selected ? ' selected' : ''}" draggable="true" data-player="${name}">${name}</button>`;
 }
 
-function buildSetupHTML() {
-  const { primary, secondary } = getPlayerRows();
+async function buildSetupHTML() {
+  const { primary, secondary } = await getPlayerRows();
   return `
     <section class="game-setup card">
       <h2>Game Setup</h2>
@@ -181,12 +183,12 @@ function bindSetupEvents(wrapper) {
     if (!addRow.hidden) wrapper.querySelector('#new-player-name').focus();
   });
 
-  function commitNewPlayer() {
+  async function commitNewPlayer() {
     const input = wrapper.querySelector('#new-player-name');
     const name = input.value.trim();
     if (!name) return;
-    addCustomPlayer(name);
-    const allNames = getAllPlayerNames();
+    await addCustomPlayer(name);
+    const allNames = await getAllPlayerNames();
     if (!allNames.includes(name)) return;
 
     const pill = document.createElement('button');
@@ -450,7 +452,7 @@ function recalcTotals(table, players) {
   });
 }
 
-function handleSave(container, date, players) {
+async function handleSave(container, date, players) {
   const table = container.querySelector('.scoresheet-table');
   const feedback = container.querySelector('#save-feedback');
 
@@ -535,7 +537,7 @@ function handleSave(container, date, players) {
     winner,
   };
 
-  saveGame(game);
+  await saveGame(game);
   feedback.textContent = `Game saved! Winner: ${winner} (${minScore} pts)`;
   feedback.className = 'feedback success';
   container.querySelector('#save-game-btn').disabled = true;

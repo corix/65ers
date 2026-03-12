@@ -1,0 +1,124 @@
+/* Archive cells */
+
+.cell-tunk {
+  color: var(--gold);
+  font-size: 1.15rem;
+}
+
+.cell-tink {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.cell-magic {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.magic-marker {
+  font-size: 0.75em;
+  vertical-align: super;
+}
+
+.ft-badge {
+  font-size: 0.65rem;
+  background: var(--red);
+  color: #fff;
+  padding: 1px 4px;
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
+.cell-false-tunk {
+  color: var(--red);
+}
+
+/* Archive list */
+
+.archive-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.archive-item {
+  padding: 0;
+  overflow: hidden;
+}
+
+.archive-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.archive-header:hover {
+  background: #f5f6fa;
+}
+
+.archive-header[aria-expanded="true"] {
+  border-bottom: 1px solid var(--border);
+}
+
+.archive-date {
+  font-weight: 700;
+  min-width: 85px;
+}
+
+.archive-players {
+  color: #666;
+  flex: 1;
+}
+
+.archive-winner {
+  font-weight: 600;
+  color: var(--green);
+  white-space: nowrap;
+}
+
+.archive-chevron {
+  transition: transform 0.2s;
+  font-size: 0.75rem;
+  color: #999;
+}
+
+.archive-header[aria-expanded="true"] .archive-chevron {
+  transform: rotate(180deg);
+}
+
+.archive-body {
+  padding: 1rem;
+}
+
+.archive-table {
+  table-layout: fixed;
+}
+
+.archive-table td,
+.archive-table th {
+  padding: 0.35rem 0.6rem;
+}
+
+/* Responsive */
+
+@media (max-width: 500px) {
+  .archive-header {
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  .archive-players {
+    width: 100%;
+    order: 3;
+    font-size: 0.82rem;
+  }
+}

@@ -1,11 +1,27 @@
-import { loadGames, ROUNDS } from './store.js';
+import './archive.css';
+import { loadGames, hasTestData, loadTestData } from './api.js';
 
-export function renderArchive(container) {
-  const games = loadGames().sort((a, b) => b.date.localeCompare(a.date));
+export async function renderArchive(container) {
+  const games = (await loadGames()).sort((a, b) => b.date.localeCompare(a.date));
   container.innerHTML = '';
 
   if (games.length === 0) {
-    container.innerHTML = '<div class="card empty-state"><p>No games saved yet. Go to <strong>New Game</strong> to add one.</p></div>';
+    const emptyEl = document.createElement('div');
+    emptyEl.className = 'card empty-state';
+    emptyEl.innerHTML = '<p>No games saved yet. Go to <strong>New Game</strong> to add one.</p>';
+    if (hasTestData()) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'primary-btn';
+      btn.textContent = 'Load test data';
+      btn.style.marginTop = '1rem';
+      btn.addEventListener('click', async () => {
+        await loadTestData();
+        await renderArchive(container);
+      });
+      emptyEl.appendChild(btn);
+    }
+    container.appendChild(emptyEl);
     return;
   }
 

@@ -1,4 +1,4 @@
-import './style.css';
+import './shared.css';
 import { renderForm } from './form.js';
 import { renderArchive } from './archive.js';
 import { renderStats } from './stats.js';
@@ -6,14 +6,14 @@ import { renderStats } from './stats.js';
 const app = document.getElementById('app');
 const navBtns = document.querySelectorAll('.nav-btn');
 
-function showView(view) {
+async function showView(view) {
   navBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.view === view));
   if (view === 'entry') {
-    renderForm(app);
+    await renderForm(app);
   } else if (view === 'archive') {
-    renderArchive(app);
+    await renderArchive(app);
   } else if (view === 'stats') {
-    renderStats(app);
+    await renderStats(app);
   }
 }
 

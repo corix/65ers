@@ -1,0 +1,331 @@
+/* Form fields */
+
+.field {
+  margin-bottom: 1rem;
+}
+
+.field label,
+.field legend {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.3rem;
+}
+
+fieldset.field {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+}
+
+input[type="text"] {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  font-size: 0.95rem;
+  font-family: inherit;
+  width: 100%;
+  max-width: 260px;
+}
+
+#game-date {
+  max-width: 120px;
+}
+
+.hint {
+  font-weight: 400;
+  color: #888;
+  font-size: 0.82rem;
+}
+
+.input-error {
+  border-color: var(--red) !important;
+  outline: 2px solid var(--red);
+  outline-offset: 1px;
+}
+
+/* Player pills */
+
+.player-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+  min-height: 38px;
+}
+
+.pill {
+  padding: 0.35rem 0.85rem;
+  border-radius: 100px;
+  border: 1.5px solid var(--border);
+  background: var(--card-bg);
+  color: #555;
+  font-size: 0.88rem;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.12s, color 0.12s, border-color 0.12s, box-shadow 0.12s;
+  touch-action: none;
+}
+
+.pill:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.pill.selected {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.pill.selected:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: #fff;
+}
+
+.pill.dragging {
+  opacity: 0.35;
+}
+
+.pill-ghost {
+  position: fixed;
+  z-index: 999;
+  pointer-events: none;
+  padding: 0.35rem 0.85rem;
+  border-radius: 100px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.88rem;
+  font-family: inherit;
+  font-weight: 500;
+  border: 1.5px solid var(--accent);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+}
+
+.pill-add {
+  border-style: dashed;
+  color: #999;
+  font-size: 1.05rem;
+  padding: 0.35rem 0.75rem;
+  line-height: 1;
+}
+
+.pill-add:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.add-player-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.add-player-row[hidden] {
+  display: none;
+}
+
+.add-player-row input {
+  max-width: 180px;
+}
+
+.add-player-row button {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--card-bg);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.add-player-row button:hover {
+  background: #eee;
+}
+
+/* Game setup collapsed */
+
+.game-setup.collapsed {
+  padding: 0.6rem 1.25rem;
+  cursor: default;
+}
+
+.game-setup.collapsed h2,
+.game-setup.collapsed .field,
+.game-setup.collapsed fieldset,
+.game-setup.collapsed #start-game-btn {
+  display: none;
+}
+
+/* Score inputs */
+
+.score-input {
+  width: 56px;
+  padding: 0.3rem 0.25rem;
+  text-align: center;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.score-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+
+.score-input.tunk-locked {
+  background: #e8f5e9;
+  color: var(--green);
+  border-color: #c8e6c9;
+}
+
+.score-input.magic-65 {
+  background: #e8eeff;
+  color: var(--accent);
+  border-color: #c5d0f0;
+}
+
+.tunk-select {
+  padding: 0.25rem 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.82rem;
+  font-family: inherit;
+  background: var(--card-bg);
+}
+
+.tunk-col {
+  min-width: 80px;
+}
+
+/* Penalties */
+
+.penalties-section {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+}
+
+.penalties-section summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #666;
+}
+
+.penalty-add-row {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.penalty-add-row select {
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  background: var(--card-bg);
+}
+
+.penalty-add-row button {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--card-bg);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.penalty-add-row button:hover {
+  background: #eee;
+}
+
+.penalty-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.penalty-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background: #fdecea;
+  border: 1px solid #f5c6c6;
+  border-radius: 4px;
+  color: var(--red);
+  font-weight: 500;
+}
+
+.remove-penalty {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--red);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0 0.3rem;
+  line-height: 1;
+}
+
+.remove-penalty:hover {
+  color: #a02025;
+}
+
+/* Form actions */
+
+.form-actions {
+  margin-top: 1.25rem;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.players-label {
+  color: #666;
+  font-size: 0.85rem;
+  margin: -0.5rem 0 1rem;
+}
+
+/* Feedback */
+
+.feedback {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.feedback.success {
+  background: #e8f5e9;
+  color: var(--green);
+  border: 1px solid #c8e6c9;
+}
+
+.feedback.error {
+  background: #fdecea;
+  color: var(--red);
+  border: 1px solid #f5c6c6;
+}
+
+/* Responsive */
+
+@media (max-width: 500px) {
+  .score-input {
+    width: 46px;
+    font-size: 0.82rem;
+  }
+
+  .scoresheet-table {
+    font-size: 0.82rem;
+  }
+}
