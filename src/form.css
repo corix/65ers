@@ -435,7 +435,7 @@ input[type="text"] {
 /* Score inputs */
 
 input.score-input {
-  width: 56px;
+  width: 48px;
   padding: 0.3rem 0.25rem;
   text-align: center;
   border: none !important;
@@ -464,19 +464,6 @@ input.score-input {
   background: #e3f2fd;
   color: var(--accent);
   font-weight: 700;
-}
-
-.tunk-select {
-  padding: 0.25rem 0.3rem;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  font-size: 0.82rem;
-  font-family: inherit;
-  background: var(--card-bg);
-}
-
-.tunk-col {
-  min-width: 80px;
 }
 
 .score-input-wrap {
@@ -532,8 +519,8 @@ input.score-input {
 }
 
 .score-cell.has-penalty .score-input {
-  width: 56px !important;
-  min-width: 56px;
+  width: 48px !important;
+  min-width: 48px;
   color: #000 !important;
   border: 1px solid var(--red) !important;
   border-radius: 4px;
@@ -1181,8 +1168,7 @@ input.score-input {
     border-bottom: 1px solid var(--border);
   }
 
-  .scoresheet-table .round-row[aria-expanded="false"] .score-cell,
-  .scoresheet-table .round-row[aria-expanded="false"] .tunk-cell {
+  .scoresheet-table .round-row[aria-expanded="false"] .score-cell {
     display: none;
   }
 
@@ -1192,7 +1178,6 @@ input.score-input {
   }
 
   .scoresheet-table .score-cell,
-  .scoresheet-table .tunk-cell,
   .scoresheet-table .total-cell {
     display: flex;
     align-items: center;
@@ -1203,13 +1188,11 @@ input.score-input {
     min-height: 36px;
   }
 
-  .scoresheet-table .score-cell:not(:last-child),
-  .scoresheet-table .tunk-cell {
+  .scoresheet-table .score-cell:not(:last-child) {
     border-bottom: 1px solid var(--border);
   }
 
-  .scoresheet-table .player-col-label,
-  .scoresheet-table .tunk-col-label {
+  .scoresheet-table .player-col-label {
     display: inline;
     font-weight: 500;
     color: #555;
@@ -1217,8 +1200,8 @@ input.score-input {
   }
 
   .scoresheet-table .score-input {
-    width: 56px;
-    min-width: 56px;
+    width: 48px;
+    min-width: 48px;
     min-height: 36px;
     padding: 0.35rem 0.5rem;
     font-size: 0.95rem;
@@ -1227,15 +1210,6 @@ input.score-input {
 
   .scoresheet-table .score-cell.has-penalty .score-input {
     margin-left: 0;
-  }
-
-  .scoresheet-table .tunk-select {
-    flex: 1;
-    min-height: 36px;
-    padding: 0.35rem 0.5rem;
-    font-size: 0.9rem;
-    max-width: 140px;
-    margin-left: auto;
   }
 
   .scoresheet-table .total-cell .total-value {
@@ -1290,8 +1264,7 @@ input.score-input {
 }
 
 @media (min-width: 541px) {
-  .scoresheet-table .player-col-label,
-  .scoresheet-table .tunk-col-label {
+  .scoresheet-table .player-col-label {
     display: none;
   }
 

@@ -168,6 +168,17 @@
 .archive-date {
   font-weight: 700;
   min-width: 85px;
+  cursor: pointer;
+}
+
+.archive-date-input {
+  font: inherit;
+  font-weight: 700;
+  min-width: 85px;
+  padding: 0.15rem 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--card-bg);
 }
 
 .archive-players {

@@ -400,7 +400,6 @@ function renderScoresheet(container, date, displayDate, players) {
             <tr>
               <th class="round-col">Round</th>
               ${players.map(p => `<th class="player-col-header" data-player="${p}" draggable="true">${p}</th>`).join('')}
-              <th class="tunk-col">Tunk</th>
             </tr>
           </thead>
           <tbody>
@@ -421,13 +420,6 @@ function renderScoresheet(container, date, displayDate, players) {
                     </span>
                   </td>
                 `).join('')}
-                <td class="tunk-cell">
-                  <span class="tunk-col-label">Tunk</span>
-                  <select class="tunk-select" data-round="${round}" tabindex="-1">
-                    <option value="">—</option>
-                    ${players.map(p => `<option value="${p}">${p}</option>`).join('')}
-                  </select>
-                </td>
               </tr>
             `).join('')}
           </tbody>
@@ -435,7 +427,6 @@ function renderScoresheet(container, date, displayDate, players) {
             <tr class="totals-row">
               <td class="round-label">Total</td>
               ${players.map(p => `<td class="total-cell" data-player="${p}"><span class="player-col-label">${p}</span><span class="total-value">0</span></td>`).join('')}
-              <td class="tunk-col-spacer"></td>
             </tr>
           </tfoot>
         </table>
@@ -488,8 +479,8 @@ function getDraftFromScoresheet(wrapper) {
   const tunks = {};
   ROUNDS.forEach(round => {
     scores[round] = {};
-    const tunkSelect = table.querySelector(`.tunk-select[data-round="${round}"]`);
-    if (tunkSelect?.value) tunks[round] = tunkSelect.value;
+    const tunkPlayer = getTunkPlayerForRound(table, round);
+    if (tunkPlayer) tunks[round] = tunkPlayer;
     players.forEach(p => {
       const input = table.querySelector(`.score-input[data-round="${round}"][data-player="${p}"]`);
       scores[round][p] = input?.value ?? '';
@@ -508,8 +499,6 @@ function restoreDraft(wrapper, draft) {
   const players = draft.players || [];
 
   ROUNDS.forEach(round => {
-    const tunkSelect = table.querySelector(`.tunk-select[data-round="${round}"]`);
-    if (tunkSelect && draft.tunks?.[round]) tunkSelect.value = draft.tunks[round];
     players.forEach(p => {
       const input = table.querySelector(`.score-input[data-round="${round}"][data-player="${p}"]`);
       const val = draft.scores?.[round]?.[p];
@@ -529,7 +518,8 @@ function restoreDraft(wrapper, draft) {
     const magic65Allowed = round !== '3' && round !== '4';
     players.forEach(p => {
       const input = table.querySelector(`.score-input[data-round="${round}"][data-player="${p}"]`);
-      if (!input || input.classList.contains('tunk-locked')) return;
+      if (!input) return;
+      if (input.classList.contains('tunk-locked')) return;
       const val = parseInt(input.value, 10);
       if (magic65Allowed && val === 65) {
         input.classList.add('magic-65');
@@ -553,6 +543,11 @@ function restoreDraft(wrapper, draft) {
 
 function getPlayersFromTable(table) {
   return [...table.querySelectorAll('thead .player-col-header')].map(th => th.dataset.player);
+}
+
+function getTunkPlayerForRound(table, round) {
+  const input = table.querySelector(`.score-input[data-round="${round}"].tunk-locked`);
+  return input?.dataset.player || null;
 }
 
 function bindColumnReorder(table, wrapper) {
@@ -619,9 +614,6 @@ function reorderColumns(table, players) {
 
   rows.forEach(tr => {
     const roundCell = tr.querySelector('.round-col, .round-label');
-    const tunkCell = tr.querySelector('.tunk-col, .tunk-cell');
-    const emptyCell = tr.querySelector('.tunk-col-spacer');
-
     const playerCells = players.map(p => {
       const cell = tr.querySelector(`[data-player="${p}"]`);
       return cell;
@@ -630,8 +622,6 @@ function reorderColumns(table, players) {
     const fragment = document.createDocumentFragment();
     if (roundCell) fragment.appendChild(roundCell);
     playerCells.forEach(cell => fragment.appendChild(cell));
-    if (tunkCell) fragment.appendChild(tunkCell);
-    if (emptyCell) fragment.appendChild(emptyCell);
 
     while (tr.firstChild) tr.removeChild(tr.firstChild);
     tr.appendChild(fragment);
@@ -641,8 +631,6 @@ function reorderColumns(table, players) {
 }
 
 function setTunk(table, round, tunkPlayer, players) {
-  const select = table.querySelector(`.tunk-select[data-round="${round}"]`);
-  select.value = tunkPlayer;
   table.querySelectorAll(`.score-input[data-round="${round}"]`).forEach(input => {
     if (input.dataset.player === tunkPlayer) {
       input.value = '\u2605';
@@ -714,10 +702,7 @@ function bindScoresheetEvents(container, date, players) {
 
   const fillSheetBtn = container.querySelector('.fill-sheet-btn');
   function isSheetEmpty() {
-    const hasTunks = ROUNDS.some(round => {
-      const sel = table.querySelector(`.tunk-select[data-round="${round}"]`);
-      return sel?.value?.trim();
-    });
+    const hasTunks = ROUNDS.some(round => getTunkPlayerForRound(table, round));
     const hasScores = [...table.querySelectorAll('.score-input')].some(input => input.value.trim() !== '');
     const hasPenalties = container.querySelectorAll('.penalty-list [data-penalty]').length > 0;
     return !hasTunks && !hasScores && !hasPenalties;
@@ -753,9 +738,6 @@ function bindScoresheetEvents(container, date, players) {
           input.value = '';
           input.classList.remove('tunk-locked', 'magic-65');
         });
-        table.querySelectorAll('.tunk-select').forEach(select => {
-          select.value = '';
-        });
         container.querySelectorAll('.penalty-list [data-penalty]').forEach(li => li.remove());
         recalcTotals(table, players);
         clearDraft();
@@ -776,9 +758,6 @@ function bindScoresheetEvents(container, date, players) {
       table.querySelectorAll('.score-input').forEach(input => {
         input.value = '';
         input.classList.remove('tunk-locked', 'magic-65');
-      });
-      table.querySelectorAll('.tunk-select').forEach(select => {
-        select.value = '';
       });
       container.querySelectorAll('.penalty-list [data-penalty]').forEach(li => li.remove());
       recalcTotals(table, players);
@@ -818,22 +797,6 @@ function bindScoresheetEvents(container, date, players) {
     });
   });
 
-  table.querySelectorAll('.tunk-select').forEach(select => {
-    select.addEventListener('change', () => {
-      const round = select.dataset.round;
-      if (select.value) {
-        setTunk(table, round, select.value, players);
-      } else {
-        table.querySelectorAll(`.score-input[data-round="${round}"]`).forEach(input => {
-          input.classList.remove('tunk-locked');
-          if (input.value === '\u2605') input.value = '';
-        });
-        recalcTotals(table, players);
-      }
-      persistDraft(wrapper);
-    });
-  });
-
   const validScoreChars = /^[0-9*\u2605tunkx!]*$/i;
   table.querySelectorAll('.score-input').forEach(input => {
     input.addEventListener('input', () => {
@@ -855,10 +818,6 @@ function bindScoresheetEvents(container, date, players) {
         const score = parseInt(val.replace(/x/gi, ''), 10) || 0;
         input.value = String(score);
         input.classList.remove('tunk-locked', 'magic-65');
-        const tunkSelect = table.querySelector(`.tunk-select[data-round="${round}"]`);
-        if (tunkSelect?.value === player) {
-          tunkSelect.value = '';
-        }
         addPenalty(container, table, round, player, players);
         recalcTotals(table, players);
         persistDraft(wrapper);
@@ -887,10 +846,6 @@ function bindScoresheetEvents(container, date, players) {
       if (input.classList.contains('tunk-locked') && val !== '\u2605') {
         input.classList.remove('tunk-locked');
         input.value = val.replace(/\u2605/g, '');
-        const tunkSelect = table.querySelector(`.tunk-select[data-round="${round}"]`);
-        if (tunkSelect?.value === player) {
-          tunkSelect.value = '';
-        }
       }
 
       if (val === '' || val.trim() === '') {
@@ -923,12 +878,6 @@ function bindScoresheetEvents(container, date, players) {
       if (input.classList.contains('tunk-locked')) {
         input.value = '';
         input.classList.remove('tunk-locked');
-        const round = input.dataset.round;
-        const player = input.dataset.player;
-        const tunkSelect = table.querySelector(`.tunk-select[data-round="${round}"]`);
-        if (tunkSelect?.value === player) {
-          tunkSelect.value = '';
-        }
         recalcTotals(table, players);
         persistDraft(wrapper);
       }
@@ -1028,8 +977,7 @@ function getPenalties(table) {
 }
 
 function isRoundFilledForPlayer(table, round, player) {
-  const tunkSelect = table.querySelector(`.tunk-select[data-round="${round}"]`);
-  const tunkPlayer = tunkSelect?.value;
+  const tunkPlayer = getTunkPlayerForRound(table, round);
   const input = table.querySelector(`.score-input[data-round="${round}"][data-player="${player}"]`);
   if (tunkPlayer === player) return true;
   return input?.value?.trim() !== '';
@@ -1044,8 +992,7 @@ function recalcTotals(table, players) {
   let allFilled = true;
 
   ROUNDS.forEach((round, roundIdx) => {
-    const tunkSelect = table.querySelector(`.tunk-select[data-round="${round}"]`);
-    const tunkPlayer = tunkSelect.value;
+    const tunkPlayer = getTunkPlayerForRound(table, round);
     let roundHasValues = !!tunkPlayer;
 
     players.forEach(p => {
@@ -1085,7 +1032,7 @@ function recalcTotals(table, players) {
       const currentFilled = isRoundFilledForPlayer(table, round, p);
       const cumEl = cell?.querySelector('.cumulative-value');
       if (cumEl) {
-        const showCumulative = !hasPenalty && allPreviousFilled && currentFilled;
+        const showCumulative = roundIdx > 0 && !hasPenalty && allPreviousFilled && currentFilled;
         cumEl.textContent = showCumulative ? cumulatives[p] : '';
         cumEl.hidden = !showCumulative;
       }
@@ -1116,8 +1063,7 @@ async function handleSave(container, date, players) {
   let allFilled = true;
 
   ROUNDS.forEach(round => {
-    const tunkSelect = table.querySelector(`.tunk-select[data-round="${round}"]`);
-    const tunkPlayer = tunkSelect.value || null;
+    const tunkPlayer = getTunkPlayerForRound(table, round);
     const scores = {};
     const tinks = [];
     const magic65s = [];
@@ -1159,8 +1105,7 @@ async function handleSave(container, date, players) {
   });
 
   const roundsMissingTunk = ROUNDS.filter(round => {
-    const tunkSelect = table.querySelector(`.tunk-select[data-round="${round}"]`);
-    if (tunkSelect?.value) return false;
+    if (getTunkPlayerForRound(table, round)) return false;
     const hasValues = currentPlayers.some(p => {
       const input = table.querySelector(`.score-input[data-round="${round}"][data-player="${p}"]`);
       return input?.value?.trim() !== '';

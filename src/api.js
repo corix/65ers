@@ -81,6 +81,14 @@ export async function deleteGame(gameId) {
   localStorage.setItem(GAMES_KEY, JSON.stringify(filtered));
 }
 
+export async function updateGame(gameId, updates) {
+  const games = await loadGames();
+  const idx = games.findIndex(g => g.id === gameId);
+  if (idx === -1) return;
+  games[idx] = { ...games[idx], ...updates };
+  localStorage.setItem(GAMES_KEY, JSON.stringify(games));
+}
+
 export async function getExportData() {
   const players = await getAllPlayerNames();
   const allGames = await loadGames();

@@ -1,5 +1,5 @@
 import './archive.css';
-import { loadGames, getExportData, isTestDataGame, deleteGame } from './api.js';
+import { loadGames, getExportData, isTestDataGame, deleteGame, updateGame } from './api.js';
 import { createScratchGameInArchive } from './scratch.js';
 import { formatDate } from './utils.js';
 
@@ -144,7 +144,60 @@ export async function renderArchive(container) {
       });
     }
 
-    item.querySelector('.archive-header').addEventListener('click', () => {
+    const dateSpan = item.querySelector('.archive-date');
+    if (game.id) {
+      dateSpan.title = 'Double-click to edit date';
+    }
+    dateSpan.addEventListener('dblclick', (e) => {
+      if (!game.id) return;
+      e.stopPropagation();
+      if (dateSpan.dataset.editing === 'true') return;
+      dateSpan.dataset.editing = 'true';
+      const originalDate = game.date;
+      const input = document.createElement('input');
+      input.type = 'date';
+      input.value = originalDate;
+      input.className = 'archive-date-input';
+      dateSpan.replaceWith(input);
+      input.focus();
+      input.select?.();
+
+      let cancelled = false;
+      const commit = async () => {
+        if (cancelled) return;
+        const newDate = input.value?.trim();
+        if (newDate && newDate !== originalDate) {
+          await updateGame(game.id, { date: newDate });
+          game.date = newDate;
+        }
+        dateSpan.textContent = formatDate(game.date);
+        input.replaceWith(dateSpan);
+        dateSpan.dataset.editing = '';
+      };
+
+      const cancel = () => {
+        cancelled = true;
+        dateSpan.textContent = formatDate(originalDate);
+        input.replaceWith(dateSpan);
+        dateSpan.dataset.editing = '';
+      };
+
+      input.addEventListener('blur', () => {
+        if (!cancelled) commit();
+      }, { once: true });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          input.blur();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          cancel();
+        }
+      });
+    });
+
+    item.querySelector('.archive-header').addEventListener('click', (e) => {
+      if (e.target.closest('.archive-date-input')) return;
       const btn = item.querySelector('.archive-header');
       const expanded = btn.getAttribute('aria-expanded') === 'true';
 
