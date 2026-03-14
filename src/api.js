@@ -36,6 +36,12 @@ export async function loadGames() {
   return raw ? JSON.parse(raw) : [];
 }
 
+export async function getExportData() {
+  const players = await getAllPlayerNames();
+  const games = await loadGames();
+  return { players, games };
+}
+
 export function saveDraft(draft) {
   if (draft) {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));

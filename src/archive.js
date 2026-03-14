@@ -1,5 +1,5 @@
 import './archive.css';
-import { loadGames } from './api.js';
+import { loadGames, getExportData } from './api.js';
 
 export async function renderArchive(container) {
   const games = (await loadGames()).sort((a, b) => b.date.localeCompare(a.date));
@@ -9,6 +9,22 @@ export async function renderArchive(container) {
     container.innerHTML = '<div class="card empty-state"><p>No games saved yet. Go to <strong>New Game</strong> to add one.</p></div>';
     return;
   }
+
+  const toolbar = document.createElement('div');
+  toolbar.className = 'archive-toolbar';
+  toolbar.innerHTML = `
+    <button type="button" class="archive-export-btn primary-btn">Export</button>
+  `;
+  toolbar.querySelector('.archive-export-btn').addEventListener('click', async () => {
+    const data = await getExportData();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'test-data.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+  container.appendChild(toolbar);
 
   const list = document.createElement('div');
   list.className = 'archive-list';
