@@ -4,7 +4,6 @@ const FIXTURE_PLAYERS = testData?.players ?? [];
 
 const GAMES_KEY = '65ers_games';
 const PLAYERS_KEY = '65ers_custom_players';
-const TEST_DATA_FLAG = '65ers_test_data';
 const TEST_DATA_IGNORED = '65ers_test_data_ignored';
 const TEST_DATA_GAME_IDS = '65ers_test_data_game_ids';
 const DRAFT_KEY = '65ers_draft';
@@ -25,7 +24,6 @@ export async function loadTestData(force = false) {
     const kept = existing.filter(g => g.scratch || !testDataIds.includes(g.id));
     const merged = [...testData.games, ...kept];
     localStorage.setItem(GAMES_KEY, JSON.stringify(merged));
-    localStorage.setItem(TEST_DATA_FLAG, '1');
     if (testDataIds.length) localStorage.setItem(TEST_DATA_GAME_IDS, JSON.stringify(testDataIds));
     localStorage.removeItem(TEST_DATA_IGNORED);
   }
@@ -47,7 +45,6 @@ export async function clearData() {
   const testDataIds = (storedIds?.size ?? 0) > 0 ? storedIds : fixtureIds;
   const kept = games.filter(g => g.scratch || !testDataIds.has(g.id));
   localStorage.setItem(GAMES_KEY, JSON.stringify(kept));
-  localStorage.removeItem(TEST_DATA_FLAG);
   localStorage.removeItem(TEST_DATA_GAME_IDS);
   localStorage.setItem(TEST_DATA_IGNORED, '1');
 }
@@ -60,7 +57,6 @@ export async function saveGame(game) {
   const games = await loadGames();
   games.push(game);
   localStorage.setItem(GAMES_KEY, JSON.stringify(games));
-  localStorage.removeItem(TEST_DATA_FLAG);
 }
 
 export async function loadGames() {
@@ -87,7 +83,8 @@ export async function deleteGame(gameId) {
 
 export async function getExportData() {
   const players = await getAllPlayerNames();
-  const games = await loadGames();
+  const allGames = await loadGames();
+  const games = allGames.filter(g => !g.scratch);
   return { players, games };
 }
 

@@ -1,5 +1,6 @@
 import { ROUNDS } from './constants.js';
 import { saveDraft, saveGame } from './api.js';
+import { todayShort } from './utils.js';
 
 const SCRATCH_PLAYERS = [
   'Anders', 'Bikram', 'Cici', 'Daisuke', 'Elena', 'Fatima',
@@ -20,12 +21,7 @@ function todayISO() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function todayShort() {
-  const d = new Date();
-  return `${d.getMonth() + 1}/${d.getDate()}/${String(d.getFullYear()).slice(-2)}`;
-}
-
-export function createScratchDraft() {
+function createScratchDraft() {
   const shuffled = shuffle(SCRATCH_PLAYERS);
   const players = shuffled.slice(0, 4 + Math.floor(Math.random() * 3)); // 4–6 players
   const date = todayISO();
@@ -49,7 +45,7 @@ export function createScratchDraft() {
   };
 }
 
-export function createScratchGame() {
+function createScratchGame() {
   const shuffled = shuffle(SCRATCH_PLAYERS);
   const players = shuffled.slice(0, 4 + Math.floor(Math.random() * 3));
   const date = todayISO();

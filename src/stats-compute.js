@@ -1,10 +1,5 @@
 import { ROUNDS } from './constants.js';
 
-export function formatDate(dateStr) {
-  const [y, m, d] = dateStr.split('-');
-  return `${parseInt(m)}/${parseInt(d)}/${String(y).slice(-2)}`;
-}
-
 export function computeStats(games) {
   let lowScore = { player: '', score: Infinity, date: '' };
   let highWinScore = { player: '', score: -Infinity, date: '' };

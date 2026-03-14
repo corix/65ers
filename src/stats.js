@@ -1,7 +1,8 @@
 import './stats.css';
 import { loadGames, getTestDataGameIds } from './api.js';
 import { ROUNDS, PLAYER_COLORS } from './constants.js';
-import { computeStats, linearRegression, formatDate } from './stats-compute.js';
+import { computeStats, linearRegression } from './stats-compute.js';
+import { formatDate } from './utils.js';
 import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
@@ -52,17 +53,17 @@ function buildRecordsHTML(stats) {
       <div class="record-card card">
         <div class="record-label">Lowest All-Time Score</div>
         <div class="record-value">${lowScore.score}</div>
-        <div class="record-detail">${lowScore.player} &mdash; ${formatDate(lowScore.date)}</div>
+        <div class="record-detail">${lowScore.player} &mdash; ${formatDate(lowScore.date, true)}</div>
       </div>
       <div class="record-card card">
         <div class="record-label">Most Tunks in a Game</div>
         <div class="record-value">${mostTunks.count}</div>
-        <div class="record-detail">${mostTunks.player} &mdash; ${formatDate(mostTunks.date)}</div>
+        <div class="record-detail">${mostTunks.player} &mdash; ${formatDate(mostTunks.date, true)}</div>
       </div>
       <div class="record-card card">
         <div class="record-label">Highest Winning Score</div>
         <div class="record-value">${highWinScore.score}</div>
-        <div class="record-detail">${highWinScore.player} &mdash; ${formatDate(highWinScore.date)}</div>
+        <div class="record-detail">${highWinScore.player} &mdash; ${formatDate(highWinScore.date, true)}</div>
       </div>
     </section>
   `;
@@ -244,7 +245,7 @@ function renderRecentGameChart(canvas, games, playerColorMap) {
         legend: { display: false },
         title: {
           display: true,
-          text: `Game on ${formatDate(game.date)}`,
+          text: `Game on ${formatDate(game.date, true)}`,
           font: { size: 14 },
         },
         tooltip: { enabled: false },
