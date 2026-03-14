@@ -298,3 +298,40 @@ nav {
   border-color: #c77a8a;
   opacity: 1;
 }
+
+/* Supabase data display */
+
+.supabase-data {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.supabase-data h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: var(--accent);
+}
+
+.supabase-data ul {
+  margin: 0 0 1rem;
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+
+.supabase-data li {
+  margin-bottom: 0.25rem;
+}
+
+.supabase-data .date,
+.supabase-data .name {
+  font-weight: 500;
+}
+
+.supabase-data .created-at {
+  font-size: 0.8rem;
+  color: #666;
+  margin-left: 0.5rem;
+}

@@ -1,8 +1,9 @@
 import './shared.css';
+import { supabase } from './supabase.js';
 import { renderForm } from './form.js';
 import { renderArchive } from './archive.js';
 import { renderStats } from './stats.js';
-import { hasTestData, loadTestData, clearData, clearTestDataIgnored, getTestDataGameIds, getTestDataGameCount } from './api.js';
+import { hasTestData, loadTestData, loadGames, clearData, clearTestDataIgnored, getTestDataGameIds, getTestDataGameCount } from './api.js';
 
 const VIEW_KEY = '65ers_view';
 const VALID_VIEWS = ['entry', 'archive', 'stats'];
@@ -86,7 +87,7 @@ async function showView(view, { animateNav = false, animateContent = false } = {
   } else if (container.children.length === 0) {
     await renderForm(container);
   }
-  renderTestDataControl();
+  await renderTestDataControl();
 }
 
 window.addEventListener('navigate-to-view', (e) => {
@@ -96,11 +97,11 @@ window.addEventListener('navigate-to-view', (e) => {
   }
 });
 
-function renderTestDataControl() {
+async function renderTestDataControl() {
   testDataEl.innerHTML = '';
   if (!hasTestData()) return;
 
-  const games = JSON.parse(localStorage.getItem('65ers_games') || '[]');
+  const games = await loadGames();
   const fixtureIds = getTestDataGameIds();
   const hasTestDataGames = games.some(g => g.id && fixtureIds.has(g.id));
 
@@ -132,9 +133,60 @@ navBtns.forEach(btn => {
   btn.addEventListener('click', () => showView(btn.dataset.view, { animateNav: true }));
 });
 
+async function fetchAndRenderSupabaseData() {
+  const { data: games, error: gamesError } = await supabase
+    .from('games')
+    .select('id, date, players, winner, totals, rounds, scratch, source, created_at')
+    .order('date', { ascending: false });
+
+  const { data: players, error: playersError } = await supabase
+    .from('players')
+    .select('id, name, created_at')
+    .order('name');
+
+  if (gamesError || playersError) {
+    console.error('Supabase fetch error:', gamesError || playersError);
+    return;
+  }
+
+  const dataEl = document.getElementById('supabase-data');
+  if (!dataEl) return;
+
+  dataEl.innerHTML = `
+    <section class="supabase-data">
+      <h3>Games (${games?.length ?? 0})</h3>
+      <ul>
+        ${(games ?? []).map(g => `
+          <li data-id="${g.id}">
+            <span class="date">${g.date}</span>
+            <span class="players">${(g.players || []).join(', ')}</span>
+            <span class="winner">${g.winner ?? '—'}</span>
+            <span class="created-at">${g.created_at ? new Date(g.created_at).toLocaleString() : ''}</span>
+          </li>
+        `).join('')}
+      </ul>
+      <h3>Players (${players?.length ?? 0})</h3>
+      <ul>
+        ${(players ?? []).map(p => `
+          <li data-id="${p.id}">
+            <span class="name">${p.name}</span>
+            <span class="created-at">${p.created_at ? new Date(p.created_at).toLocaleString() : ''}</span>
+          </li>
+        `).join('')}
+      </ul>
+    </section>
+  `;
+}
+
 (async () => {
   await loadTestData();
   await showView(getStoredView());
+
+  const dataContainer = document.createElement('div');
+  dataContainer.id = 'supabase-data';
+  app.appendChild(dataContainer);
+  await fetchAndRenderSupabaseData();
+
   requestAnimationFrame(() => updateNavSlider());
 })();
 
