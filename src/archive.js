@@ -1,18 +1,39 @@
 import './archive.css';
-import { loadGames, getExportData } from './api.js';
+import { loadGames, getExportData, isTestDataGame, deleteGame } from './api.js';
+import { createScratchGameInArchive } from './scratch.js';
+
+const TRASH_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
 
 export async function renderArchive(container) {
-  const games = (await loadGames()).sort((a, b) => b.date.localeCompare(a.date));
+  const loaded = await loadGames();
+  const games = loaded
+    .map((g, i) => ({ game: g, i }))
+    .sort((a, b) => b.game.date.localeCompare(a.game.date) || b.i - a.i)
+    .map(({ game }) => game);
   container.innerHTML = '';
 
   if (games.length === 0) {
-    container.innerHTML = '<div class="card empty-state"><p>No games saved yet. Go to <strong>New Game</strong> to add one.</p></div>';
+    const emptyDiv = document.createElement('div');
+    emptyDiv.className = 'archive-empty';
+    emptyDiv.innerHTML = `
+      <div class="card empty-state"><p>No games saved yet. Go to <strong>New Game</strong> to add one.</p></div>
+      <div class="archive-toolbar archive-toolbar--empty">
+        <button type="button" class="scratch-entry-btn" title="Dev: generate test game entry">Scratch entry</button>
+      </div>
+    `;
+    emptyDiv.querySelector('.scratch-entry-btn').addEventListener('click', async () => {
+      await createScratchGameInArchive();
+      container.innerHTML = '';
+      await renderArchive(container);
+    });
+    container.appendChild(emptyDiv);
     return;
   }
 
   const toolbar = document.createElement('div');
   toolbar.className = 'archive-toolbar';
   toolbar.innerHTML = `
+    <button type="button" class="scratch-entry-btn" title="Dev: generate test game entry">Scratch entry</button>
     <button type="button" class="archive-export-btn primary-btn">Export</button>
   `;
   toolbar.querySelector('.archive-export-btn').addEventListener('click', async () => {
@@ -24,27 +45,103 @@ export async function renderArchive(container) {
     a.click();
     URL.revokeObjectURL(a.href);
   });
+  toolbar.querySelector('.scratch-entry-btn').addEventListener('click', async () => {
+    await createScratchGameInArchive();
+    container.innerHTML = '';
+    await renderArchive(container);
+  });
   container.appendChild(toolbar);
 
   const list = document.createElement('div');
   list.className = 'archive-list';
 
+  let awaitingDeleteGameId = null;
+  let deleteConfirmTimeout = null;
+
+  const hideAllDeleteTooltips = () => {
+    list.querySelectorAll('.archive-delete-tooltip').forEach(t => { t.hidden = true; });
+  };
+
   games.forEach(game => {
+    const canDelete = game.id && !isTestDataGame(game.id);
     const item = document.createElement('div');
     item.className = 'archive-item card';
+    item.dataset.gameId = game.id || '';
     item.innerHTML = `
-      <button class="archive-header" aria-expanded="false">
-        <span class="archive-date">${formatDate(game.date)}</span>
-        <span class="archive-players">${game.players.join(', ')}</span>
-        <span class="archive-header-right">
-          <span class="archive-winner">Winner: ${game.winner}</span>
-          <span class="archive-chevron" aria-hidden="true">&#9662;</span>
-        </span>
-      </button>
+      <div class="archive-header-row">
+        <button class="archive-header" aria-expanded="false">
+          <span class="archive-date">${formatDate(game.date)}</span>
+          <span class="archive-players">${game.players.join(', ')}</span>
+          <span class="archive-header-right">
+            <span class="archive-winner">Winner: ${game.winner}</span>
+            <span class="archive-chevron" aria-hidden="true">&#9662;</span>
+          </span>
+        </button>
+        ${canDelete ? `
+          <div class="archive-delete-wrap">
+            <div class="archive-delete-tooltip" hidden>Click again to delete</div>
+            <button type="button" class="archive-delete-btn" aria-label="Delete game" title="Delete game">${TRASH_ICON}</button>
+          </div>
+        ` : ''}
+      </div>
       <div class="archive-body" hidden>
         ${buildArchiveTable(game)}
       </div>
     `;
+
+    if (canDelete) {
+      const deleteBtn = item.querySelector('.archive-delete-btn');
+      const tooltip = item.querySelector('.archive-delete-tooltip');
+
+      const scheduleCancel = () => {
+        if (deleteConfirmTimeout) clearTimeout(deleteConfirmTimeout);
+        deleteConfirmTimeout = setTimeout(() => {
+          awaitingDeleteGameId = null;
+          hideAllDeleteTooltips();
+          deleteConfirmTimeout = null;
+        }, 1000);
+      };
+
+      const cancelSchedule = () => {
+        if (deleteConfirmTimeout) {
+          clearTimeout(deleteConfirmTimeout);
+          deleteConfirmTimeout = null;
+        }
+      };
+
+      deleteBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (awaitingDeleteGameId === game.id) {
+          cancelSchedule();
+          awaitingDeleteGameId = null;
+          hideAllDeleteTooltips();
+          await deleteGame(game.id);
+          container.innerHTML = '';
+          await renderArchive(container);
+        } else {
+          cancelSchedule();
+          hideAllDeleteTooltips();
+          awaitingDeleteGameId = game.id;
+          tooltip.hidden = false;
+        }
+      });
+
+      deleteBtn.addEventListener('mouseleave', () => {
+        if (awaitingDeleteGameId === game.id) scheduleCancel();
+      });
+
+      deleteBtn.addEventListener('blur', () => {
+        if (awaitingDeleteGameId === game.id) scheduleCancel();
+      });
+
+      deleteBtn.addEventListener('mouseenter', () => {
+        if (awaitingDeleteGameId === game.id) cancelSchedule();
+      });
+
+      deleteBtn.addEventListener('focus', () => {
+        if (awaitingDeleteGameId === game.id) cancelSchedule();
+      });
+    }
 
     item.querySelector('.archive-header').addEventListener('click', () => {
       const btn = item.querySelector('.archive-header');
@@ -91,7 +188,7 @@ export async function renderArchive(container) {
   container.appendChild(list);
 }
 
-function formatDate(dateStr) {
+export function formatDate(dateStr) {
   const [y, m, d] = dateStr.split('-');
   return `${parseInt(m)}/${parseInt(d)}/${y}`;
 }

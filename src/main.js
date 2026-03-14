@@ -2,7 +2,10 @@ import './shared.css';
 import { renderForm } from './form.js';
 import { renderArchive } from './archive.js';
 import { renderStats } from './stats.js';
-import { hasTestData, loadTestData, clearData } from './api.js';
+import { hasTestData, loadTestData, clearData, clearTestDataIgnored, getTestDataGameIds } from './api.js';
+
+const VIEW_KEY = '65ers_view';
+const VALID_VIEWS = ['entry', 'archive', 'stats'];
 
 const app = document.getElementById('app');
 const nav = document.querySelector('nav');
@@ -12,12 +15,18 @@ const testDataEl = document.getElementById('test-data-control');
 
 let currentView = 'entry';
 
+function getStoredView() {
+  const stored = localStorage.getItem(VIEW_KEY);
+  return VALID_VIEWS.includes(stored) ? stored : 'entry';
+}
+
 const viewContainers = {};
+const initialView = getStoredView();
 ['entry', 'archive', 'stats'].forEach(view => {
   const el = document.createElement('div');
   el.id = `view-${view}`;
   el.className = 'view-container';
-  el.hidden = view !== 'entry';
+  el.hidden = view !== initialView;
   app.appendChild(el);
   viewContainers[view] = el;
 });
@@ -47,6 +56,7 @@ function updateNavSlider(animate = false) {
 
 async function showView(view, { animateNav = false } = {}) {
   currentView = view;
+  localStorage.setItem(VIEW_KEY, view);
   navBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.view === view));
   updateNavSlider(animateNav);
 
@@ -55,14 +65,15 @@ async function showView(view, { animateNav = false } = {}) {
   });
 
   const container = viewContainers[view];
-  if (container.children.length === 0) {
-    if (view === 'entry') {
-      await renderForm(container);
-    } else if (view === 'archive') {
+  if (view === 'archive' || view === 'stats') {
+    container.innerHTML = '';
+    if (view === 'archive') {
       await renderArchive(container);
-    } else if (view === 'stats') {
+    } else {
       await renderStats(container);
     }
+  } else if (container.children.length === 0) {
+    await renderForm(container);
   }
   renderTestDataControl();
 }
@@ -72,15 +83,19 @@ function renderTestDataControl() {
   if (!hasTestData()) return;
 
   const games = JSON.parse(localStorage.getItem('65ers_games') || '[]');
+  const fixtureIds = getTestDataGameIds();
+  const hasTestDataGames = games.some(g => g.id && fixtureIds.has(g.id));
+
   const link = document.createElement('button');
   link.type = 'button';
   link.className = 'test-data-link';
-  link.textContent = games.length === 0 ? 'Load test data' : 'Ignore test data';
+  link.textContent = hasTestDataGames ? 'Ignore test data' : 'Load test data';
   link.addEventListener('click', async () => {
-    if (games.length === 0) {
-      await loadTestData();
+    if (hasTestDataGames) {
+      await clearData();
     } else {
-      clearData();
+      clearTestDataIgnored();
+      await loadTestData(true);
     }
     viewContainers.entry.innerHTML = '';
     viewContainers.archive.innerHTML = '';
@@ -94,9 +109,11 @@ navBtns.forEach(btn => {
   btn.addEventListener('click', () => showView(btn.dataset.view, { animateNav: true }));
 });
 
-loadTestData();
-showView('entry');
-requestAnimationFrame(() => updateNavSlider());
+(async () => {
+  await loadTestData();
+  await showView(getStoredView());
+  requestAnimationFrame(() => updateNavSlider());
+})();
 
 // Use ResizeObserver on nav so we update when its layout changes (e.g. at 850px breakpoint).
 // Double rAF ensures layout has settled before measuring.

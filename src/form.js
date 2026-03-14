@@ -1,6 +1,10 @@
 import './form.css';
-import { getPlayerRows, getAllPlayerNames, addCustomPlayer, saveGame, saveDraft, loadDraft, clearDraft } from './api.js';
+import { getPlayerRows, getAllPlayerNames, addCustomPlayer, removeCustomPlayer, getCustomPlayers, saveGame, saveDraft, loadDraft, clearDraft } from './api.js';
+import { createScratchDraftInNewGame } from './scratch.js';
+import { formatDate } from './archive.js';
 import { ROUNDS, PLAYER_COLORS } from './constants.js';
+
+const PILL_TRASH_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
 
 let selectedPlayers = [];
 
@@ -40,15 +44,16 @@ function parseShortDate(str) {
   return `${fullYear}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
-function pillHTML(name, selected, colorIndex) {
+function pillHTML(name, selected, colorIndex, isCustom = false) {
   const color = PLAYER_COLORS[colorIndex % PLAYER_COLORS.length];
-  return `<button type="button" class="pill${selected ? ' selected' : ''}" draggable="true" data-player="${name}" style="--pill-color: ${color}">${name}<span class="pill-remove" aria-label="Deselect">×</span></button>`;
+  return `<button type="button" class="pill${selected ? ' selected' : ''}" draggable="true" data-player="${name}" data-custom="${isCustom}" style="--pill-color: ${color}">${name}<span class="pill-remove" aria-label="Deselect">×</span></button>`;
 }
 
 async function buildSetupHTML(draft = null) {
   const { players } = await getPlayerRows();
+  const customPlayers = new Set((await getCustomPlayers()).map(n => n.toLowerCase()));
   const initialDate = draft?.displayDate ?? todayShort();
-  const selectedSet = draft?.players ? new Set(draft.players) : new Set();
+  const selectedSet = draft?.players?.length ? new Set(draft.players) : new Set(players);
   const pillOrder = draft?.players?.length
     ? [...draft.players, ...players.filter(p => !selectedSet.has(p))]
     : players;
@@ -59,17 +64,18 @@ async function buildSetupHTML(draft = null) {
         <input type="text" id="game-date" value="${initialDate}" placeholder="3/11/26" inputmode="numeric">
       </div>
       <fieldset class="field">
-        <legend>Players <span class="hint">tap to select, drag to reorder</span> · <button type="button" class="players-clear-link" id="players-clear-btn">clear</button></legend>
+        <legend>Players <span class="hint">tap to select, drag to reorder</span><span class="players-actions"> · <button type="button" class="players-clear-link" id="players-clear-btn">clear</button> · <button type="button" class="players-manage-link" id="players-manage-btn">manage</button></span></legend>
         <div class="player-pills" data-original-order="${JSON.stringify(players).replace(/"/g, '&quot;')}">
-          ${pillOrder.map((n, i) => pillHTML(n, selectedSet.has(n), i)).join('')}
+          ${pillOrder.map((n, i) => pillHTML(n, selectedSet.has(n), i, customPlayers.has(n.toLowerCase()))).join('')}
           <button type="button" class="pill pill-add" id="add-pill-btn">+</button>
         </div>
         <div class="add-player-row" hidden>
-          <input type="text" id="new-player-name" placeholder="New player name…">
+          <input type="text" id="new-player-name" placeholder="Player name">
           <button type="button" id="add-player-btn">Add</button>
         </div>
       </fieldset>
       <button type="button" id="start-game-btn" class="primary-btn">Start Scoresheet</button>
+      <button type="button" class="scratch-entry-btn" title="Dev: generate test scoresheet (unsaved)">Scratch entry</button>
     </section>
     <section id="scoresheet-area"></section>
   `;
@@ -97,6 +103,49 @@ function syncSelectedPlayers(wrapper, reorder = true) {
 
   selectedPlayers = [...container.querySelectorAll('.pill.selected')].map(p => p.dataset.player);
   wrapper.querySelector('#start-game-btn').disabled = selectedPlayers.length < 2;
+
+  const pillCount = container?.querySelectorAll('.pill:not(.pill-add)').length ?? 0;
+  const actionsSpan = wrapper.querySelector('.players-actions');
+  if (actionsSpan) actionsSpan.hidden = pillCount === 0;
+
+  if (container) container.dataset.empty = pillCount === 0 ? 'true' : '';
+  const addRow = wrapper.querySelector('.add-player-row');
+  if (addRow && pillCount === 0) addRow.hidden = false;
+
+  if (pillCount === 0) {
+    if (container?.dataset.manageMode === 'true') {
+      container.dataset.manageMode = 'false';
+      const fieldset = container?.closest('.field');
+      if (fieldset) fieldset.dataset.manageMode = '';
+      const manageBtn = wrapper.querySelector('#players-manage-btn');
+      if (manageBtn) manageBtn.textContent = 'manage';
+      updatePillIcons(wrapper);
+    }
+  }
+
+  const clearBtn = wrapper.querySelector('#players-clear-btn');
+  if (clearBtn) {
+    clearBtn.textContent = selectedPlayers.length > 0 ? 'clear' : 'select all';
+    const manageMode = container?.dataset.manageMode === 'true';
+    clearBtn.disabled = !!manageMode;
+  }
+}
+
+function updatePillIcons(wrapper) {
+  const pillsContainer = wrapper.querySelector('.player-pills');
+  const manageMode = pillsContainer?.dataset.manageMode === 'true';
+  pillsContainer?.querySelectorAll('.pill:not(.pill-add)').forEach(pill => {
+    const removeSpan = pill.querySelector('.pill-remove');
+    if (!removeSpan) return;
+    const isCustom = pill.dataset.custom === 'true';
+    if (manageMode && isCustom) {
+      removeSpan.innerHTML = PILL_TRASH_ICON;
+      removeSpan.setAttribute('aria-label', 'Remove');
+    } else {
+      removeSpan.textContent = '×';
+      removeSpan.setAttribute('aria-label', 'Deselect');
+    }
+  });
 }
 
 function bindSetupEvents(wrapper) {
@@ -104,9 +153,19 @@ function bindSetupEvents(wrapper) {
   const startBtn = wrapper.querySelector('#start-game-btn');
   syncSelectedPlayers(wrapper);
 
-  pillsContainer.addEventListener('click', (e) => {
+  pillsContainer.addEventListener('click', async (e) => {
     const pill = e.target.closest('.pill');
     if (!pill || pill.classList.contains('pill-add')) return;
+    const manageMode = pillsContainer.dataset.manageMode === 'true';
+    if (manageMode && pill.dataset.custom === 'true') {
+      await removeCustomPlayer(pill.dataset.player);
+      const order = JSON.parse(pillsContainer.dataset.originalOrder || '[]');
+      const updated = order.filter(n => n.toLowerCase() !== pill.dataset.player.toLowerCase());
+      pillsContainer.dataset.originalOrder = JSON.stringify(updated);
+      pill.remove();
+      syncSelectedPlayers(wrapper);
+      return;
+    }
     if (e.target.closest('.pill-remove')) {
       pill.classList.remove('selected');
       syncSelectedPlayers(wrapper);
@@ -210,21 +269,39 @@ function bindSetupEvents(wrapper) {
     touchStarted = false;
   });
 
+  wrapper.querySelector('#players-manage-btn')?.addEventListener('click', () => {
+    const manageMode = pillsContainer.dataset.manageMode === 'true';
+    pillsContainer.dataset.manageMode = manageMode ? 'false' : 'true';
+    const inManage = pillsContainer.dataset.manageMode === 'true';
+    const fieldset = pillsContainer.closest('.field');
+    if (fieldset) fieldset.dataset.manageMode = inManage ? 'true' : '';
+    wrapper.querySelector('#players-manage-btn').textContent = manageMode ? 'manage' : 'done';
+    wrapper.querySelector('#players-clear-btn').disabled = !manageMode;
+    updatePillIcons(wrapper);
+    syncSelectedPlayers(wrapper);
+  });
+
   wrapper.querySelector('#players-clear-btn')?.addEventListener('click', () => {
-    pillsContainer.querySelectorAll('.pill.selected').forEach(p => p.classList.remove('selected'));
-    const originalOrder = JSON.parse(pillsContainer.dataset.originalOrder || '[]');
+    addRow.hidden = true;
+    const selected = pillsContainer.querySelectorAll('.pill.selected');
     const addBtn = pillsContainer.querySelector('.pill-add');
-    const pillsByPlayer = new Map();
-    pillsContainer.querySelectorAll('.pill:not(.pill-add)').forEach(p => {
-      pillsByPlayer.set(p.dataset.player, p);
-    });
-    const customPills = [...pillsContainer.querySelectorAll('.pill:not(.pill-add)')]
-      .filter(p => !originalOrder.includes(p.dataset.player));
-    const targetOrder = [...originalOrder, ...customPills.map(p => p.dataset.player)];
-    targetOrder.reverse().forEach(name => {
-      const pill = pillsByPlayer.get(name);
-      if (pill) pillsContainer.insertBefore(pill, addBtn);
-    });
+    if (selected.length > 0) {
+      pillsContainer.querySelectorAll('.pill.selected').forEach(p => p.classList.remove('selected'));
+      const originalOrder = JSON.parse(pillsContainer.dataset.originalOrder || '[]');
+      const pillsByPlayer = new Map();
+      pillsContainer.querySelectorAll('.pill:not(.pill-add)').forEach(p => {
+        pillsByPlayer.set(p.dataset.player, p);
+      });
+      const customPills = [...pillsContainer.querySelectorAll('.pill:not(.pill-add)')]
+        .filter(p => !originalOrder.includes(p.dataset.player));
+      const targetOrder = [...originalOrder, ...customPills.map(p => p.dataset.player)];
+      targetOrder.reverse().forEach(name => {
+        const pill = pillsByPlayer.get(name);
+        if (pill) pillsContainer.insertBefore(pill, addBtn);
+      });
+    } else {
+      pillsContainer.querySelectorAll('.pill:not(.pill-add)').forEach(p => p.classList.add('selected'));
+    }
     syncSelectedPlayers(wrapper);
   });
 
@@ -249,10 +326,14 @@ function bindSetupEvents(wrapper) {
     pill.className = 'pill selected';
     pill.draggable = true;
     pill.dataset.player = name;
+    pill.dataset.custom = 'true';
     const colorIndex = pillsContainer.querySelectorAll('.pill:not(.pill-add)').length;
     const color = PLAYER_COLORS[colorIndex % PLAYER_COLORS.length];
     pill.style.setProperty('--pill-color', color);
-    pill.innerHTML = `${name}<span class="pill-remove" aria-label="Deselect">×</span>`;
+    const manageMode = pillsContainer.dataset.manageMode === 'true';
+    const removeContent = manageMode ? PILL_TRASH_ICON : '×';
+    const removeLabel = manageMode ? 'Remove' : 'Deselect';
+    pill.innerHTML = `${name}<span class="pill-remove" aria-label="${removeLabel}">${removeContent}</span>`;
     pillsContainer.insertBefore(pill, addPillBtn);
     syncSelectedPlayers(wrapper);
     input.value = '';
@@ -263,6 +344,16 @@ function bindSetupEvents(wrapper) {
   wrapper.querySelector('#new-player-name').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); commitNewPlayer(); }
   });
+
+  const scratchBtn = wrapper.querySelector('.scratch-entry-btn');
+  if (scratchBtn) {
+    scratchBtn.addEventListener('click', async () => {
+      createScratchDraftInNewGame();
+      const container = wrapper.closest('.view-container') || wrapper.parentElement;
+      container.innerHTML = '';
+      await renderForm(container);
+    });
+  }
 
   startBtn.addEventListener('click', () => {
     const raw = wrapper.querySelector('#game-date').value;
@@ -284,7 +375,14 @@ function renderScoresheet(container, date, displayDate, players) {
     <section class="scoresheet card">
       <div class="scoresheet-header">
         <h2>Scoresheet &mdash; ${displayDate} <button type="button" class="scoresheet-shortcuts-btn" aria-label="Keyboard shortcuts">ℹ</button></h2>
-        <button type="button" class="scoresheet-clear-btn text-btn icon-btn" aria-label="Clear scores"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+        <div class="scoresheet-header-actions">
+          <button type="button" class="fill-sheet-btn scratch-entry-btn" title="Dev: fill with zeros and tunks">Fill sheet</button>
+          <button type="button" class="scoresheet-clear-btn text-btn icon-btn" aria-label="Clear scores"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+          <div class="start-over-wrap">
+            <div class="start-over-tooltip" id="start-over-tooltip" hidden>Click to start over</div>
+            <button type="button" id="start-over-btn" class="text-btn start-over-btn icon-btn" aria-label="Start over"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>
+          </div>
+        </div>
       </div>
       <div class="scoresheet-shortcuts-modal" id="shortcuts-modal" role="dialog" aria-modal="true" aria-labelledby="shortcuts-modal-title" hidden>
         <div class="scoresheet-shortcuts-modal-backdrop"></div>
@@ -370,10 +468,6 @@ function renderScoresheet(container, date, displayDate, players) {
         <button type="button" id="save-game-btn" class="primary-btn">Save Game</button>
       </div>
       <div id="save-feedback"></div>
-      <div class="start-over-wrap">
-        <div class="start-over-tooltip" id="start-over-tooltip" hidden>Click to start over</div>
-        <button type="button" id="start-over-btn" class="text-btn start-over-btn icon-btn" aria-label="Start over"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>
-      </div>
     </section>
   `;
 
@@ -458,6 +552,7 @@ function restoreDraft(wrapper, draft) {
   }
 
   recalcTotals(table, draft.players || []);
+  wrapper.dispatchEvent(new CustomEvent('scoresheet-restored', { bubbles: true }));
 }
 
 function getPlayersFromTable(table) {
@@ -621,6 +716,67 @@ function bindScoresheetEvents(container, date, players) {
     shortcutsModal.querySelector('.scoresheet-shortcuts-modal-backdrop')?.addEventListener('click', closeModal);
   }
 
+  const fillSheetBtn = container.querySelector('.fill-sheet-btn');
+  function updateFillSheetButtonState() {
+    if (!fillSheetBtn) return;
+    const allTunksFilled = ROUNDS.every(round => {
+      const sel = table.querySelector(`.tunk-select[data-round="${round}"]`);
+      return sel?.value?.trim();
+    });
+    const allScoresFilled = table.querySelectorAll('.score-input').length > 0 &&
+      [...table.querySelectorAll('.score-input')].every(input => input.value.trim() !== '');
+    fillSheetBtn.textContent = allTunksFilled && allScoresFilled ? 'Clear sheet' : 'Fill sheet';
+  }
+
+  if (fillSheetBtn) {
+    fillSheetBtn.addEventListener('click', () => {
+      const allTunksFilled = ROUNDS.every(round => {
+        const sel = table.querySelector(`.tunk-select[data-round="${round}"]`);
+        return sel?.value?.trim();
+      });
+      const allScoresFilled = table.querySelectorAll('.score-input').length > 0 &&
+        [...table.querySelectorAll('.score-input')].every(input => input.value.trim() !== '');
+
+      if (allTunksFilled && allScoresFilled) {
+        table.querySelectorAll('.score-input').forEach(input => {
+          input.value = '';
+          input.classList.remove('tunk-locked', 'magic-65');
+        });
+        table.querySelectorAll('.tunk-select').forEach(select => {
+          select.value = '';
+        });
+        container.querySelectorAll('.penalty-list [data-penalty]').forEach(li => li.remove());
+        recalcTotals(table, players);
+        clearDraft();
+      } else {
+        const dateInput = wrapper.querySelector('#game-date');
+        const scores = {};
+        const tunks = {};
+        ROUNDS.forEach(round => {
+          scores[round] = {};
+          players.forEach(p => { scores[round][p] = '0'; });
+          tunks[round] = players[Math.floor(Math.random() * players.length)];
+        });
+        const draft = {
+          date: date || '',
+          displayDate: dateInput?.value ?? '',
+          players,
+          scores,
+          tunks,
+          penalties: [],
+        };
+        restoreDraft(wrapper, draft);
+      }
+      persistDraft(wrapper);
+      updateFillSheetButtonState();
+    });
+    updateFillSheetButtonState();
+  }
+
+  table.addEventListener('input', updateFillSheetButtonState);
+  table.addEventListener('change', updateFillSheetButtonState);
+  wrapper.addEventListener('scoresheet-restored', updateFillSheetButtonState);
+
   const clearBtn = container.querySelector('.scoresheet-clear-btn');
   if (clearBtn) {
     clearBtn.addEventListener('click', () => {
@@ -635,6 +791,7 @@ function bindScoresheetEvents(container, date, players) {
       recalcTotals(table, players);
       clearDraft();
       persistDraft(wrapper);
+      updateFillSheetButtonState();
     });
   }
 
@@ -1066,7 +1223,52 @@ async function handleSave(container, date, players) {
 
   await saveGame(game);
   clearDraft();
-  feedback.textContent = `Game saved! Winner: ${winner} (${minScore} pts)`;
-  feedback.className = 'feedback success';
-  container.querySelector('#save-game-btn').disabled = true;
+
+  const entryContainer = container.closest('#view-entry');
+  const formView = container.closest('.form-view');
+  if (entryContainer && formView) {
+    formView.classList.add('scoresheet-exiting');
+    formView.addEventListener('animationend', () => {
+      formView.classList.remove('scoresheet-exiting');
+      entryContainer.innerHTML = '';
+      const preview = document.createElement('div');
+      preview.className = 'save-success-preview';
+      preview.innerHTML = `
+        <p class="save-success-message">Game saved!</p>
+        <div class="archive-item card save-preview-item">
+          <div class="archive-header-row">
+            <div class="archive-header archive-header-preview">
+              <span class="archive-date">${formatDate(date)}</span>
+              <span class="archive-players">${currentPlayers.join(', ')}</span>
+              <span class="archive-header-right">
+                <span class="archive-winner">Winner: ${winner}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      `;
+      entryContainer.appendChild(preview);
+
+      setTimeout(() => {
+        preview.classList.add('fade-out');
+        preview.addEventListener('animationend', async () => {
+          entryContainer.innerHTML = '';
+          entryContainer.classList.add('form-entering');
+          await renderForm(entryContainer);
+          const newFormView = entryContainer.querySelector('.form-view');
+          if (newFormView) {
+            newFormView.addEventListener('animationend', () => {
+              entryContainer.classList.remove('form-entering');
+            }, { once: true });
+          } else {
+            entryContainer.classList.remove('form-entering');
+          }
+        }, { once: true });
+      }, 900);
+    }, { once: true });
+  } else {
+    feedback.textContent = `Game saved! Winner: ${winner} (${minScore} pts)`;
+    feedback.className = 'feedback success';
+    container.querySelector('#save-game-btn').disabled = true;
+  }
 }
