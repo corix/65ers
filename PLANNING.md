@@ -37,34 +37,43 @@ Creates new entries, which entails:
 - New Game setup
   - Date — entered as short text in M/D/YY format (stored internally as ISO YYYY-MM-DD). Usually 1 entry per date, but in rare cases there may be multiple games in a day.
   - Number of players — varies, typically 4 to 7, rarely fewer or more
-  - Players — selected via draggable pills, ordered by the user's arrangement. A "+" pill reveals a form to add and save new player names.
+  - Players — selected via draggable pills, ordered by the user's arrangement. A "+" pill reveals a form to add and save new player names. "manage" toggles manage mode (custom players show trash icon to remove); "clear" / "select all" toggle selection.
 - Scoresheet entry
-  - 11 rounds, with score per player per round
+  - 11 rounds, with score per player per round; player columns are draggable to reorder
+  - Cumulative scores after first round
   - Winning player of each round (the "tunk")
   - Total scores per player, with the winning player (lowest score) highlighted only after all 11 rounds are completed
-- Shortcuts
-  - Tunks can be entered by typing `*` in the score input or by selecting from a dropdown per round. Tunk inputs display with a green highlight and a star character, and are editable so they can be corrected.
-  - Penalties can be added by typing `***` after a score in the input, e.g. `10***` or via a dropdown (round/player).
+  - Clear (restart icon) and Start over (trash icon with confirmation)
+  - Keyboard shortcuts modal (ℹ button)
+    - **Tunk** — `*` or `t` in the score input. Tunk inputs display as a star (★); editable.
+    - **Penalty** — Score + `x`, e.g. `9x`, or via "Add Penalty" (round/player). Adds +65 to that round. Each penalty has a × button to remove it.
+    - **Magic 65** — `65` or `!` in the score input (not available in rounds 3 or 4).
+  - After saving, a success state shows "View in Archive" to navigate to the Archive view
+  - Drafts persist across navigation; returning to New Game restores unsaved data
 
 ### 2. Archive
 
 All past game scoresheets, displayed as tabular data:
 
 - Games listed newest-first in an accordion; only one game can be expanded at a time
+- Export button downloads `stored-games.json`
+- Delete (trash icon, two-click confirm) for non-fixture games
+- Editable dates (double-click)
 - A tunk is visually represented as a star (★) with a green highlight
 - A tink is shown as a number ("0") in green text, no highlight
 - A magic 65 is shown as "65*" with a blue highlight
 - False tunks show a red "FT" badge
 
-[For now, stored locally, later on in a database]
+Stored locally; Phase 4 migrates to Supabase (DB primary, `stored-games.json` fallback).
 
 ### 3. Stats
 
-Data insights and visualizations:
+Data insights and visualizations (display order):
 
-- Record cards: Lowest All-Time Score, Most Tunks in a Game, Highest Winning Score
-- Player leaderboard (ranked by wins, then avg score) with clickable names that expand to show detailed stats
-- Two Chart.js visualizations: Most Recent Game (line chart of cumulative scores by round), Average Score by Round (scatter plot with regression lines, players ordered by slope)
+1. Most Recent Game chart (line chart of cumulative scores by round)
+2. Player leaderboard (ranked by wins, then avg score) with clickable names that expand to show detailed stats
+3. Record cards: Lowest All-Time Score, Most Tunks in a Game, Highest Winning Score
+4. Average Score by Round chart (scatter plot with regression lines, players ordered by slope)
 
 ---
 
@@ -89,7 +98,7 @@ Data insights and visualizations:
 
 ### Out of scope
 
-- Ability to edit or remove entries — not necessary past the testing stage
+- Ability to edit entries — delete and date-edit (double-click in Archive) are supported; further edits not needed
 - Multiple databases/different types of entries — only one collection of scoresheets, for one type of game
 - The game itself (playing 65 with the computer) — this tool is just to store the scoresheets and show insights about the players
 
@@ -176,8 +185,9 @@ These are the building stages for this project.
 
 ### DB migration prep
 
-- Stored games set up in `/fixtures/`; see `fixtures/README.md` for export/load instructions. New Game and Archive show "Load stored games" when empty, "Ignore stored games" when games exist
+- Stored games set up in `/fixtures/`; see `fixtures/README.md` for export/load instructions. New Game and Archive show "Load stored games" when empty, "Ignore stored games" when games exist. Phase 4 changes this: Load = import into DB, Ignore = delete fixture rows from DB.
 - Backend-ready structure: `api.js` (async persistence, swap for Supabase in Phase 4), `constants.js` (game schema), `stats-compute.js` (pure stat logic), per-view CSS
+- `.env` in `.gitignore` for Supabase credentials
 
 ### Data model
 

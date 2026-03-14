@@ -89,10 +89,14 @@ export async function updateGame(gameId, updates) {
   localStorage.setItem(GAMES_KEY, JSON.stringify(games));
 }
 
+export function isScratchGame(game) {
+  return game && (game.scratch === true || game.scratch === 'true');
+}
+
 export async function getExportData() {
   const players = await getAllPlayerNames();
   const allGames = await loadGames();
-  const games = allGames.filter(g => !g.scratch);
+  const games = allGames.filter(g => !isScratchGame(g));
   return { players, games };
 }
 

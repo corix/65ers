@@ -1,5 +1,5 @@
 import './stats.css';
-import { loadGames, getTestDataGameIds } from './api.js';
+import { loadGames } from './api.js';
 import { ROUNDS, PLAYER_COLORS } from './constants.js';
 import { computeStats, linearRegression } from './stats-compute.js';
 import { formatDate } from './utils.js';
@@ -13,9 +13,7 @@ export async function renderStats(container) {
   activeCharts.forEach(c => c.destroy());
   activeCharts = [];
 
-  const allGames = await loadGames();
-  const testDataIds = getTestDataGameIds();
-  const games = allGames.filter(g => g.id && testDataIds.has(g.id));
+  const games = await loadGames();
   container.innerHTML = '';
 
   if (games.length === 0) {

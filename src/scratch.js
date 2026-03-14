@@ -1,11 +1,13 @@
 import { ROUNDS } from './constants.js';
-import { saveDraft, saveGame } from './api.js';
+import { loadGames, isScratchGame, saveDraft, saveGame } from './api.js';
 import { todayShort } from './utils.js';
 
 const SCRATCH_PLAYERS = [
   'Anders', 'Bikram', 'Cici', 'Daisuke', 'Elena', 'Fatima',
   'Gustav', 'Hana', 'Ivan', 'Jin', 'Kira', 'Lars',
 ];
+
+const FALLBACK_ROUND = [0, 0, 2, 3, 5, 8, 10, 15];
 
 function shuffle(arr) {
   const a = [...arr];
@@ -21,7 +23,57 @@ function todayISO() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function createScratchDraft() {
+function pickScoresForRound(roundSamples, round, players, maxTotal, runningTotals) {
+  const samples = roundSamples[round];
+  let scores;
+  if (samples?.length) {
+    const sample = samples[Math.floor(Math.random() * samples.length)];
+    const shuffled = shuffle([...sample]);
+    scores = players.map((_, i) => shuffled[i % shuffled.length] ?? 0);
+  } else {
+    scores = players.map(() =>
+      FALLBACK_ROUND[Math.floor(Math.random() * FALLBACK_ROUND.length)]
+    );
+  }
+  if (maxTotal != null) {
+    scores = scores.map((s, i) => {
+      const cap = maxTotal - (runningTotals[players[i]] ?? 0);
+      return Math.min(s, Math.max(0, cap));
+    });
+  }
+  return scores;
+}
+
+async function buildRoundSamples() {
+  const games = await loadGames();
+  const realGames = games.filter(g => !isScratchGame(g));
+  const roundSamples = {};
+  let maxTotal = null;
+  ROUNDS.forEach(r => { roundSamples[r] = []; });
+  realGames.forEach(game => {
+    const playerTotals = {};
+    game.rounds?.forEach(r => {
+      const roundName = r.round;
+      if (roundSamples[roundName]) {
+        const vals = Object.values(r.scores || {}).filter(v => typeof v === 'number' && !isNaN(v));
+        if (vals.length) {
+          roundSamples[roundName].push(vals);
+        }
+      }
+      Object.entries(r.scores || {}).forEach(([p, v]) => {
+        if (typeof v === 'number' && !isNaN(v)) {
+          playerTotals[p] = (playerTotals[p] || 0) + v;
+        }
+      });
+    });
+    Object.values(playerTotals).forEach(t => {
+      if (maxTotal == null || t > maxTotal) maxTotal = t;
+    });
+  });
+  return { roundSamples, maxTotal };
+}
+
+function createScratchDraft({ roundSamples, maxTotal }) {
   const shuffled = shuffle(SCRATCH_PLAYERS);
   const players = shuffled.slice(0, 4 + Math.floor(Math.random() * 3)); // 4–6 players
   const date = todayISO();
@@ -29,10 +81,21 @@ function createScratchDraft() {
 
   const scores = {};
   const tunks = {};
+  const runningTotals = {};
+  players.forEach(p => { runningTotals[p] = 0; });
   ROUNDS.forEach(round => {
+    const roundScoresArr = pickScoresForRound(roundSamples, round, players, maxTotal, runningTotals);
     scores[round] = {};
-    players.forEach(p => { scores[round][p] = '0'; });
-    tunks[round] = players[Math.floor(Math.random() * players.length)];
+    const roundScores = {};
+    players.forEach((p, i) => {
+      const val = roundScoresArr[i];
+      roundScores[p] = val;
+      scores[round][p] = String(val);
+      runningTotals[p] += val;
+    });
+    const minScore = Math.min(...Object.values(roundScores));
+    const lowest = players.filter(p => roundScores[p] === minScore);
+    tunks[round] = lowest[Math.floor(Math.random() * lowest.length)];
   });
 
   return {
@@ -45,20 +108,24 @@ function createScratchDraft() {
   };
 }
 
-function createScratchGame() {
+function createScratchGame({ roundSamples, maxTotal }) {
   const shuffled = shuffle(SCRATCH_PLAYERS);
   const players = shuffled.slice(0, 4 + Math.floor(Math.random() * 3));
   const date = todayISO();
   const usedRounds = ROUNDS.slice(0, 6);
 
+  const runningTotals = {};
+  players.forEach(p => { runningTotals[p] = 0; });
   const rounds = usedRounds.map(round => {
-    const tunk = players[Math.floor(Math.random() * players.length)];
+    const roundScoresArr = pickScoresForRound(roundSamples, round, players, maxTotal, runningTotals);
     const scores = {};
-    const tinks = [];
-    players.forEach(p => {
-      scores[p] = 0;
-      if (p !== tunk) tinks.push(p);
+    players.forEach((p, i) => {
+      scores[p] = roundScoresArr[i];
+      runningTotals[p] += roundScoresArr[i];
     });
+    const minScore = Math.min(...Object.values(scores));
+    const tunk = players.find(p => scores[p] === minScore);
+    const tinks = players.filter(p => scores[p] === 0 && p !== tunk);
     return {
       round,
       scores,
@@ -71,6 +138,14 @@ function createScratchGame() {
 
   const totals = {};
   players.forEach(p => { totals[p] = 0; });
+  rounds.forEach(r => {
+    players.forEach(p => {
+      totals[p] += r.scores[p];
+    });
+  });
+
+  const minTotal = Math.min(...Object.values(totals));
+  const winner = players.find(p => totals[p] === minTotal);
 
   return {
     id: crypto.randomUUID(),
@@ -78,17 +153,49 @@ function createScratchGame() {
     players,
     rounds,
     totals,
-    winner: players[0],
+    winner,
     scratch: true,
   };
 }
 
-export function createScratchDraftInNewGame() {
-  const draft = createScratchDraft();
+export async function createScratchDraftInNewGame() {
+  const data = await buildRoundSamples();
+  const draft = createScratchDraft(data);
   saveDraft(draft);
 }
 
 export async function createScratchGameInArchive() {
-  const game = createScratchGame();
+  const data = await buildRoundSamples();
+  const game = createScratchGame(data);
   await saveGame(game);
+}
+
+export async function buildFillDraft(players, date = '', displayDate = '') {
+  const { roundSamples, maxTotal } = await buildRoundSamples();
+  const scores = {};
+  const tunks = {};
+  const runningTotals = {};
+  players.forEach(p => { runningTotals[p] = 0; });
+  ROUNDS.forEach(round => {
+    const roundScoresArr = pickScoresForRound(roundSamples, round, players, maxTotal, runningTotals);
+    scores[round] = {};
+    const roundScores = {};
+    players.forEach((p, i) => {
+      const val = roundScoresArr[i];
+      roundScores[p] = val;
+      scores[round][p] = String(val);
+      runningTotals[p] += val;
+    });
+    const minScore = Math.min(...Object.values(roundScores));
+    const lowest = players.filter(p => roundScores[p] === minScore);
+    tunks[round] = lowest[Math.floor(Math.random() * lowest.length)];
+  });
+  return {
+    date,
+    displayDate,
+    players,
+    scores,
+    tunks,
+    penalties: [],
+  };
 }
