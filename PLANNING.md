@@ -74,19 +74,18 @@ Data insights and visualizations:
 
 - Additional chart types or filters
 - Nice-to-haves
-  - Password-protected access or invite-based login credentials
   - CSV export
 
 ### Completed
 
 - Data insights (written stats)
-  - [x] Highest and lowest all-time final scores
-  - [x] Most tunks (rounds won) in a single game
-  - [x] Player leaderboard (ranked by games won, ranked by average final score)
-  - [x] Individual player stats — total games won, total rounds won, average rounds won per game
+  - Highest and lowest all-time final scores
+  - Most tunks (rounds won) in a single game
+  - Player leaderboard (ranked by games won, ranked by average final score)
+  - Individual player stats — total games won, total rounds won, average rounds won per game
 - Data visualizations (graphs)
-  - [x] Most recent game (multiple line graph, each line is a player, Y axis is score and X axis is rounds)
-  - [x] Average player performance (scatter plot of how a player tends to score in each round)
+  - Most recent game (multiple line graph, each line is a player, Y axis is score and X axis is rounds)
+  - Average player performance (scatter plot of how a player tends to score in each round)
 
 ### Out of scope
 
@@ -102,33 +101,74 @@ These are the building stages for this project.
 
 ### 1. Phase 1 — Testing web form (complete)
 
-- [x] Web form with player pill selection, scoresheet grid, tunk/penalty shortcuts, and auto-computed totals
-- [x] Archive view with expandable game cards
-- [x] All data persisted in localStorage
-- [x] Vanilla JS and Vite, no framework
+- Web form with player pill selection, scoresheet grid, tunk/penalty shortcuts, and auto-computed totals
+- Archive view with expandable game cards
+- All data persisted in localStorage
+- Vanilla JS and Vite, no framework
 
 ### 2. Phase 2 — Testing data insights (complete)
 
-- [x] Create Stats tab
-- [x] Top three record cards: Lowest All-Time Score, Most Tunks in a Game, Highest Winning Score
-- [x] Leaderboard with wins, games, win %
-  - [x] Click a player name to expand detailed stats (avg score, tunks/tinks per game, best/worst game, penalties, zeros per game, best win streak, magic 65s)
-- [x] Two interactive Chart.js charts
-  - [x] Most Recent Game (cumulative score by round, inverted Y-axis), Average Score by Round (scatter with regression lines, legend-ordered by slope)
-  - [x] Hover/click legend to highlight a player; tooltips show round and score for highlighted player only
+- Create Stats tab
+- Top three record cards: Lowest All-Time Score, Most Tunks in a Game, Highest Winning Score
+- Leaderboard with wins, games, win %
+  - Click a player name to expand detailed stats (avg score, tunks/tinks per game, best/worst game, penalties, zeros per game, best win streak, magic 65s)
+- Two interactive Chart.js charts
+  - Most Recent Game (cumulative score by round, inverted Y-axis), Average Score by Round (scatter with regression lines, legend-ordered by slope)
+  - Hover/click legend to highlight a player; tooltips show round and score for highlighted player only
 
-### 3. 👉 Phase 3 — Set up database on the back end [WE ARE HERE]
+### 3. 👉 Phase 3 — Deploy to Netlify [WE ARE HERE]
 
-- Supabase; replace `api.js` with fetch; players and games in DB
-- Schema: players table, games table (with rounds as JSON or normalized)
-- Migration: strategy for moving existing localStorage data to Supabase
-- Environment variables: Supabase URL and anon key (e.g. `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`)
+- Deploy static build through Netlify (connect GitHub repo; build command: `vite build`; publish directory: `dist/`)
+- App runs in production with localStorage; validates deployment pipeline
+- No backend or env vars required yet
 
-### 4. Phase 4 — Deploy and test
+### 4. Phase 4 — Integrate Supabase
 
-- Deploy through Netlify (`vite build` → `dist/`)
-- Configure Supabase env vars in Netlify dashboard
-- Test web form and data insights
+
+| Todo                 | Purpose                                  | Task(s)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Outcome                                          |
+| -------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| Set up schema        | Define DB structure for persistence      | <ul><li>Create Supabase project</li><li>Define players table</li><li>Define games table (rounds as JSONB, <code>source</code> for fixture marking)</li><li>Run migrations in Supabase</li><li>Add RLS policies: allow anon read/write on players and games (open for Phase 4; tighten in Phase 5 with auth)</li></ul> | Tables exist; ready to connect                   |
+| Create env variables | Enable app to connect to Supabase        | <ul><li>Get <code>VITE_SUPABASE_URL</code> from Supabase dashboard</li><li>Get <code>VITE_SUPABASE_ANON_KEY</code> from Supabase dashboard</li><li>Create <code>.env</code> in project root (if not exists)</li><li>Add vars to <code>.env</code></li><li>Add to Netlify dashboard</li></ul> | Credentials in place; ready to wire up client    |
+| Decide fixture flow  | Unblock Replace api.js                   | <ul><li>Keep Load/Ignore: DB is primary; <code>stored-games.json</code> is fallback</li><li>Load = insert from JSON into DB (set <code>source: 'fixture'</code>)</li><li>Ignore = delete rows where <code>source = 'fixture'</code></li></ul> | Decision made; implementation path clear         |
+| Replace api.js       | Switch app from localStorage to Supabase | <ul><li>Install <code>@supabase/supabase-js</code></li><li>Initialize Supabase client</li><li>Replace games CRUD (loadGames, saveGame, deleteGame, updateGame)</li><li>Replace players CRUD (getAllPlayerNames, getPlayerRows, addCustomPlayer, removeCustomPlayer, getCustomPlayers)</li><li>Replace Load/Ignore (loadTestData, clearData, hasTestData, isTestDataGame, getTestDataGameIds, clearTestDataIgnored)</li><li>Replace getExportData from DB</li><li>Keep drafts in localStorage (saveDraft, loadDraft, clearDraft)</li></ul> | Supabase connected; app uses it for reads/writes |
+| Migrate entries      | Populate Supabase with existing data     | <ul><li>Export from localStorage (Archive Export button) and/or use <code>stored-games.json</code></li><li>Run one-time migration script: read JSON, insert into players and games via Supabase client</li><li>Verify row counts and spot-check a few games</li></ul> | Data lives in Supabase; begin testing            |
+| Test                 | Verify everything works in production    | <ul><li>Redeploy to Netlify</li><li>Verify New Game flow</li><li>Verify Archive (list, expand, delete non-fixture)</li><li>Verify Stats (charts, leaderboard)</li><li>Verify Load/Ignore stored games flow</li></ul> | Everything works; ready to document fallback     |
+| Plan fallback        | Document stored-games as fallback        | <ul><li>Confirm: DB primary, <code>stored-games.json</code> fallback</li><li>Document fallback behavior (Load = import into DB; Ignore = clear fixture rows; Export = backup from DB)</li><li>Update <code>fixtures/README.md</code> with new behavior</li></ul> | Fallback behavior documented                     |
+
+
+**Schema** (reference: `src/constants.js` Game/Round typedefs; `fixtures/stored-games.json` for sample data)
+
+- **players**
+  - `id` (uuid, pk)
+  - `name` (text, unique)
+  - Single table for all player names; migration seeds from `stored-games.json`.players and localStorage; `getAllPlayerNames` = select from this table
+- **games**
+  - `id` (uuid, pk)
+  - `date` (text)
+  - `players` (jsonb) — array of strings, e.g. `["Asha", "Clancy", "Pete"]`
+  - `winner` (text)
+  - `totals` (jsonb)
+  - `rounds` (jsonb) — array of objects; each has `round`, `scores`, `tunk`, `tinks`, `magic65s`, `falseTunks`
+  - `scratch` (boolean)
+  - `source` (text, optional) — `'fixture'` for Load/Ignore flow
+- **Recommendations**
+  - Add `created_at timestamptz default now()` to both tables
+  - Use `default gen_random_uuid()` for `id` columns
+  - Index `games (date desc)` for archive "newest first" queries
+  - Index `games (source)` for Ignore flow
+
+**Migration:** One-time Node script (e.g. `scripts/migrate-to-supabase.js`) that loads `stored-games.json` and/or exported JSON, then inserts into Supabase via `@supabase/supabase-js`. Insert players first, then games. Set `source: 'fixture'` for games from stored-games.json. Use upsert for idempotency. Use `dotenv` or `--env-file` so the script reads `.env`. Run after env vars are set.
+
+### 5. Phase 5 — Password protection and auth
+
+- Password protection (Supabase Auth)
+- Optionally explore login credentials
+
+### 6. Phase 6 — Explore more features
+
+- More player stats metrics and chart visualizations
+- Player vs player matchups
+- Upload/scan a photo of a paper scoresheet to auto-populate the form (OCR or similar)
 
 ---
 
@@ -137,7 +177,7 @@ These are the building stages for this project.
 ### DB migration prep
 
 - Stored games set up in `/fixtures/`; see `fixtures/README.md` for export/load instructions. New Game and Archive show "Load stored games" when empty, "Ignore stored games" when games exist
-- Backend-ready structure: `api.js` (async persistence, swap for fetch in Phase 3), `constants.js` (game schema), `stats-compute.js` (pure stat logic), per-view CSS
+- Backend-ready structure: `api.js` (async persistence, swap for Supabase in Phase 4), `constants.js` (game schema), `stats-compute.js` (pure stat logic), per-view CSS
 
 ### Data model
 
