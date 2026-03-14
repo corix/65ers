@@ -54,7 +54,7 @@ function updateNavSlider(animate = false) {
   }
 }
 
-async function showView(view, { animateNav = false } = {}) {
+async function showView(view, { animateNav = false, animateContent = false } = {}) {
   currentView = view;
   localStorage.setItem(VIEW_KEY, view);
   navBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.view === view));
@@ -69,6 +69,17 @@ async function showView(view, { animateNav = false } = {}) {
     container.innerHTML = '';
     if (view === 'archive') {
       await renderArchive(container);
+      if (animateContent && container.children.length > 0) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'archive-view archive-entering';
+        while (container.firstChild) {
+          wrapper.appendChild(container.firstChild);
+        }
+        container.appendChild(wrapper);
+        wrapper.addEventListener('animationend', () => {
+          wrapper.classList.remove('archive-entering');
+        }, { once: true });
+      }
     } else {
       await renderStats(container);
     }
@@ -77,6 +88,13 @@ async function showView(view, { animateNav = false } = {}) {
   }
   renderTestDataControl();
 }
+
+window.addEventListener('navigate-to-view', (e) => {
+  const { view, animateNav = false, animateContent = false } = e.detail || {};
+  if (view && VALID_VIEWS.includes(view)) {
+    showView(view, { animateNav, animateContent });
+  }
+});
 
 function renderTestDataControl() {
   testDataEl.innerHTML = '';

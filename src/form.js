@@ -1260,13 +1260,32 @@ async function handleSave(container, date, players) {
             </div>
           </div>
         </div>
+        <button type="button" class="save-success-archive-btn">View in Archive</button>
       `;
       entryContainer.appendChild(preview);
 
-      setTimeout(() => {
+      let previewTimeout = null;
+      function runFadeOut(then) {
+        if (previewTimeout) {
+          clearTimeout(previewTimeout);
+          previewTimeout = null;
+        }
         preview.classList.add('fade-out');
-        preview.addEventListener('animationend', async () => {
+        preview.addEventListener('animationend', () => {
           entryContainer.innerHTML = '';
+          then();
+        }, { once: true });
+      }
+
+      preview.querySelector('.save-success-archive-btn')?.addEventListener('click', () => {
+        runFadeOut(() => {
+          window.dispatchEvent(new CustomEvent('navigate-to-view', { detail: { view: 'archive', animateNav: true, animateContent: true } }));
+        });
+      });
+
+      previewTimeout = setTimeout(() => {
+        previewTimeout = null;
+        runFadeOut(async () => {
           entryContainer.classList.add('form-entering');
           await renderForm(entryContainer);
           const newFormView = entryContainer.querySelector('.form-view');
@@ -1277,8 +1296,8 @@ async function handleSave(container, date, players) {
           } else {
             entryContainer.classList.remove('form-entering');
           }
-        }, { once: true });
-      }, 900);
+        });
+      }, 2500);
     }, { once: true });
   } else {
     feedback.textContent = `Game saved! Winner: ${winner} (${minScore} pts)`;
