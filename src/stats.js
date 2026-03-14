@@ -67,56 +67,66 @@ function buildRecordsHTML(stats) {
   `;
 }
 
+const LEADERBOARD_VISIBLE = 5;
+
 function buildLeaderboardHTML(stats) {
-  const cols = 5;
-  const rows = stats.leaderboard.map((p, i) => `
-    <tr class="leaderboard-row" data-player="${p.name}">
+  const leaderboard = stats.leaderboard;
+  const hasMore = leaderboard.length > LEADERBOARD_VISIBLE;
+  const rows = leaderboard.map((p, i) => {
+    const overflowClass = i >= LEADERBOARD_VISIBLE ? ' leaderboard-row-overflow' : '';
+    return `
+    <tr class="leaderboard-row${overflowClass}" data-player="${p.name}">
       <td class="rank-cell">${i + 1}</td>
       <td class="player-name-cell">${p.name}</td>
       <td>${p.wins}</td>
       <td>${p.games}</td>
       <td>${p.winRate}%</td>
     </tr>
-    <tr class="player-detail-head" hidden>
+    <tr class="player-detail-head${overflowClass}" hidden>
       <td colspan="2"></td>
       <th>Avg Score</th>
       <th>Tunks</th>
       <th>Tinks</th>
     </tr>
-    <tr class="player-detail-body" hidden>
+    <tr class="player-detail-body${overflowClass}" hidden>
       <td colspan="2"></td>
       <td>${p.avgScore}</td>
       <td>${p.totalTunks} <span class="detail-sub">(${p.avgTunks}/g)</span></td>
       <td>${p.totalTinks} <span class="detail-sub">(${p.avgTinks}/g)</span></td>
     </tr>
-    <tr class="player-detail-head" hidden>
+    <tr class="player-detail-head${overflowClass}" hidden>
       <td colspan="2"></td>
       <th>Best Game</th>
       <th>Worst Game</th>
       <th>Penalties</th>
     </tr>
-    <tr class="player-detail-body" hidden>
+    <tr class="player-detail-body${overflowClass}" hidden>
       <td colspan="2"></td>
       <td>${p.bestGame}</td>
       <td>${p.worstGame}</td>
       <td>${p.totalPenalties}</td>
     </tr>
-    <tr class="player-detail-head" hidden>
+    <tr class="player-detail-head${overflowClass}" hidden>
       <td colspan="2"></td>
       <th>Zeros/G</th>
       <th>Win Streak</th>
       <th>Magic 65s</th>
     </tr>
-    <tr class="player-detail-body player-detail-last" hidden>
+    <tr class="player-detail-body player-detail-last${overflowClass}" hidden>
       <td colspan="2"></td>
       <td>${p.avgZeros}</td>
       <td>${p.bestStreak}</td>
       <td>${p.totalMagic65s}</td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
+
+  const toggleBtn = hasMore
+    ? `<button type="button" class="leaderboard-toggle-btn" aria-expanded="false">Show all</button>`
+    : '';
 
   return `
-    <section class="card">
+    <section class="card leaderboard-section" data-collapsed="true">
       <h2>Leaderboard</h2>
       <div class="table-wrap">
         <table class="leaderboard-table">
@@ -132,12 +142,23 @@ function buildLeaderboardHTML(stats) {
           <tbody>${rows}</tbody>
         </table>
       </div>
+      ${toggleBtn}
     </section>
   `;
 }
 
 function bindLeaderboardPopout(wrapper) {
   const detailSelectors = '.player-detail-head, .player-detail-body';
+  const section = wrapper.querySelector('.leaderboard-section');
+  const toggleBtn = wrapper.querySelector('.leaderboard-toggle-btn');
+  if (section && toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      const collapsed = section.dataset.collapsed === 'true';
+      section.dataset.collapsed = String(!collapsed);
+      toggleBtn.setAttribute('aria-expanded', String(collapsed));
+      toggleBtn.textContent = collapsed ? 'Show less' : 'Show all';
+    });
+  }
 
   wrapper.querySelectorAll('.leaderboard-row').forEach(row => {
     row.addEventListener('click', () => {

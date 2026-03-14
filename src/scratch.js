@@ -112,7 +112,7 @@ function createScratchGame({ roundSamples, maxTotal }) {
   const shuffled = shuffle(SCRATCH_PLAYERS);
   const players = shuffled.slice(0, 4 + Math.floor(Math.random() * 3));
   const date = todayISO();
-  const usedRounds = ROUNDS.slice(0, 6);
+  const usedRounds = ROUNDS;
 
   const runningTotals = {};
   players.forEach(p => { runningTotals[p] = 0; });

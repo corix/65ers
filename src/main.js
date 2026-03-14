@@ -2,7 +2,7 @@ import './shared.css';
 import { renderForm } from './form.js';
 import { renderArchive } from './archive.js';
 import { renderStats } from './stats.js';
-import { hasTestData, loadTestData, clearData, clearTestDataIgnored, getTestDataGameIds } from './api.js';
+import { hasTestData, loadTestData, clearData, clearTestDataIgnored, getTestDataGameIds, getTestDataGameCount } from './api.js';
 
 const VIEW_KEY = '65ers_view';
 const VALID_VIEWS = ['entry', 'archive', 'stats'];
@@ -107,8 +107,10 @@ function renderTestDataControl() {
   const link = document.createElement('button');
   link.type = 'button';
   link.className = 'test-data-link';
-  link.textContent = hasTestDataGames ? 'Ignore stored games' : 'Load stored games';
+  const count = getTestDataGameCount();
+  link.textContent = hasTestDataGames ? `Ignore stored games (${count})` : `Load stored games (${count})`;
   link.addEventListener('click', async () => {
+    const scrollY = window.scrollY;
     if (hasTestDataGames) {
       await clearData();
     } else {
@@ -119,6 +121,9 @@ function renderTestDataControl() {
     viewContainers.archive.innerHTML = '';
     viewContainers.stats.innerHTML = '';
     await showView(currentView);
+    requestAnimationFrame(() => {
+      window.scrollTo(0, scrollY);
+    });
   });
   testDataEl.appendChild(link);
 }

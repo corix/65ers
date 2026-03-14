@@ -41,6 +41,26 @@
 
 /* Leaderboard */
 
+.leaderboard-section[data-collapsed="true"] .leaderboard-row-overflow {
+  display: none;
+}
+
+.leaderboard-toggle-btn {
+  display: block;
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.25rem 0;
+  font-size: 0.8rem;
+  color: #888;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.leaderboard-toggle-btn:hover {
+  color: #555;
+}
+
 .leaderboard-table {
   width: 100%;
   border-collapse: collapse;

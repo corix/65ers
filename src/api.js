@@ -12,6 +12,10 @@ export function hasTestData() {
   return !!(testData?.games?.length);
 }
 
+export function getTestDataGameCount() {
+  return (testData?.games ?? []).length;
+}
+
 export function getTestDataGameIds() {
   return new Set((testData?.games ?? []).map(g => g.id).filter(Boolean));
 }

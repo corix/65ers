@@ -183,12 +183,24 @@ These are the building stages for this project.
 
 ## Implementation notes
 
-### DB migration prep
+### Code structure
 
-- Stored games set up in `/fixtures/`; see `fixtures/README.md` for export/load instructions. New Game and Archive show "Load stored games" when empty, "Ignore stored games" when games exist. Phase 4 changes this: Load = import into DB, Ignore = delete fixture rows from DB.
-- Backend-ready structure: `api.js` (async persistence, swap for Supabase in Phase 4), `constants.js` (game schema), `stats-compute.js` (pure stat logic), per-view CSS
-- `.env` in `.gitignore` for Supabase credentials
+- `main.js` — Nav, view switching, Load/Ignore control
+- `form.js` — New Game form and scoresheet
+- `archive.js` — Archive view, export, delete, date edit
+- `stats.js` — Stats view and charts
+- `api.js` — Persistence (localStorage)
+- `scratch.js` — Dev/test data generation
 
 ### Data model
 
 Game and Round schema are defined in `src/constants.js`. Each round tracks `scores`, `tunk`, `tinks`, `magic65s`, and `falseTunks` per player.
+
+### Testing
+
+Dev controls for testing and fixtures:
+
+- **Load / Ignore stored games** — When `fixtures/stored-games.json` has games, "Load stored games (N)" or "Ignore stored games (N)" appears on New Game and Archive, where N is the fixture game count. Load merges fixture data into storage; Ignore clears fixture rows. See `fixtures/README.md` for export/load instructions.
+- **Scratch entry** — New Game: generates a test draft. Archive: generates a test game. Both use realistic scores borrowed from stored games (round scores and totals capped to match real data).
+- **Fill sheet** — Scoresheet toolbar button that fills the sheet with realistic scores from stored games and tunks, or clears when already filled.
+- **Export** — Archive Export button downloads `stored-games.json` excluding scratch entries.
