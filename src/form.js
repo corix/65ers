@@ -417,6 +417,7 @@ function renderScoresheet(container, date, displayDate, players) {
                         data-round="${round}" data-player="${p}"
                         inputmode="numeric">
                       <span class="penalty-suffix" hidden>+65</span>
+                      <span class="cumulative-value" aria-hidden="true"></span>
                     </span>
                   </td>
                 `).join('')}
@@ -1017,6 +1018,8 @@ function bindScoresheetEvents(container, date, players) {
       }
     });
   })();
+
+  recalcTotals(table, players);
 }
 
 function getPenalties(table) {
@@ -1031,7 +1034,8 @@ function recalcTotals(table, players) {
   const penalties = getPenalties(table);
 
   const totals = {};
-  players.forEach(p => { totals[p] = 0; });
+  const cumulatives = {};
+  players.forEach(p => { totals[p] = 0; cumulatives[p] = 0; });
   let allFilled = true;
 
   ROUNDS.forEach(round => {
@@ -1070,6 +1074,13 @@ function recalcTotals(table, players) {
       }
 
       totals[p] += val;
+      cumulatives[p] += val;
+
+      const cumEl = cell?.querySelector('.cumulative-value');
+      if (cumEl) {
+        cumEl.textContent = hasPenalty ? '' : cumulatives[p];
+        cumEl.hidden = hasPenalty;
+      }
     });
 
     if (!roundHasValues) allFilled = false;
