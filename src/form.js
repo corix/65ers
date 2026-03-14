@@ -1030,6 +1030,14 @@ function getPenalties(table) {
   return penalties;
 }
 
+function isRoundFilledForPlayer(table, round, player) {
+  const tunkSelect = table.querySelector(`.tunk-select[data-round="${round}"]`);
+  const tunkPlayer = tunkSelect?.value;
+  const input = table.querySelector(`.score-input[data-round="${round}"][data-player="${player}"]`);
+  if (tunkPlayer === player) return true;
+  return input?.value?.trim() !== '';
+}
+
 function recalcTotals(table, players) {
   const penalties = getPenalties(table);
 
@@ -1038,7 +1046,7 @@ function recalcTotals(table, players) {
   players.forEach(p => { totals[p] = 0; cumulatives[p] = 0; });
   let allFilled = true;
 
-  ROUNDS.forEach(round => {
+  ROUNDS.forEach((round, roundIdx) => {
     const tunkSelect = table.querySelector(`.tunk-select[data-round="${round}"]`);
     const tunkPlayer = tunkSelect.value;
     let roundHasValues = !!tunkPlayer;
@@ -1076,10 +1084,13 @@ function recalcTotals(table, players) {
       totals[p] += val;
       cumulatives[p] += val;
 
+      const allPreviousFilled = roundIdx === 0 || ROUNDS.slice(0, roundIdx).every(r => isRoundFilledForPlayer(table, r, p));
+      const currentFilled = isRoundFilledForPlayer(table, round, p);
       const cumEl = cell?.querySelector('.cumulative-value');
       if (cumEl) {
-        cumEl.textContent = hasPenalty ? '' : cumulatives[p];
-        cumEl.hidden = hasPenalty;
+        const showCumulative = !hasPenalty && allPreviousFilled && currentFilled;
+        cumEl.textContent = showCumulative ? cumulatives[p] : '';
+        cumEl.hidden = !showCumulative;
       }
     });
 
