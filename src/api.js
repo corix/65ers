@@ -3,6 +3,13 @@ import { supabase } from './supabase.js';
 const DRAFT_KEY = '65ers_draft';
 
 export async function saveGame(game) {
+  const playerNames = game.players ?? [];
+  for (const name of playerNames) {
+    const trimmed = String(name).trim();
+    if (!trimmed) continue;
+    await supabase.from('players').upsert({ name: trimmed }, { onConflict: 'name', ignoreDuplicates: true });
+  }
+
   const row = {
     id: game.id,
     date: game.date,
