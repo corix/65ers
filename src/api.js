@@ -1,4 +1,4 @@
-import testData from '../fixtures/test-data.json';
+import testData from '../fixtures/stored-games.json';
 
 const FIXTURE_PLAYERS = testData?.players ?? [];
 

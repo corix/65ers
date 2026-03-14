@@ -1,6 +1,6 @@
 # Stored Games
 
-`test-data.json` contains:
+`stored-games.json` contains:
 
 - `players` — player names (single list, no primary/secondary distinction)
 - `games` — saved game records
@@ -15,6 +15,10 @@ const data = {
 copy(JSON.stringify(data, null, 2));
 ```
 
-Paste the result into `test-data.json`, replacing the existing content.
+Paste the result into `stored-games.json`, replacing the existing content.
 
 **Load / Ignore stored games** buttons appear on the **New Game** and **Archive** views when this file has games.
+
+## Export button
+
+The **Archive** view has an **Export** button in the toolbar. Clicking it downloads `stored-games.json` containing the current player list and all saved games (excluding scratch entries). Use this to back up your data or refresh the fixtures file without using DevTools.
