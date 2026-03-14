@@ -713,38 +713,24 @@ function bindScoresheetEvents(container, date, players) {
   }
 
   const fillSheetBtn = container.querySelector('.fill-sheet-btn');
-  function updateFillSheetButtonState() {
-    if (!fillSheetBtn) return;
-    const allTunksFilled = ROUNDS.every(round => {
+  function isSheetEmpty() {
+    const hasTunks = ROUNDS.some(round => {
       const sel = table.querySelector(`.tunk-select[data-round="${round}"]`);
       return sel?.value?.trim();
     });
-    const allScoresFilled = table.querySelectorAll('.score-input').length > 0 &&
-      [...table.querySelectorAll('.score-input')].every(input => input.value.trim() !== '');
-    fillSheetBtn.textContent = allTunksFilled && allScoresFilled ? 'Clear sheet' : 'Fill sheet';
+    const hasScores = [...table.querySelectorAll('.score-input')].some(input => input.value.trim() !== '');
+    const hasPenalties = container.querySelectorAll('.penalty-list [data-penalty]').length > 0;
+    return !hasTunks && !hasScores && !hasPenalties;
+  }
+
+  function updateFillSheetButtonState() {
+    if (!fillSheetBtn) return;
+    fillSheetBtn.textContent = isSheetEmpty() ? 'Fill sheet' : 'Clear sheet';
   }
 
   if (fillSheetBtn) {
     fillSheetBtn.addEventListener('click', () => {
-      const allTunksFilled = ROUNDS.every(round => {
-        const sel = table.querySelector(`.tunk-select[data-round="${round}"]`);
-        return sel?.value?.trim();
-      });
-      const allScoresFilled = table.querySelectorAll('.score-input').length > 0 &&
-        [...table.querySelectorAll('.score-input')].every(input => input.value.trim() !== '');
-
-      if (allTunksFilled && allScoresFilled) {
-        table.querySelectorAll('.score-input').forEach(input => {
-          input.value = '';
-          input.classList.remove('tunk-locked', 'magic-65');
-        });
-        table.querySelectorAll('.tunk-select').forEach(select => {
-          select.value = '';
-        });
-        container.querySelectorAll('.penalty-list [data-penalty]').forEach(li => li.remove());
-        recalcTotals(table, players);
-        clearDraft();
-      } else {
+      if (isSheetEmpty()) {
         const dateInput = wrapper.querySelector('#game-date');
         const scores = {};
         const tunks = {};
@@ -762,6 +748,17 @@ function bindScoresheetEvents(container, date, players) {
           penalties: [],
         };
         restoreDraft(wrapper, draft);
+      } else {
+        table.querySelectorAll('.score-input').forEach(input => {
+          input.value = '';
+          input.classList.remove('tunk-locked', 'magic-65');
+        });
+        table.querySelectorAll('.tunk-select').forEach(select => {
+          select.value = '';
+        });
+        container.querySelectorAll('.penalty-list [data-penalty]').forEach(li => li.remove());
+        recalcTotals(table, players);
+        clearDraft();
       }
       persistDraft(wrapper);
       updateFillSheetButtonState();
