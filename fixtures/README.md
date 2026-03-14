@@ -1,4 +1,4 @@
-# Test Data
+# Stored Games
 
 `test-data.json` contains:
 
@@ -17,4 +17,4 @@ copy(JSON.stringify(data, null, 2));
 
 Paste the result into `test-data.json`, replacing the existing content.
 
-**Load / Ignore test data** buttons appear on the **New Game** and **Archive** views when this file has games.
+**Load / Ignore stored games** buttons appear on the **New Game** and **Archive** views when this file has games.

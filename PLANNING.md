@@ -136,7 +136,7 @@ These are the building stages for this project.
 
 ### DB migration prep
 
-- Test data set up in `/fixtures/`; see `fixtures/README.md` for export/load instructions. New Game and Archive show "Load test data" when empty, "Ignore test data" when games exist
+- Stored games set up in `/fixtures/`; see `fixtures/README.md` for export/load instructions. New Game and Archive show "Load stored games" when empty, "Ignore stored games" when games exist
 - Backend-ready structure: `api.js` (async persistence, swap for fetch in Phase 3), `constants.js` (game schema), `stats-compute.js` (pure stat logic), per-view CSS
 
 ### Data model

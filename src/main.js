@@ -107,7 +107,7 @@ function renderTestDataControl() {
   const link = document.createElement('button');
   link.type = 'button';
   link.className = 'test-data-link';
-  link.textContent = hasTestDataGames ? 'Ignore test data' : 'Load test data';
+  link.textContent = hasTestDataGames ? 'Ignore stored games' : 'Load stored games';
   link.addEventListener('click', async () => {
     if (hasTestDataGames) {
       await clearData();
