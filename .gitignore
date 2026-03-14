@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 .env
+fixtures/test-games.json
 .temp
 dist-ssr
 *.local

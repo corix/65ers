@@ -64,7 +64,7 @@ export async function renderArchive(container) {
   };
 
   games.forEach(game => {
-    const canDelete = game.id && !isTestDataGame(game.id);
+    const canDelete = game.id && !isTestDataGame(game);
     const item = document.createElement('div');
     item.className = 'archive-item card';
     item.dataset.gameId = game.id || '';

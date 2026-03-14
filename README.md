@@ -11,7 +11,7 @@ Data entry tool for digitizing paper scoresheets from the card game "65."
 
 ## Tech stack
 
-Vite, vanilla JS, Chart.js, localStorage
+Vite, vanilla JS, Chart.js, Supabase
 
 ## Roadmap
 
