@@ -118,6 +118,10 @@ function syncSelectedPlayers(wrapper) {
     const manageMode = container?.dataset.manageMode === 'true';
     clearBtn.disabled = !!manageMode;
   }
+
+  if (!wrapper.querySelector('.scoresheet')) {
+    persistDraft(wrapper);
+  }
 }
 
 function updatePillIcons(wrapper) {
@@ -135,6 +139,30 @@ function updatePillIcons(wrapper) {
       removeSpan.setAttribute('aria-label', 'Deselect');
     }
   });
+}
+
+function getInsertBeforeForNewlySelected(pillsContainer, pill) {
+  const pills = [...pillsContainer.querySelectorAll('.pill:not(.pill-add)')];
+  const idx = pills.indexOf(pill);
+  const otherSelected = pills.filter((p) => p !== pill && p.classList.contains('selected'));
+  const hasSelectedBefore = pills.slice(0, idx).some((p) => p.classList.contains('selected'));
+  const hasSelectedAfter = pills.slice(idx + 1).some((p) => p.classList.contains('selected'));
+
+  if (otherSelected.length === 0) {
+    return pills[0] || pillsContainer.querySelector('.pill-add');
+  }
+  const selectedIndices = otherSelected.map((p) => pills.indexOf(p));
+  const firstIdx = Math.min(...selectedIndices);
+  const lastIdx = Math.max(...selectedIndices);
+  const hasGaps = lastIdx - firstIdx + 1 !== selectedIndices.length;
+  if (!hasGaps) {
+    return pills[0] || pillsContainer.querySelector('.pill-add');
+  }
+  if (hasSelectedBefore && hasSelectedAfter) return null;
+  const lastSelected = [...pills].reverse().find((p) => p.classList.contains('selected'));
+  return lastSelected
+    ? (lastSelected.nextElementSibling || pillsContainer.querySelector('.pill-add'))
+    : pillsContainer.querySelector('.pill-add');
 }
 
 function bindSetupEvents(wrapper) {
@@ -163,9 +191,7 @@ function bindSetupEvents(wrapper) {
     const wasSelected = pill.classList.contains('selected');
     pill.classList.toggle('selected');
     if (pill.classList.contains('selected') && !wasSelected) {
-      const pills = pillsContainer.querySelectorAll('.pill:not(.pill-add)');
-      const firstUnselected = [...pills].find(p => !p.classList.contains('selected'));
-      const insertBefore = firstUnselected || pillsContainer.querySelector('.pill-add');
+      const insertBefore = getInsertBeforeForNewlySelected(pillsContainer, pill);
       if (insertBefore && pill !== insertBefore) {
         pillsContainer.insertBefore(pill, insertBefore);
       }
@@ -174,11 +200,13 @@ function bindSetupEvents(wrapper) {
   });
 
   let draggedPill = null;
+  let draggedOverSelected = false;
 
   pillsContainer.addEventListener('dragstart', (e) => {
     const pill = e.target.closest('.pill');
     if (!pill || pill.classList.contains('pill-add')) return;
     draggedPill = pill;
+    draggedOverSelected = false;
     pill.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';
   });
@@ -186,7 +214,15 @@ function bindSetupEvents(wrapper) {
   pillsContainer.addEventListener('dragend', () => {
     if (draggedPill) {
       const wasUnselected = !draggedPill.classList.contains('selected');
-      if (wasUnselected) draggedPill.classList.add('selected');
+      if (wasUnselected) {
+        if (!draggedOverSelected) {
+          const insertBefore = getInsertBeforeForNewlySelected(pillsContainer, draggedPill);
+          if (insertBefore && draggedPill !== insertBefore) {
+            pillsContainer.insertBefore(draggedPill, insertBefore);
+          }
+        }
+        draggedPill.classList.add('selected');
+      }
       draggedPill.classList.remove('dragging');
       syncSelectedPlayers(wrapper);
       draggedPill = null;
@@ -198,7 +234,10 @@ function bindSetupEvents(wrapper) {
     if (!draggedPill) return;
     const target = e.target.closest('.pill');
     if (!target || target === draggedPill || target.classList.contains('pill-add')) return;
-    if (draggedPill.classList.contains('selected') && !target.classList.contains('selected')) return;
+    const hasSelected = pillsContainer.querySelector('.pill.selected');
+    const targetSelected = target.classList.contains('selected');
+    if (!targetSelected && !hasSelected) return;
+    if (!draggedPill.classList.contains('selected')) draggedOverSelected = true;
     const rect = target.getBoundingClientRect();
     const midX = rect.left + rect.width / 2;
     if (e.clientX < midX) {
@@ -216,6 +255,7 @@ function bindSetupEvents(wrapper) {
     const pill = e.target.closest('.pill');
     if (!pill || pill.classList.contains('pill-add')) return;
     draggedPill = pill;
+    draggedOverSelected = false;
     touchStarted = false;
   }, { passive: true });
 
@@ -236,7 +276,10 @@ function bindSetupEvents(wrapper) {
     touchClone.style.top = `${touch.clientY - touchClone.offsetHeight / 2}px`;
 
     const target = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.pill');
-    if (target && target !== draggedPill && pillsContainer.contains(target) && !target.classList.contains('pill-add') && (draggedPill.classList.contains('selected') ? target.classList.contains('selected') : true)) {
+    const hasSelected = pillsContainer.querySelector('.pill.selected');
+    const targetSelected = target?.classList.contains('selected');
+    if (target && target !== draggedPill && pillsContainer.contains(target) && !target.classList.contains('pill-add') && (targetSelected || hasSelected)) {
+      if (!draggedPill.classList.contains('selected')) draggedOverSelected = true;
       const rect = target.getBoundingClientRect();
       const midX = rect.left + rect.width / 2;
       if (touch.clientX < midX) {
@@ -258,9 +301,7 @@ function bindSetupEvents(wrapper) {
         const wasSelected = draggedPill.classList.contains('selected');
         draggedPill.classList.toggle('selected');
         if (draggedPill.classList.contains('selected') && !wasSelected) {
-          const pills = pillsContainer.querySelectorAll('.pill:not(.pill-add)');
-          const firstUnselected = [...pills].find(p => !p.classList.contains('selected'));
-          const insertBefore = firstUnselected || pillsContainer.querySelector('.pill-add');
+          const insertBefore = getInsertBeforeForNewlySelected(pillsContainer, draggedPill);
           if (insertBefore && draggedPill !== insertBefore) {
             pillsContainer.insertBefore(draggedPill, insertBefore);
           }
@@ -268,7 +309,15 @@ function bindSetupEvents(wrapper) {
         syncSelectedPlayers(wrapper);
       } else {
         const wasUnselected = !draggedPill.classList.contains('selected');
-        if (wasUnselected) draggedPill.classList.add('selected');
+        if (wasUnselected) {
+          if (!draggedOverSelected) {
+            const insertBefore = getInsertBeforeForNewlySelected(pillsContainer, draggedPill);
+            if (insertBefore && draggedPill !== insertBefore) {
+              pillsContainer.insertBefore(draggedPill, insertBefore);
+            }
+          }
+          draggedPill.classList.add('selected');
+        }
         syncSelectedPlayers(wrapper);
       }
       draggedPill = null;
@@ -372,21 +421,8 @@ function bindSetupEvents(wrapper) {
   wrapper.querySelector('#players-clear-btn')?.addEventListener('click', () => {
     addRow.hidden = true;
     const selected = pillsContainer.querySelectorAll('.pill.selected');
-    const addBtn = pillsContainer.querySelector('.pill-add');
     if (selected.length > 0) {
       pillsContainer.querySelectorAll('.pill.selected').forEach(p => p.classList.remove('selected'));
-      const originalOrder = JSON.parse(pillsContainer.dataset.originalOrder || '[]');
-      const pillsByPlayer = new Map();
-      pillsContainer.querySelectorAll('.pill:not(.pill-add)').forEach(p => {
-        pillsByPlayer.set(p.dataset.player, p);
-      });
-      const customPills = [...pillsContainer.querySelectorAll('.pill:not(.pill-add)')]
-        .filter(p => !originalOrder.includes(p.dataset.player));
-      const targetOrder = [...originalOrder, ...customPills.map(p => p.dataset.player)];
-      targetOrder.reverse().forEach(name => {
-        const pill = pillsByPlayer.get(name);
-        if (pill) pillsContainer.insertBefore(pill, addBtn);
-      });
     } else {
       pillsContainer.querySelectorAll('.pill:not(.pill-add)').forEach(p => p.classList.add('selected'));
     }
@@ -455,6 +491,10 @@ function bindSetupEvents(wrapper) {
     renderScoresheet(wrapper.querySelector('#scoresheet-area'), date, formatDate(date, true), selectedPlayers);
     wrapper.querySelector('.game-setup').classList.add('collapsed');
     persistDraft(wrapper);
+  });
+
+  wrapper.querySelector('#game-date')?.addEventListener('change', () => {
+    if (!wrapper.querySelector('.scoresheet')) persistDraft(wrapper);
   });
 }
 
@@ -561,6 +601,17 @@ function renderScoresheet(container, date, displayDate, players) {
   `;
 
   bindScoresheetEvents(container, date, players);
+}
+
+function getDraftFromForm(wrapper) {
+  const scoresheet = wrapper.querySelector('.scoresheet');
+  if (scoresheet) return getDraftFromScoresheet(wrapper);
+  const pillsContainer = wrapper.querySelector('.player-pills');
+  const gameDateInput = wrapper.querySelector('#game-date');
+  if (!pillsContainer) return null;
+  const selected = [...pillsContainer.querySelectorAll('.pill.selected')].map((p) => p.dataset.player);
+  const date = gameDateInput?.value?.trim() || null;
+  return { date, players: selected };
 }
 
 function getDraftFromScoresheet(wrapper) {
@@ -795,7 +846,7 @@ function persistDraft(wrapper) {
   if (!wrapper) return;
   clearTimeout(persistDraftTimer);
   persistDraftTimer = setTimeout(() => {
-    const draft = getDraftFromScoresheet(wrapper);
+    const draft = getDraftFromForm(wrapper);
     if (draft) saveDraft(draft);
   }, 300);
 }
