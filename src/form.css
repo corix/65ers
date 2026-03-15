@@ -28,7 +28,14 @@ input[type="text"] {
 }
 
 #game-date {
-  max-width: 120px;
+  font: inherit;
+  font-weight: 700;
+  min-width: 85px;
+  padding: 0.15rem 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--card-bg);
+  max-width: 160px;
 }
 
 .hint {
@@ -820,11 +827,6 @@ input.score-input {
   gap: 0.75rem;
 }
 
-.scoresheet .fill-sheet-btn {
-  flex-shrink: 0;
-  margin-right: 0.25rem;
-}
-
 .scoresheet-clear-btn {
   flex-shrink: 0;
   font-size: 0.8rem;
@@ -1054,6 +1056,7 @@ input.score-input {
   }
 
   input[type="text"],
+  input[type="date"],
   #game-date {
     max-width: none;
     padding: 0.55rem 0.75rem;

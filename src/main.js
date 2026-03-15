@@ -1,4 +1,5 @@
 import './shared.css';
+import { getExportData } from './api.js';
 import { renderForm } from './form.js';
 import { renderArchive } from './archive.js';
 import { renderStats } from './stats.js';
@@ -97,6 +98,12 @@ navBtns.forEach(btn => {
   btn.addEventListener('click', () => showView(btn.dataset.view, { animateNav: true }));
 });
 
+window.addEventListener('storage', (e) => {
+  if (e.key === VIEW_KEY && e.newValue && VALID_VIEWS.includes(e.newValue) && e.newValue !== currentView) {
+    showView(e.newValue, { animateNav: true, animateContent: true });
+  }
+});
+
 (async () => {
   await showView(getStoredView());
   requestAnimationFrame(() => updateNavSlider());
@@ -122,3 +129,68 @@ window.addEventListener('resize', () => {
   scheduleSliderUpdate();
   requestAnimationFrame(() => { resizeTicking = false; });
 });
+
+const LAST_BACKUP_KEY = '65ers_last_backup_download';
+
+function formatLastBackup(iso) {
+  if (!iso) return 'Not backed up';
+  const d = new Date(iso);
+  const now = new Date();
+  const diffMs = now - d;
+  if (diffMs < 0) return 'Not backed up';
+  const minutes = Math.floor(diffMs / (60 * 1000));
+  const hours = Math.floor(diffMs / (60 * 60 * 1000));
+  const days = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+  if (minutes === 0) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 31) return `${days}d ago`;
+  const months = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
+  const dPlusMonths = new Date(d.getFullYear(), d.getMonth() + months, d.getDate());
+  const remainingDays = Math.floor((now - dPlusMonths) / (24 * 60 * 60 * 1000));
+  return `${months}m ${remainingDays}d ago`;
+}
+
+function updateLastBackupCaption() {
+  const caption = document.getElementById('last-backup-caption');
+  if (caption) {
+    const stored = localStorage.getItem(LAST_BACKUP_KEY);
+    caption.textContent = formatLastBackup(stored);
+  }
+}
+
+// Header kebab (Archive options)
+const headerKebab = document.getElementById('header-nav-kebab');
+const kebabBtn = headerKebab?.querySelector('.header-kebab-btn');
+const kebabMenu = headerKebab?.querySelector('.header-kebab-menu');
+if (kebabBtn && kebabMenu) {
+  kebabBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = !kebabMenu.hidden;
+    kebabMenu.hidden = isOpen;
+    if (!kebabMenu.hidden) {
+      updateLastBackupCaption();
+      document.addEventListener('click', () => { kebabMenu.hidden = true; }, { once: true });
+    }
+  });
+  headerKebab.querySelector('.header-kebab-option[data-action="download"]')?.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    kebabMenu.hidden = true;
+    const data = await getExportData();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    a.download = `65_Almanac_Backup_${y}-${m}-${d}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    localStorage.setItem(LAST_BACKUP_KEY, now.toISOString());
+    updateLastBackupCaption();
+  });
+  window.addEventListener('storage', (e) => {
+    if (e.key === LAST_BACKUP_KEY) updateLastBackupCaption();
+  });
+}

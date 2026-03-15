@@ -107,6 +107,85 @@ nav {
   color: var(--accent);
 }
 
+/* Header kebab (Archive options) */
+.header-nav-kebab {
+  margin-left: auto;
+  position: relative;
+}
+
+.header-kebab-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  font-family: inherit;
+  border-radius: 4px;
+}
+
+.header-kebab-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.header-kebab-btn svg {
+  display: block;
+}
+
+.header-kebab-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.25rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 0.25rem;
+  width: max-content;
+  z-index: 20;
+}
+
+.header-kebab-option {
+  display: block;
+  width: 100%;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  color: #333;
+}
+
+.header-kebab-option:hover {
+  background: #f5f6fa;
+}
+
+.header-kebab-option-title {
+  display: block;
+  font-weight: 500;
+}
+
+.header-kebab-option-divider {
+  display: block;
+  height: 1px;
+  background: var(--border);
+  margin: 0.4rem 0;
+}
+
+.header-kebab-option-caption {
+  display: block;
+  font-size: 0.7rem;
+  color: #888;
+}
 
 .test-data-link {
   background: none;
@@ -279,22 +358,3 @@ nav {
   }
 }
 
-/* Dev control: Scratch entry */
-
-.scratch-entry-btn {
-  font-size: 0.75rem;
-  padding: 0.25rem 0.5rem;
-  color: #c77a8a;
-  background: transparent;
-  border: 1px dashed #d4a0ab;
-  border-radius: 4px;
-  cursor: pointer;
-  font-family: inherit;
-  opacity: 0.9;
-}
-
-.scratch-entry-btn:hover {
-  color: #b85c6f;
-  border-color: #c77a8a;
-  opacity: 1;
-}

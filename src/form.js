@@ -1,7 +1,6 @@
 import './form.css';
 import { getPlayerRows, getAllPlayerNames, addCustomPlayer, removeCustomPlayer, getCustomPlayers, saveGame, saveDraft, loadDraft, clearDraft, loadGames } from './api.js';
-import { createScratchDraftInNewGame, buildFillDraft } from './scratch.js';
-import { formatDate, todayShort } from './utils.js';
+import { formatDate, todayShort, todayISO } from './utils.js';
 import { ROUNDS, PILL_COLOR } from './constants.js';
 
 const PILL_TRASH_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
@@ -25,7 +24,7 @@ export async function renderForm(container) {
   if (draft?.players?.length >= 2) {
     const raw = wrapper.querySelector('#game-date').value;
     const date = parseShortDate(raw) || draft.date;
-    const displayDate = raw || draft.displayDate;
+    const displayDate = date ? formatDate(date, true) : (draft.displayDate ?? '');
     renderScoresheet(wrapper.querySelector('#scoresheet-area'), date, displayDate, draft.players);
     wrapper.querySelector('.game-setup')?.classList.add('collapsed');
     restoreDraft(wrapper, draft);
@@ -33,7 +32,9 @@ export async function renderForm(container) {
 }
 
 function parseShortDate(str) {
-  const parts = str.trim().split('/');
+  const s = str.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const parts = s.split('/');
   if (parts.length !== 3) return null;
   const [m, d, y] = parts.map(Number);
   if (!m || !d || isNaN(y)) return null;
@@ -48,7 +49,7 @@ function pillHTML(name, selected, _colorIndex, isCustom = false) {
 async function buildSetupHTML(draft = null) {
   const { players } = await getPlayerRows();
   const customPlayers = new Set((await getCustomPlayers()).map(n => n.toLowerCase()));
-  const initialDate = draft?.displayDate ?? todayShort();
+  const initialDate = draft?.date ?? todayISO();
   const selectedSet = draft?.players?.length ? new Set(draft.players) : new Set(players);
   const pillOrder = draft?.players?.length
     ? [...draft.players, ...players.filter(p => !selectedSet.has(p))]
@@ -59,12 +60,13 @@ async function buildSetupHTML(draft = null) {
         <button type="button" class="game-setup-kebab-btn" aria-label="Options">${KEBAB_ICON}</button>
         <div class="game-setup-menu" hidden>
           <button type="button" class="game-setup-option" id="players-edit-btn">edit players</button>
+          <button type="button" class="game-setup-option" id="players-sort-btn">sort A→Z</button>
           <button type="button" class="game-setup-option" id="players-import-all-btn">reset</button>
         </div>
       </div>
       <div class="field">
-        <label for="game-date">Date <span class="hint">(M/D/YY)</span></label>
-        <input type="text" id="game-date" value="${initialDate}" placeholder="3/11/26" inputmode="numeric">
+        <label for="game-date">Date</label>
+        <input type="date" id="game-date" value="${initialDate}">
       </div>
       <fieldset class="field">
         <legend>Players <span class="hint">tap to select, drag to reorder</span><span class="players-actions"> · <button type="button" class="players-clear-link" id="players-clear-btn">clear</button></span></legend>
@@ -78,7 +80,6 @@ async function buildSetupHTML(draft = null) {
         </div>
       </fieldset>
       <button type="button" id="start-game-btn" class="primary-btn">Start Scoresheet</button>
-      <button type="button" class="scratch-entry-btn" title="Dev: generate test scoresheet (unsaved)">Scratch entry</button>
     </section>
     <section id="scoresheet-area"></section>
   `;
@@ -278,6 +279,21 @@ function bindSetupEvents(wrapper) {
     syncSelectedPlayers(wrapper);
   }
 
+  wrapper.querySelector('#players-sort-btn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    kebabMenu.hidden = true;
+    const addBtn = pillsContainer.querySelector('.pill-add');
+    const pills = [...pillsContainer.querySelectorAll('.pill:not(.pill-add)')];
+    const sorted = pills.slice().sort((a, b) =>
+      a.dataset.player.localeCompare(b.dataset.player, undefined, { sensitivity: 'base' })
+    );
+    sorted.forEach((pill) => pillsContainer.insertBefore(pill, addBtn));
+    pillsContainer.dataset.originalOrder = JSON.stringify(
+      sorted.map((p) => p.dataset.player)
+    );
+    syncSelectedPlayers(wrapper);
+  });
+
   editBtn?.addEventListener('click', (e) => {
     e.stopPropagation();
     kebabMenu.hidden = true;
@@ -407,16 +423,6 @@ function bindSetupEvents(wrapper) {
     if (e.key === 'Enter') { e.preventDefault(); commitNewPlayer(); }
   });
 
-  const scratchBtn = wrapper.querySelector('.scratch-entry-btn');
-  if (scratchBtn) {
-    scratchBtn.addEventListener('click', async () => {
-      await createScratchDraftInNewGame();
-      const container = wrapper.closest('.view-container') || wrapper.parentElement;
-      container.innerHTML = '';
-      await renderForm(container);
-    });
-  }
-
   startBtn.addEventListener('click', () => {
     const raw = wrapper.querySelector('#game-date').value;
     const date = parseShortDate(raw);
@@ -426,7 +432,7 @@ function bindSetupEvents(wrapper) {
     }
     wrapper.querySelector('#game-date').classList.remove('input-error');
     clearDraft();
-    renderScoresheet(wrapper.querySelector('#scoresheet-area'), date, raw, selectedPlayers);
+    renderScoresheet(wrapper.querySelector('#scoresheet-area'), date, formatDate(date, true), selectedPlayers);
     wrapper.querySelector('.game-setup').classList.add('collapsed');
     persistDraft(wrapper);
   });
@@ -438,7 +444,6 @@ function renderScoresheet(container, date, displayDate, players) {
       <div class="scoresheet-header">
         <h2>Scoresheet &mdash; ${displayDate} <button type="button" class="scoresheet-shortcuts-btn" aria-label="Keyboard shortcuts">ℹ</button></h2>
         <div class="scoresheet-header-actions">
-          <button type="button" class="fill-sheet-btn scratch-entry-btn" title="Dev: fill with realistic scores and tunks">Fill sheet</button>
           <button type="button" class="scoresheet-clear-btn text-btn icon-btn" aria-label="Clear scores"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
           <div class="start-over-wrap">
             <div class="start-over-tooltip" id="start-over-tooltip" hidden>Click to start over</div>
@@ -536,10 +541,8 @@ function getDraftFromScoresheet(wrapper) {
   const players = getPlayersFromTable(table);
   if (!players.length) return null;
 
-  const parts = (dateInput?.value || '').trim().split('/').map(Number);
-  const [m, d, y] = parts.length === 3 ? parts : [0, 0, 0];
-  const fullYear = y < 100 ? 2000 + (y || 0) : y;
-  const date = dateInput?.value ? `${fullYear}-${String(m || 0).padStart(2, '0')}-${String(d || 0).padStart(2, '0')}` : null;
+  const val = (dateInput?.value || '').trim();
+  const date = val ? (parseShortDate(val) || null) : null;
   if (!date) return null;
 
   const scores = {};
@@ -767,44 +770,6 @@ function bindScoresheetEvents(container, date, players) {
     shortcutsModal.querySelector('.scoresheet-shortcuts-modal-backdrop')?.addEventListener('click', closeModal);
   }
 
-  const fillSheetBtn = container.querySelector('.fill-sheet-btn');
-  function isSheetEmpty() {
-    const hasTunks = ROUNDS.some(round => getTunkPlayerForRound(table, round));
-    const hasScores = [...table.querySelectorAll('.score-input')].some(input => input.value.trim() !== '');
-    const hasPenalties = container.querySelectorAll('.penalty-list [data-penalty]').length > 0;
-    return !hasTunks && !hasScores && !hasPenalties;
-  }
-
-  function updateFillSheetButtonState() {
-    if (!fillSheetBtn) return;
-    fillSheetBtn.textContent = isSheetEmpty() ? 'Fill sheet' : 'Clear sheet';
-  }
-
-  if (fillSheetBtn) {
-    fillSheetBtn.addEventListener('click', async () => {
-      if (isSheetEmpty()) {
-        const dateInput = wrapper.querySelector('#game-date');
-        const draft = await buildFillDraft(players, date || '', dateInput?.value ?? '');
-        restoreDraft(wrapper, draft);
-      } else {
-        table.querySelectorAll('.score-input').forEach(input => {
-          input.value = '';
-          input.classList.remove('tunk-locked', 'magic-65');
-        });
-        container.querySelectorAll('.penalty-list [data-penalty]').forEach(li => li.remove());
-        recalcTotals(table, players);
-        clearDraft();
-      }
-      persistDraft(wrapper);
-      updateFillSheetButtonState();
-    });
-    updateFillSheetButtonState();
-  }
-
-  table.addEventListener('input', updateFillSheetButtonState);
-  table.addEventListener('change', updateFillSheetButtonState);
-  wrapper.addEventListener('scoresheet-restored', updateFillSheetButtonState);
-
   const clearBtn = container.querySelector('.scoresheet-clear-btn');
   if (clearBtn) {
     clearBtn.addEventListener('click', () => {
@@ -816,7 +781,6 @@ function bindScoresheetEvents(container, date, players) {
       recalcTotals(table, players);
       clearDraft();
       persistDraft(wrapper);
-      updateFillSheetButtonState();
     });
   }
 
