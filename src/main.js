@@ -135,6 +135,31 @@ window.addEventListener('resize', () => {
 });
 
 const LAST_BACKUP_KEY = '65ers_last_backup_download';
+const THEME_KEY = '65ers_theme';
+
+function getTheme() {
+  return document.documentElement.getAttribute('data-theme') || 'light';
+}
+
+function setTheme(theme) {
+  if (theme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    localStorage.setItem(THEME_KEY, 'dark');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem(THEME_KEY, 'light');
+  }
+  updateThemeToggleLabel();
+}
+
+function updateThemeToggleLabel() {
+  const label = document.getElementById('theme-toggle-label');
+  if (label) label.textContent = getTheme() === 'dark' ? 'Light mode' : 'Dark mode';
+}
+
+function toggleTheme() {
+  setTheme(getTheme() === 'dark' ? 'light' : 'dark');
+}
 
 function formatLastBackup(iso) {
   if (!iso) return 'Not backed up';
@@ -168,6 +193,7 @@ const headerKebab = document.getElementById('header-nav-kebab');
 const kebabBtn = headerKebab?.querySelector('.header-kebab-btn');
 const kebabMenu = headerKebab?.querySelector('.header-kebab-menu');
 if (kebabBtn && kebabMenu) {
+  updateThemeToggleLabel();
   kebabBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     const isOpen = !kebabMenu.hidden;
@@ -176,6 +202,11 @@ if (kebabBtn && kebabMenu) {
       updateLastBackupCaption();
       document.addEventListener('click', () => { kebabMenu.hidden = true; }, { once: true });
     }
+  });
+  headerKebab.querySelector('.header-kebab-option[data-action="theme"]')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    kebabMenu.hidden = true;
+    toggleTheme();
   });
   headerKebab.querySelector('.header-kebab-option[data-action="download"]')?.addEventListener('click', async (e) => {
     e.stopPropagation();

@@ -41,7 +41,7 @@
 }
 
 .cell-false-tunk {
-  color: #000;
+  color: var(--text);
   position: relative;
 }
 
@@ -74,7 +74,7 @@
 .archive-item--delete-pending {
   outline: 3px solid var(--red, #d64045);
   outline-offset: 2px;
-  box-shadow: 0 0 0 6px rgba(214, 64, 69, 0.4);
+  box-shadow: 0 0 0 6px var(--red-outline-glow);
 }
 
 .archive-header-row {
@@ -100,13 +100,13 @@
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  color: #666;
+  color: var(--text-muted);
   transition: color 0.15s, background 0.15s;
 }
 
 .archive-delete-btn:hover {
   color: var(--red, #c00);
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--hover-overlay);
 }
 
 .archive-delete-wrap {
@@ -155,13 +155,13 @@
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  color: #666;
+  color: var(--text-muted);
   transition: color 0.15s, background 0.15s;
 }
 
 .archive-edit-btn:hover {
   color: var(--accent);
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--hover-overlay);
 }
 
 .archive-edit-btn svg {
@@ -183,7 +183,7 @@
 .delete-confirm-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--backdrop-bg);
   cursor: pointer;
 }
 
@@ -193,7 +193,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1.25rem 1.5rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 20px var(--modal-shadow);
   max-width: 320px;
   width: 100%;
 }
@@ -206,7 +206,7 @@
 .delete-confirm-instruction {
   margin: 0 0 1rem;
   font-size: 0.9rem;
-  color: #666;
+  color: var(--text-muted);
 }
 
 .delete-confirm-input {
@@ -243,11 +243,11 @@
 .delete-confirm-cancel {
   background: none;
   border: 1px solid var(--border);
-  color: #333;
+  color: var(--text);
 }
 
 .delete-confirm-cancel:hover {
-  background: #f5f6fa;
+  background: var(--surface);
 }
 
 .delete-confirm-submit {
@@ -284,7 +284,7 @@
 }
 
 .archive-header:hover {
-  background: #f5f6fa;
+  background: var(--surface);
 }
 
 .archive-header[aria-expanded="true"] {
@@ -308,7 +308,7 @@
 }
 
 .archive-players {
-  color: #666;
+  color: var(--text-muted);
   flex: 1;
   min-width: 0;
   overflow: hidden;

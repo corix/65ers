@@ -4,6 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>The 65 Almanac</title>
+    <script>
+      (function() {
+        var theme = localStorage.getItem('65ers_theme');
+        if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
   </head>
   <body>
     <header>
@@ -17,6 +25,9 @@
       <div class="header-nav-kebab" id="header-nav-kebab">
         <button type="button" class="header-kebab-btn" aria-label="Options"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg></button>
         <div class="header-kebab-menu" hidden>
+          <button type="button" class="header-kebab-option" data-action="theme" id="theme-toggle-btn">
+            <span class="header-kebab-option-title" id="theme-toggle-label">Dark mode</span>
+          </button>
           <button type="button" class="header-kebab-option" data-action="download">
             <span class="header-kebab-option-title">Download backup</span>
             <span class="header-kebab-option-divider"></span>
