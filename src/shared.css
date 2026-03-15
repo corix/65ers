@@ -7,8 +7,6 @@ html {
   line-height: 1.5;
   font-weight: 400;
   --bg: #f0f0f5;
-  color: var(--text);
-  background: var(--bg);
   --accent: #4361ee;
   --accent-hover: #3a56d4;
   --header-bg: var(--accent);
@@ -46,6 +44,8 @@ html {
   --primary-btn-bg-hover: #5a4a94;
   --primary-btn-color: #d89a6a;
   --hover-overlay: rgba(0, 0, 0, 0.05);
+  --nav-bg: rgba(255, 255, 255, 0.15);
+  --nav-slider-bg: #fff;
   --icon-btn-bg: #eee;
   --icon-btn-bg-hover: #e0e0e0;
   --error-bg: #fdecea;
@@ -62,14 +62,18 @@ html {
   --chart-legend-active-bg: #e8e8e8;
   --chart-legend-active-color: #111;
   --avg-tooltip-bg: rgba(0, 0, 0, 0.75);
-  --avg-tooltip-color: #fff;
-}
-
-[data-theme="dark"] {
-  --bg: #0f0f18;
+  --avg-tooltip-color: #b4b0c4;
+  --text-on-color: #b4b0c4;
+  --text-on-color-muted: #9894a8;
+  --nav-unselected-color: #b8d4ff;
   color: var(--text);
   background: var(--bg);
+}
+
+html[data-theme="dark"] {
+  --bg: #0f0f18;
   --accent: #4a6ad9;
+  --header-title-color: #b86a42;
   --accent-hover: #5a7ae8;
   --header-bg: #1e1a35;
   --btn-bg: #2a2345;
@@ -103,9 +107,9 @@ html {
   --round-separator-tunk: #553030;
   --heading-accent: #b86a42;
   --heading-accent-hover: #9a5a38;
-  --primary-btn-bg: #2a2345;
-  --primary-btn-bg-hover: #352d55;
-  --primary-btn-color: #d8aa7a;
+  --primary-btn-bg: #5a2810;
+  --primary-btn-bg-hover: #6a3418;
+  --primary-btn-color: #b0a090;
   --focus-outline: #6a6a7a;
   --hover-overlay: rgba(255, 255, 255, 0.05);
   --icon-btn-bg: #3a3a4a;
@@ -122,19 +126,50 @@ html {
   --chart-legend-bg: #2a2a38;
   --chart-legend-hover-bg: #3a3a48;
   --chart-legend-active-bg: #3a3a48;
-  --chart-legend-active-color: #e0e0e8;
+  --chart-legend-active-color: #b4b0c4;
   --avg-tooltip-bg: rgba(0, 0, 0, 0.85);
-  --avg-tooltip-color: #fff;
+  --avg-tooltip-color: #b4b0c4;
+  --text-on-color: #b4b0c4;
+  --text-on-color-muted: #9894a8;
+  --nav-unselected-color: var(--accent);
+  color: var(--text);
+  background: var(--bg);
 }
 
-[data-theme="dark"] input,
-[data-theme="dark"] select {
+html[data-theme="dark"] input,
+html[data-theme="dark"] select {
   color: var(--text);
 }
 
-[data-theme="dark"] .pill,
-[data-theme="dark"] .pill-ghost {
+html[data-theme="dark"] .pill,
+html[data-theme="dark"] .pill-ghost {
   --pill-color: #6a5a9c !important;
+}
+
+/* Explicit light mode – blue accents, no burnt orange or purple */
+html:not([data-theme="dark"]) {
+  --header-bg: #4361ee;
+  --header-title-color: #fff;
+  --heading-accent: #1a1a2e;
+  --primary-btn-bg: #4361ee;
+  --primary-btn-bg-hover: #3a56d4;
+  --primary-btn-color: #fff;
+  --text-on-color: #fff;
+  --text-on-color-muted: rgba(255, 255, 255, 0.75);
+  --avg-tooltip-color: #fff;
+  --nav-bg: rgba(255, 255, 255, 0.15);
+  --nav-slider-bg: #fff;
+}
+
+/* Light mode: white header text; active tab has dark text on white slider */
+html:not([data-theme="dark"]) header,
+html:not([data-theme="dark"]) .nav-btn:hover,
+html:not([data-theme="dark"]) .header-kebab-btn {
+  color: #fff;
+}
+
+html:not([data-theme="dark"]) .nav-btn.active {
+  color: var(--text);
 }
 
 *, *::before, *::after {
@@ -151,7 +186,7 @@ body {
 
 header {
   background: var(--header-bg);
-  color: #fff;
+  color: var(--text-on-color);
   padding: 1rem 1.25rem;
   display: flex;
   align-items: center;
@@ -165,7 +200,7 @@ header h1 {
   margin: 0;
   font-size: 1.35rem;
   letter-spacing: 0.02em;
-  color: var(--heading-accent);
+  color: var(--header-title-color, var(--heading-accent));
 }
 
 nav {
@@ -174,7 +209,7 @@ nav {
   transform: translateX(-50%);
   display: flex;
   gap: 0.25rem;
-  background: var(--nav-bg, rgba(255, 255, 255, 0.15));
+  background: var(--nav-bg);
   border-radius: var(--radius);
   padding: 3px;
   min-width: 420px;
@@ -191,7 +226,7 @@ nav {
   top: 3px;
   bottom: 3px;
   left: 3px;
-  background: var(--nav-slider-bg, #fff);
+  background: var(--nav-slider-bg);
   border-radius: calc(var(--radius) - 2px);
   transition: none;
   z-index: 0;
@@ -208,7 +243,7 @@ nav {
   position: relative;
   z-index: 1;
   background: transparent;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--nav-unselected-color);
   border: none;
   padding: 0.4rem 1rem;
   border-radius: calc(var(--radius) - 2px);
@@ -220,11 +255,11 @@ nav {
 }
 
 .nav-btn:hover {
-  color: #fff;
+  color: var(--text-on-color);
 }
 
 .nav-btn.active {
-  color: var(--accent);
+  color: var(--text-on-color);
 }
 
 /* Header kebab (Archive options) */
@@ -242,14 +277,14 @@ nav {
   padding: 0;
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-on-color);
   cursor: pointer;
   font-family: inherit;
   border-radius: 4px;
 }
 
 .header-kebab-btn:hover {
-  color: #fff;
+  color: var(--text-on-color);
   background: rgba(255, 255, 255, 0.2);
 }
 
@@ -312,7 +347,7 @@ nav {
   border: none;
   padding: 0;
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--text-on-color-muted);
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -320,7 +355,7 @@ nav {
 }
 
 .test-data-link:hover {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-on-color);
 }
 
 /* Main container */

@@ -442,13 +442,13 @@ input[type="text"] {
 .player-pills[data-manage-mode="true"] .pill.selected {
   background: var(--pill-manage-bg);
   border-color: var(--pill-manage-bg);
-  color: #fff;
+  color: var(--text-on-color);
 }
 
 .player-pills[data-manage-mode="true"] .pill[data-custom="true"]:hover {
   background: var(--pill-manage-hover);
   border-color: var(--pill-manage-hover);
-  color: #fff;
+  color: var(--text-on-color);
 }
 
 .player-pills[data-manage-mode="true"] .pill[data-custom="true"]:hover .pill-remove {
@@ -479,7 +479,7 @@ input[type="text"] {
   box-sizing: border-box;
   border-radius: 100px;
   background: var(--pill-color, var(--accent));
-  color: #fff;
+  color: var(--text-on-color);
   font-size: 0.82rem;
   font-family: inherit;
   font-weight: 500;
@@ -592,7 +592,7 @@ input.score-input {
   user-select: none;
   pointer-events: none;
   background: var(--red);
-  color: #fff;
+  color: var(--text-on-color);
   padding: 0.1em 0.3em;
   border-radius: 3px;
   display: flex;
@@ -1043,7 +1043,7 @@ input.score-input {
   font-size: 0.8rem;
   white-space: nowrap;
   background: var(--tooltip-bg);
-  color: #fff;
+  color: var(--text-on-color);
   border-radius: 4px;
   pointer-events: none;
 }
