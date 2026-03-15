@@ -2,6 +2,7 @@
 requestAnimationFrame(() => { document.getElementById('critical-theme')?.remove(); });
 
 import { getExportData, loadGames, getPlayerRowsAndCustom } from './api.js';
+import exportedGames from '../fixtures/exported-games.json';
 import { renderForm } from './form.js';
 import { renderArchive } from './archive.js';
 import { renderStats } from './stats.js';
@@ -146,7 +147,6 @@ window.addEventListener('resize', () => {
   requestAnimationFrame(() => { resizeTicking = false; });
 });
 
-const LAST_BACKUP_KEY = '65ers_last_backup_download';
 const THEME_KEY = '65ers_theme';
 
 function getTheme() {
@@ -198,29 +198,16 @@ function formatBackupDuration(iso) {
 async function updateLastBackupCaption() {
   const caption = document.getElementById('last-backup-caption');
   if (!caption) return;
-  const stored = localStorage.getItem(LAST_BACKUP_KEY);
   const games = await loadGames();
   const y = games.length;
-  let x = null;
-  let lastExport = null;
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored);
-      if (parsed && typeof parsed.lastExport === 'string') {
-        lastExport = parsed.lastExport;
-        x = typeof parsed.count === 'number' ? parsed.count : null;
-      }
-    } catch (_) {
-      lastExport = stored;
-    }
-  }
-  const duration = lastExport ? formatBackupDuration(lastExport) : null;
-  if (!lastExport || !duration) {
-    caption.textContent = `0 of ${y} saved`;
+  const x = Array.isArray(exportedGames?.games) ? exportedGames.games.length : 0;
+  const lastModified = typeof __EXPORTED_GAMES_MTIME__ === 'string' ? __EXPORTED_GAMES_MTIME__ : null;
+  const duration = lastModified ? formatBackupDuration(lastModified) : null;
+  if (!lastModified || !duration) {
+    caption.textContent = `${x} of ${y} saved`;
     return;
   }
-  const xStr = x !== null ? String(x) : '?';
-  caption.textContent = duration === 'just now' ? `${xStr} of ${y} saved just now` : `${xStr} of ${y} saved ${duration} ago`;
+  caption.textContent = duration === 'just now' ? `${x} of ${y} saved just now` : `${x} of ${y} saved ${duration} ago`;
 }
 
 // Header kebab (Archive options)
@@ -257,10 +244,6 @@ if (kebabBtn && kebabMenu) {
     a.download = `65_Almanac_Backup_${y}-${m}-${d}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
-    localStorage.setItem(LAST_BACKUP_KEY, JSON.stringify({ lastExport: now.toISOString(), count: data.games.length }));
     updateLastBackupCaption();
-  });
-  window.addEventListener('storage', (e) => {
-    if (e.key === LAST_BACKUP_KEY) updateLastBackupCaption();
   });
 }
