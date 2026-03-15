@@ -94,6 +94,21 @@ export async function renderArchive(container) {
     return;
   }
 
+  const toolbar = document.createElement('div');
+  toolbar.className = 'archive-toolbar';
+  toolbar.innerHTML = `
+    <button type="button" class="scratch-entry-btn" title="Dev: generate test game">Scratch entry</button>
+  `;
+  const scratchToolbarBtn = toolbar.querySelector('.scratch-entry-btn');
+  if (scratchToolbarBtn) {
+    scratchToolbarBtn.addEventListener('click', async () => {
+      await createScratchGameInArchive();
+      container.innerHTML = '';
+      await renderArchive(container);
+    });
+  }
+  container.appendChild(toolbar);
+
   const list = document.createElement('div');
   list.className = 'archive-list';
 

@@ -48,6 +48,36 @@ header h1 {
   letter-spacing: 0.02em;
 }
 
+.dev-mode-badge {
+  display: inline-block;
+  font-family: ui-monospace, monospace;
+  font-size: 0.6em;
+  font-weight: 600;
+  background: #ffeb3b;
+  color: #1a1a2e;
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  margin-left: 0.4em;
+  vertical-align: middle;
+}
+
+.scratch-entry-btn,
+.fill-sheet-btn {
+  font-size: 0.7rem;
+  padding: 0.2rem 0.4rem;
+  background: #fef5f5;
+  color: var(--red);
+  border: 2px dotted #e8b8b8;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.scratch-entry-btn:hover,
+.fill-sheet-btn:hover {
+  background: #fce8e8;
+}
+
 nav {
   position: absolute;
   left: 50%;
