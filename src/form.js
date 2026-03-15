@@ -48,7 +48,7 @@ function pillHTML(name, selected, _colorIndex, isCustom = false) {
 async function buildSetupHTML(draft = null) {
   const { players, customPlayers } = await getPlayerRowsAndCustom();
   const initialDate = draft?.date ?? todayISO();
-  const selectedSet = draft?.players?.length ? new Set(draft.players) : new Set(players);
+  const selectedSet = draft?.players?.length ? new Set(draft.players) : new Set();
   const pillOrder = draft?.players?.length
     ? [...draft.players, ...players.filter(p => !selectedSet.has(p))]
     : players;

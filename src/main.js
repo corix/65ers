@@ -178,31 +178,49 @@ function toggleTheme() {
   setTheme(getTheme() === 'dark' ? 'light' : 'dark');
 }
 
-function formatLastBackup(iso) {
-  if (!iso) return 'Not backed up';
+function formatBackupDuration(iso) {
+  if (!iso) return null;
   const d = new Date(iso);
   const now = new Date();
   const diffMs = now - d;
-  if (diffMs < 0) return 'Not backed up';
+  if (diffMs < 0) return null;
   const minutes = Math.floor(diffMs / (60 * 1000));
   const hours = Math.floor(diffMs / (60 * 60 * 1000));
   const days = Math.floor(diffMs / (24 * 60 * 60 * 1000));
-  if (minutes === 0) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 31) return `${days}d ago`;
-  const months = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
-  const dPlusMonths = new Date(d.getFullYear(), d.getMonth() + months, d.getDate());
-  const remainingDays = Math.floor((now - dPlusMonths) / (24 * 60 * 60 * 1000));
-  return `${months}m ${remainingDays}d ago`;
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes}m`;
+  if (hours < 24) return `${hours}h`;
+  if (days < 30) return `${days}d`;
+  const months = Math.max(1, (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth()));
+  return `${months}mo`;
 }
 
-function updateLastBackupCaption() {
+async function updateLastBackupCaption() {
   const caption = document.getElementById('last-backup-caption');
-  if (caption) {
-    const stored = localStorage.getItem(LAST_BACKUP_KEY);
-    caption.textContent = formatLastBackup(stored);
+  if (!caption) return;
+  const stored = localStorage.getItem(LAST_BACKUP_KEY);
+  const games = await loadGames();
+  const y = games.length;
+  let x = null;
+  let lastExport = null;
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (parsed && typeof parsed.lastExport === 'string') {
+        lastExport = parsed.lastExport;
+        x = typeof parsed.count === 'number' ? parsed.count : null;
+      }
+    } catch (_) {
+      lastExport = stored;
+    }
   }
+  const duration = lastExport ? formatBackupDuration(lastExport) : null;
+  if (!lastExport || !duration) {
+    caption.textContent = `0 of ${y} saved`;
+    return;
+  }
+  const xStr = x !== null ? String(x) : '?';
+  caption.textContent = duration === 'just now' ? `${xStr} of ${y} saved just now` : `${xStr} of ${y} saved ${duration} ago`;
 }
 
 // Header kebab (Archive options)
@@ -211,12 +229,12 @@ const kebabBtn = headerKebab?.querySelector('.header-kebab-btn');
 const kebabMenu = headerKebab?.querySelector('.header-kebab-menu');
 if (kebabBtn && kebabMenu) {
   updateThemeToggleLabel();
-  kebabBtn.addEventListener('click', (e) => {
+  kebabBtn.addEventListener('click', async (e) => {
     e.stopPropagation();
     const isOpen = !kebabMenu.hidden;
     kebabMenu.hidden = isOpen;
     if (!kebabMenu.hidden) {
-      updateLastBackupCaption();
+      await updateLastBackupCaption();
       document.addEventListener('click', () => { kebabMenu.hidden = true; }, { once: true });
     }
   });
@@ -239,7 +257,7 @@ if (kebabBtn && kebabMenu) {
     a.download = `65_Almanac_Backup_${y}-${m}-${d}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
-    localStorage.setItem(LAST_BACKUP_KEY, now.toISOString());
+    localStorage.setItem(LAST_BACKUP_KEY, JSON.stringify({ lastExport: now.toISOString(), count: data.games.length }));
     updateLastBackupCaption();
   });
   window.addEventListener('storage', (e) => {
