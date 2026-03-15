@@ -79,6 +79,29 @@ input[type="text"] {
 
 .game-setup.card {
   position: relative;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+}
+
+.game-setup-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1.5rem;
+  margin-top: 0.5rem;
+}
+
+.game-setup-date-field {
+  margin-bottom: 0;
+}
+
+.game-setup-actions {
+  margin-top: 0;
+  padding-top: 0;
+  display: flex;
+  justify-content: flex-end;
+  margin-left: auto;
 }
 
 .game-setup-kebab {
@@ -338,20 +361,29 @@ input[type="text"] {
 .pill {
   display: inline-flex;
   align-items: center;
-  padding: 0 0.7rem;
-  height: 2rem;
+  padding: 0 0.6rem;
+  height: 1.75rem;
   box-sizing: border-box;
   border-radius: 100px;
   border: 1px solid var(--border);
   background: var(--card-bg);
   color: #555;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   font-family: inherit;
   font-weight: 500;
   cursor: pointer;
   user-select: none;
   transition: background 0.12s, color 0.12s, border-color 0.12s, box-shadow 0.12s;
   touch-action: none;
+  flex-shrink: 1;
+  min-width: 2rem;
+}
+
+.pill-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .pill:hover {
@@ -373,13 +405,13 @@ input[type="text"] {
 
 .pill-remove {
   display: none;
-  margin-left: 0.35rem;
+  margin-left: 0.25rem;
   opacity: 0.85;
-  font-size: 1.2rem;
+  font-size: 0.85rem;
   line-height: 1;
   cursor: pointer;
-  inline-size: 1.2rem;
-  block-size: 1.2rem;
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
@@ -391,7 +423,7 @@ input[type="text"] {
 }
 
 .pill-remove:not(:has(svg)) {
-  line-height: 1.2rem;
+  line-height: 1;
   position: relative;
   top: -1px;
 }
@@ -442,13 +474,13 @@ input[type="text"] {
   pointer-events: none;
   display: inline-flex;
   align-items: center;
-  padding: 0 0.7rem;
-  height: 2rem;
+  padding: 0 0.6rem;
+  height: 1.75rem;
   box-sizing: border-box;
   border-radius: 100px;
   background: var(--pill-color, var(--accent));
   color: #fff;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   font-family: inherit;
   font-weight: 500;
   border: 1px solid var(--pill-color, var(--accent));
@@ -465,11 +497,12 @@ input[type="text"] {
   border: 1px dashed var(--border);
   background: var(--card-bg);
   color: #999;
-  font-size: 1rem;
+  font-size: 0.9rem;
   padding: 0 0.6rem;
-  height: 2rem;
+  height: 1.75rem;
   box-sizing: border-box;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .pill-add:hover {
@@ -659,6 +692,45 @@ input.score-input {
   user-select: none;
 }
 
+.player-col-header-inner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.player-col-header-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.player-remove-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+  color: #888;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.player-remove-btn[hidden] {
+  display: none !important;
+}
+
+.player-remove-btn:hover {
+  color: var(--red, #d64045);
+  background: rgba(214, 64, 69, 0.1);
+}
+
 .player-col-header:active {
   cursor: grabbing;
 }
@@ -786,15 +858,33 @@ input.score-input {
 
 .scoresheet-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.5rem 1rem;
   margin-bottom: 0.75rem;
 }
 
 .scoresheet-header h2 {
   margin: 0;
   flex: 1;
+}
+
+.scoresheet-date {
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
+
+.scoresheet-date-input {
+  font: inherit;
+  font-weight: 600;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--border, #ddd);
+  border-radius: 4px;
+  background: var(--card-bg, #fff);
+  max-width: 10rem;
+  vertical-align: middle;
 }
 
 .scoresheet-shortcuts-btn {
@@ -867,7 +957,8 @@ input.score-input {
   border-radius: var(--radius);
   padding: 1.25rem 2rem 1.25rem 1.25rem;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  max-width: 320px;
+  max-width: 420px;
+  min-width: 360px;
 }
 
 .scoresheet-shortcuts-modal-content h3 {
@@ -882,8 +973,17 @@ input.score-input {
 }
 
 .shortcuts-table td {
-  padding: 0.25rem 0.5rem 0.25rem 0;
+  padding: 0.4rem 0;
   vertical-align: top;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.shortcuts-table tr:last-child td {
+  border-bottom: none;
+}
+
+.shortcuts-table td:first-child {
+  padding-right: 1.5rem;
 }
 
 .shortcuts-table .shortcut-desc {
@@ -891,7 +991,7 @@ input.score-input {
 }
 
 .shortcuts-table td:last-child {
-  white-space: nowrap;
+  padding-left: 1rem;
 }
 
 .shortcuts-table kbd {
@@ -1086,8 +1186,8 @@ input.score-input {
 
   .pill,
   .pill-add {
-    padding: 0.35rem 0.75rem;
-    font-size: 0.9rem;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.82rem;
   }
 
   .primary-btn {
@@ -1095,6 +1195,22 @@ input.score-input {
     min-height: 48px;
     padding: 0.75rem 1.5rem;
     font-size: 1.05rem;
+  }
+
+  .game-setup-footer {
+    flex-direction: column;
+    align-items: stretch;
+    margin-top: 0.75rem;
+  }
+
+  .game-setup-actions {
+    margin-left: 0;
+    margin-top: 0.5rem;
+    justify-content: stretch;
+  }
+
+  .game-setup-actions .primary-btn {
+    width: 100%;
   }
 
   /* Scoresheet: card layout per round */

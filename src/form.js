@@ -44,7 +44,7 @@ function parseShortDate(str) {
 }
 
 function pillHTML(name, selected, _colorIndex, isCustom = false) {
-  return `<button type="button" class="pill${selected ? ' selected' : ''}" draggable="true" data-player="${name}" data-custom="${isCustom}" style="--pill-color: ${PILL_COLOR}">${name}<span class="pill-remove" aria-label="Deselect">×</span></button>`;
+  return `<button type="button" class="pill${selected ? ' selected' : ''}" draggable="true" data-player="${name}" data-custom="${isCustom}" style="--pill-color: ${PILL_COLOR}"><span class="pill-name">${name}</span><span class="pill-remove" aria-label="Deselect">×</span></button>`;
 }
 
 async function buildSetupHTML(draft = null) {
@@ -64,10 +64,6 @@ async function buildSetupHTML(draft = null) {
           <button type="button" class="game-setup-option" id="players-import-all-btn">reset</button>
         </div>
       </div>
-      <div class="field">
-        <label for="game-date">Date</label>
-        <input type="date" id="game-date" value="${initialDate}">
-      </div>
       <fieldset class="field">
         <legend>Players <span class="hint">tap to select, drag to reorder</span><span class="players-actions"> · <button type="button" class="players-clear-link" id="players-clear-btn">clear</button></span></legend>
         <div class="player-pills" data-original-order="${JSON.stringify(players).replace(/"/g, '&quot;')}">
@@ -79,8 +75,16 @@ async function buildSetupHTML(draft = null) {
           <button type="button" id="add-player-btn">Add</button>
         </div>
       </fieldset>
-      <button type="button" id="start-game-btn" class="primary-btn">Start Scoresheet</button>
-      <button type="button" class="scratch-entry-btn" title="Dev: generate test scoresheet (unsaved)">Scratch entry</button>
+      <div class="game-setup-footer">
+        <div class="field game-setup-date-field">
+          <label for="game-date">Date</label>
+          <input type="date" id="game-date" value="${initialDate}">
+        </div>
+        <div class="game-setup-actions">
+          <button type="button" id="start-game-btn" class="primary-btn">Start Scoresheet</button>
+          <button type="button" class="scratch-entry-btn" title="Dev: generate test scoresheet (unsaved)">Scratch entry</button>
+        </div>
+      </div>
     </section>
     <section id="scoresheet-area"></section>
   `;
@@ -159,7 +163,16 @@ function bindSetupEvents(wrapper) {
       syncSelectedPlayers(wrapper);
       return;
     }
+    const wasSelected = pill.classList.contains('selected');
     pill.classList.toggle('selected');
+    if (pill.classList.contains('selected') && !wasSelected) {
+      const pills = pillsContainer.querySelectorAll('.pill:not(.pill-add)');
+      const firstUnselected = [...pills].find(p => !p.classList.contains('selected'));
+      const insertBefore = firstUnselected || pillsContainer.querySelector('.pill-add');
+      if (insertBefore && pill !== insertBefore) {
+        pillsContainer.insertBefore(pill, insertBefore);
+      }
+    }
     syncSelectedPlayers(wrapper);
   });
 
@@ -245,7 +258,16 @@ function bindSetupEvents(wrapper) {
     if (draggedPill) {
       draggedPill.classList.remove('dragging');
       if (!touchStarted) {
+        const wasSelected = draggedPill.classList.contains('selected');
         draggedPill.classList.toggle('selected');
+        if (draggedPill.classList.contains('selected') && !wasSelected) {
+          const pills = pillsContainer.querySelectorAll('.pill:not(.pill-add)');
+          const firstUnselected = [...pills].find(p => !p.classList.contains('selected'));
+          const insertBefore = firstUnselected || pillsContainer.querySelector('.pill-add');
+          if (insertBefore && draggedPill !== insertBefore) {
+            pillsContainer.insertBefore(draggedPill, insertBefore);
+          }
+        }
         syncSelectedPlayers(wrapper);
       } else {
         const wasUnselected = !draggedPill.classList.contains('selected');
@@ -453,7 +475,7 @@ function renderScoresheet(container, date, displayDate, players) {
   container.innerHTML = `
     <section class="scoresheet card">
       <div class="scoresheet-header">
-        <h2>Scoresheet &mdash; ${displayDate} <button type="button" class="scoresheet-shortcuts-btn" aria-label="Keyboard shortcuts">ℹ</button></h2>
+        <h2>Scoresheet &mdash; <span class="scoresheet-date" data-date="${date || ''}" role="button" tabindex="0" aria-label="Game date (double-click to edit)">${displayDate || (date ? formatDate(date, true) : '')}</span> <button type="button" class="scoresheet-shortcuts-btn" aria-label="Keyboard shortcuts">ℹ</button></h2>
         <div class="scoresheet-header-actions">
           <button type="button" class="fill-sheet-btn scratch-entry-btn" title="Dev: fill with realistic scores and tunks">Fill sheet</button>
           <button type="button" class="scoresheet-clear-btn text-btn icon-btn" aria-label="Clear scores"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
@@ -470,8 +492,12 @@ function renderScoresheet(container, date, displayDate, players) {
           <table class="shortcuts-table">
             <tbody>
               <tr><td class="shortcut-desc">Tunk</td><td><kbd>*</kbd> or <kbd>t</kbd></td></tr>
-              <tr><td class="shortcut-desc">Penalty</td><td>Score + x, ex. <kbd>9x</kbd></td></tr>
+              <tr><td class="shortcut-desc">Penalty</td><td><kbd>9x</kbd> (Score + x)</td></tr>
               <tr><td class="shortcut-desc">Magic 65</td><td><kbd>65</kbd> or <kbd>!</kbd></td></tr>
+              <tr><td class="shortcut-desc">Edit date</td><td>Double-click the date</td></tr>
+              <tr><td class="shortcut-desc">Remove a player</td><td>Double-click the name</td></tr>
+              <tr><td class="shortcut-desc">Next cell</td><td><kbd>Tab</kbd> to move right<br /><kbd>Enter</kbd> to move down</td></tr>
+              <tr><td class="shortcut-desc">Previous cell</td><td><kbd>Shift</kbd>+<kbd>Tab</kbd> to move left<br /><kbd>Shift</kbd>+<kbd>Enter</kbd> to move up</td></tr>
             </tbody>
           </table>
           <button type="button" class="shortcuts-modal-close" aria-label="Close">×</button>
@@ -483,7 +509,7 @@ function renderScoresheet(container, date, displayDate, players) {
           <thead>
             <tr>
               <th class="round-col">Round</th>
-              ${players.map(p => `<th class="player-col-header" data-player="${p}" draggable="true">${p}</th>`).join('')}
+              ${players.map(p => `<th class="player-col-header" data-player="${p}" draggable="true"><span class="player-col-header-inner"><span class="player-col-header-name" data-player="${p}" title="Double-click to show remove">${p}</span><button type="button" class="player-remove-btn" data-player="${p}" aria-label="Remove ${p}" hidden>×</button></span></th>`).join('')}
             </tr>
           </thead>
           <tbody>
@@ -549,11 +575,13 @@ function getDraftFromScoresheet(wrapper) {
   const scoresheet = wrapper.querySelector('.scoresheet');
   if (!scoresheet) return null;
   const table = scoresheet.querySelector('.scoresheet-table');
-  const dateInput = wrapper.querySelector('#game-date');
+  const dateInput = scoresheet.querySelector('#scoresheet-date');
+  const dateSpan = scoresheet.querySelector('.scoresheet-date');
+  const gameDateInput = wrapper.querySelector('#game-date');
   const players = getPlayersFromTable(table);
   if (!players.length) return null;
 
-  const val = (dateInput?.value || '').trim();
+  const val = (dateInput?.value || dateSpan?.dataset?.date || gameDateInput?.value || '').trim();
   const date = val ? (parseShortDate(val) || null) : null;
   if (!date) return null;
 
@@ -571,7 +599,8 @@ function getDraftFromScoresheet(wrapper) {
 
   const penalties = [...getPenalties(table)];
 
-  return { date, displayDate: dateInput?.value ?? '', players, scores, tunks, penalties };
+  const displayDateVal = dateInput?.value ?? dateSpan?.dataset?.date ?? gameDateInput?.value ?? '';
+  return { date, displayDate: displayDateVal, players, scores, tunks, penalties };
 }
 
 function restoreDraft(wrapper, draft) {
@@ -641,6 +670,7 @@ function bindColumnReorder(table, wrapper) {
   headers.forEach(th => {
     th.addEventListener('dragstart', (e) => {
       if (!window.matchMedia('(min-width: 541px)').matches) return;
+      if (e.target.closest('.player-remove-btn')) return;
       draggedPlayer = th.dataset.player;
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', draggedPlayer);
@@ -685,6 +715,27 @@ function bindColumnReorder(table, wrapper) {
       persistDraft(wrapper);
     });
   });
+}
+
+function removePlayerColumn(container, table, player, wrapper) {
+  const players = getPlayersFromTable(table);
+  if (players.length <= 2) return;
+  if (!players.includes(player)) return;
+
+  table.querySelectorAll(`[data-player="${player}"]`).forEach(el => el.remove());
+  container.querySelectorAll('.penalty-list [data-penalty]').forEach(li => {
+    const [, p] = (li.dataset.penalty || '').split('::');
+    if (p === player) li.remove();
+  });
+
+  const penaltyPlayerSelect = container.querySelector('#penalty-player');
+  if (penaltyPlayerSelect) {
+    const opt = penaltyPlayerSelect.querySelector(`option[value="${player}"]`);
+    if (opt) opt.remove();
+  }
+
+  const remainingPlayers = getPlayersFromTable(table);
+  recalcTotals(table, remainingPlayers);
 }
 
 function reorderColumns(table, players) {
@@ -817,6 +868,91 @@ function bindScoresheetEvents(container, date, players) {
 
   bindColumnReorder(table, wrapper);
 
+  const dateSpan = container.querySelector('.scoresheet-date');
+  if (dateSpan) {
+    const gameDateInput = wrapper.querySelector('#game-date');
+    const startDateEdit = () => {
+      if (dateSpan.dataset.editing === 'true') return;
+      dateSpan.dataset.editing = 'true';
+      const originalDate = dateSpan.dataset.date || '';
+      const input = document.createElement('input');
+      input.type = 'date';
+      input.value = originalDate;
+      input.className = 'scoresheet-date-input';
+      input.id = 'scoresheet-date';
+      input.setAttribute('aria-label', 'Game date');
+      dateSpan.replaceWith(input);
+      input.focus();
+      input.select?.();
+
+      let cancelled = false;
+      const commit = () => {
+        if (cancelled) return;
+        const newDate = input.value?.trim();
+        const finalDate = newDate && parseShortDate(newDate) ? newDate : originalDate;
+        dateSpan.textContent = finalDate ? formatDate(finalDate, true) : '';
+        dateSpan.dataset.date = finalDate || '';
+        if (gameDateInput) gameDateInput.value = finalDate || '';
+        input.replaceWith(dateSpan);
+        dateSpan.dataset.editing = '';
+        persistDraft(wrapper);
+      };
+
+      const cancel = () => {
+        cancelled = true;
+        dateSpan.textContent = originalDate ? formatDate(originalDate, true) : '';
+        dateSpan.dataset.date = originalDate || '';
+        input.replaceWith(dateSpan);
+        dateSpan.dataset.editing = '';
+      };
+
+      input.addEventListener('blur', () => {
+        if (!cancelled) commit();
+      }, { once: true });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          input.blur();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          cancel();
+        }
+      });
+    };
+
+    dateSpan.addEventListener('dblclick', startDateEdit);
+    dateSpan.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        startDateEdit();
+      }
+    });
+  }
+
+  container.querySelectorAll('.player-col-header-name').forEach(nameEl => {
+    nameEl.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const header = nameEl.closest('.player-col-header');
+      const removeBtn = header?.querySelector('.player-remove-btn');
+      const currentPlayers = getPlayersFromTable(table);
+      if (currentPlayers.length <= 2 || !removeBtn) return;
+      removeBtn.hidden = !removeBtn.hidden;
+    });
+  });
+
+  container.querySelectorAll('.player-remove-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const player = btn.dataset.player;
+      const currentPlayers = getPlayersFromTable(table);
+      if (currentPlayers.length <= 2) return;
+      removePlayerColumn(container, table, player, wrapper);
+      persistDraft(wrapper);
+    });
+  });
+
   table.querySelectorAll('.round-toggle').forEach(btn => {
     btn.addEventListener('click', () => {
       if (!window.matchMedia('(max-width: 540px)').matches) return;
@@ -938,6 +1074,26 @@ function bindScoresheetEvents(container, date, players) {
         input.classList.remove('magic-65');
         recalcTotals(table, players);
         persistDraft(wrapper);
+      }
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const round = input.dataset.round;
+      const player = input.dataset.player;
+      const roundIdx = ROUNDS.indexOf(round);
+      if (roundIdx === -1) return;
+      if (e.shiftKey) {
+        if (roundIdx <= 0) return;
+        const prevRound = ROUNDS[roundIdx - 1];
+        const prevInput = table.querySelector(`.score-input[data-round="${prevRound}"][data-player="${player}"]`);
+        if (prevInput) prevInput.focus();
+      } else {
+        if (roundIdx >= ROUNDS.length - 1) return;
+        const nextRound = ROUNDS[roundIdx + 1];
+        const nextInput = table.querySelector(`.score-input[data-round="${nextRound}"][data-player="${player}"]`);
+        if (nextInput) nextInput.focus();
       }
     });
   });
