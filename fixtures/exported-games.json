@@ -1,0 +1,1026 @@
+{
+  "players": [
+    "Asha",
+    "Clancy",
+    "Pete",
+    "Tim",
+    "Will",
+    "Larry",
+    "Cori"
+  ],
+  "games": [
+    {
+      "id": "5c573fbd-19fc-43bd-9849-b43c9e83e1ae",
+      "date": "2026-02-21",
+      "players": [
+        "Asha",
+        "Cori",
+        "Will",
+        "Clancy",
+        "Pete",
+        "Tim",
+        "Larry"
+      ],
+      "rounds": [
+        {
+          "round": "3",
+          "scores": {
+            "Asha": 21,
+            "Will": 13,
+            "Clancy": 20,
+            "Pete": 8,
+            "Tim": 0,
+            "Larry": 22,
+            "Cori": 0
+          },
+          "tunk": "Cori",
+          "tinks": [
+            "Tim"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "4",
+          "scores": {
+            "Asha": 6,
+            "Will": 0,
+            "Clancy": 6,
+            "Pete": 5,
+            "Tim": 15,
+            "Larry": 8,
+            "Cori": 6
+          },
+          "tunk": "Will",
+          "tinks": [],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "5",
+          "scores": {
+            "Asha": 3,
+            "Will": 0,
+            "Clancy": 0,
+            "Pete": 0,
+            "Tim": 11,
+            "Larry": 8,
+            "Cori": 3
+          },
+          "tunk": "Will",
+          "tinks": [
+            "Clancy",
+            "Pete"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "6",
+          "scores": {
+            "Asha": 10,
+            "Will": 0,
+            "Clancy": 45,
+            "Pete": 13,
+            "Tim": 0,
+            "Larry": 36,
+            "Cori": 14
+          },
+          "tunk": "Tim",
+          "tinks": [
+            "Will"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "7",
+          "scores": {
+            "Asha": 0,
+            "Will": 2,
+            "Clancy": 0,
+            "Pete": 0,
+            "Tim": 0,
+            "Larry": 44,
+            "Cori": 27
+          },
+          "tunk": "Asha",
+          "tinks": [
+            "Clancy",
+            "Pete",
+            "Tim"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "8",
+          "scores": {
+            "Asha": 0,
+            "Will": 0,
+            "Clancy": 3,
+            "Pete": 5,
+            "Tim": 15,
+            "Larry": 33,
+            "Cori": 55
+          },
+          "tunk": "Asha",
+          "tinks": [
+            "Will"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "9",
+          "scores": {
+            "Asha": 0,
+            "Will": 32,
+            "Clancy": 18,
+            "Pete": 6,
+            "Tim": 21,
+            "Larry": 8,
+            "Cori": 57
+          },
+          "tunk": "Asha",
+          "tinks": [],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "10",
+          "scores": {
+            "Asha": 0,
+            "Will": 0,
+            "Clancy": 2,
+            "Pete": 29,
+            "Tim": 18,
+            "Larry": 34,
+            "Cori": 13
+          },
+          "tunk": "Will",
+          "tinks": [
+            "Asha"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "J",
+          "scores": {
+            "Asha": 0,
+            "Will": 0,
+            "Clancy": 2,
+            "Pete": 2,
+            "Tim": 11,
+            "Larry": 0,
+            "Cori": 34
+          },
+          "tunk": "Will",
+          "tinks": [
+            "Asha",
+            "Larry"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "Q",
+          "scores": {
+            "Asha": 0,
+            "Will": 14,
+            "Clancy": 11,
+            "Pete": 0,
+            "Tim": 0,
+            "Larry": 14,
+            "Cori": 0
+          },
+          "tunk": "Cori",
+          "tinks": [
+            "Asha",
+            "Pete",
+            "Tim"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "K",
+          "scores": {
+            "Asha": 58,
+            "Will": 34,
+            "Clancy": 5,
+            "Pete": 0,
+            "Tim": 27,
+            "Larry": 4,
+            "Cori": 20
+          },
+          "tunk": "Pete",
+          "tinks": [],
+          "magic65s": [],
+          "falseTunks": []
+        }
+      ],
+      "totals": {
+        "Asha": 98,
+        "Will": 95,
+        "Clancy": 112,
+        "Pete": 68,
+        "Tim": 118,
+        "Larry": 211,
+        "Cori": 229
+      },
+      "winner": "Pete"
+    },
+    {
+      "id": "f739be0b-ab97-493d-8b42-416e235783f4",
+      "date": "2026-02-05",
+      "players": [
+        "Will",
+        "Clancy",
+        "Kyle",
+        "Pete",
+        "Tim",
+        "Cori",
+        "Asha"
+      ],
+      "rounds": [
+        {
+          "round": "3",
+          "scores": {
+            "Will": 0,
+            "Clancy": 22,
+            "Kyle": 25,
+            "Pete": 16,
+            "Tim": 15,
+            "Cori": 17,
+            "Asha": 26
+          },
+          "tunk": "Will",
+          "tinks": [],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "4",
+          "scores": {
+            "Will": 0,
+            "Clancy": 2,
+            "Kyle": 0,
+            "Pete": 21,
+            "Tim": 28,
+            "Cori": 20,
+            "Asha": 7
+          },
+          "tunk": "Kyle",
+          "tinks": [
+            "Will"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "5",
+          "scores": {
+            "Will": 0,
+            "Clancy": 4,
+            "Kyle": 3,
+            "Pete": 7,
+            "Tim": 3,
+            "Cori": 7,
+            "Asha": 4
+          },
+          "tunk": "Will",
+          "tinks": [],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "6",
+          "scores": {
+            "Will": 7,
+            "Clancy": 0,
+            "Kyle": 47,
+            "Pete": 0,
+            "Tim": 0,
+            "Cori": 3,
+            "Asha": 10
+          },
+          "tunk": "Clancy",
+          "tinks": [
+            "Pete",
+            "Tim"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "7",
+          "scores": {
+            "Will": 2,
+            "Clancy": 3,
+            "Kyle": 24,
+            "Pete": 65,
+            "Tim": 15,
+            "Cori": 0,
+            "Asha": 25
+          },
+          "tunk": "Cori",
+          "tinks": [],
+          "magic65s": [
+            "Pete"
+          ],
+          "falseTunks": []
+        },
+        {
+          "round": "8",
+          "scores": {
+            "Will": 2,
+            "Clancy": 0,
+            "Kyle": 21,
+            "Pete": 2,
+            "Tim": 5,
+            "Cori": 0,
+            "Asha": 4
+          },
+          "tunk": "Cori",
+          "tinks": [
+            "Clancy"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "9",
+          "scores": {
+            "Will": 12,
+            "Clancy": 0,
+            "Kyle": 0,
+            "Pete": 4,
+            "Tim": 19,
+            "Cori": 13,
+            "Asha": 9
+          },
+          "tunk": "Kyle",
+          "tinks": [
+            "Clancy"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "10",
+          "scores": {
+            "Will": 39,
+            "Clancy": 17,
+            "Kyle": 38,
+            "Pete": 4,
+            "Tim": 0,
+            "Cori": 45,
+            "Asha": 5
+          },
+          "tunk": "Tim",
+          "tinks": [],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "J",
+          "scores": {
+            "Will": 0,
+            "Clancy": 0,
+            "Kyle": 5,
+            "Pete": 0,
+            "Tim": 21,
+            "Cori": 12,
+            "Asha": 24
+          },
+          "tunk": "Clancy",
+          "tinks": [
+            "Will",
+            "Pete"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "Q",
+          "scores": {
+            "Will": 8,
+            "Clancy": 16,
+            "Kyle": 43,
+            "Pete": 16,
+            "Tim": 27,
+            "Cori": 0,
+            "Asha": 0
+          },
+          "tunk": "Cori",
+          "tinks": [
+            "Asha"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "K",
+          "scores": {
+            "Will": 25,
+            "Clancy": 0,
+            "Kyle": 28,
+            "Pete": 0,
+            "Tim": 0,
+            "Cori": 2,
+            "Asha": 6
+          },
+          "tunk": "Tim",
+          "tinks": [
+            "Clancy",
+            "Pete"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        }
+      ],
+      "totals": {
+        "Will": 95,
+        "Clancy": 64,
+        "Kyle": 234,
+        "Pete": 70,
+        "Tim": 133,
+        "Cori": 119,
+        "Asha": 120
+      },
+      "winner": "Clancy"
+    },
+    {
+      "id": "1ca36736-4c43-49ba-9102-cfa76a27df43",
+      "date": "2026-02-20",
+      "players": [
+        "Clancy",
+        "Larry",
+        "Will",
+        "Asha"
+      ],
+      "rounds": [
+        {
+          "round": "3",
+          "scores": {
+            "Clancy": 19,
+            "Larry": 9,
+            "Will": 0,
+            "Asha": 20
+          },
+          "tunk": "Will",
+          "tinks": [],
+          "magic65s": [],
+          "falseTunks": [
+            "Larry"
+          ]
+        },
+        {
+          "round": "4",
+          "scores": {
+            "Clancy": 28,
+            "Larry": 0,
+            "Will": 30,
+            "Asha": 0
+          },
+          "tunk": "Asha",
+          "tinks": [
+            "Larry"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "5",
+          "scores": {
+            "Clancy": 0,
+            "Larry": 8,
+            "Will": 5,
+            "Asha": 0
+          },
+          "tunk": "Asha",
+          "tinks": [
+            "Clancy"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "6",
+          "scores": {
+            "Clancy": 26,
+            "Larry": 0,
+            "Will": 0,
+            "Asha": 25
+          },
+          "tunk": "Will",
+          "tinks": [
+            "Larry"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "7",
+          "scores": {
+            "Clancy": 24,
+            "Larry": 0,
+            "Will": 10,
+            "Asha": 13
+          },
+          "tunk": "Larry",
+          "tinks": [],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "8",
+          "scores": {
+            "Clancy": 8,
+            "Larry": 22,
+            "Will": 3,
+            "Asha": 0
+          },
+          "tunk": "Asha",
+          "tinks": [],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "9",
+          "scores": {
+            "Clancy": 5,
+            "Larry": 24,
+            "Will": 0,
+            "Asha": 9
+          },
+          "tunk": "Will",
+          "tinks": [],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "10",
+          "scores": {
+            "Clancy": 0,
+            "Larry": 15,
+            "Will": 18,
+            "Asha": 45
+          },
+          "tunk": "Clancy",
+          "tinks": [],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "J",
+          "scores": {
+            "Clancy": 0,
+            "Larry": 15,
+            "Will": 6,
+            "Asha": 0
+          },
+          "tunk": "Clancy",
+          "tinks": [
+            "Asha"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "Q",
+          "scores": {
+            "Clancy": 9,
+            "Larry": 0,
+            "Will": 23,
+            "Asha": 0
+          },
+          "tunk": "Asha",
+          "tinks": [
+            "Larry"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "K",
+          "scores": {
+            "Clancy": 12,
+            "Larry": 45,
+            "Will": 2,
+            "Asha": 0
+          },
+          "tunk": "Asha",
+          "tinks": [],
+          "magic65s": [],
+          "falseTunks": []
+        }
+      ],
+      "totals": {
+        "Clancy": 131,
+        "Larry": 203,
+        "Will": 97,
+        "Asha": 112
+      },
+      "winner": "Will"
+    },
+    {
+      "id": "7031e759-05f5-4ece-952d-7cf93aa0dd8a",
+      "date": "2026-02-18",
+      "players": [
+        "Asha",
+        "Clancy",
+        "Pete",
+        "Will"
+      ],
+      "rounds": [
+        {
+          "round": "3",
+          "scores": {
+            "Asha": 28,
+            "Clancy": 0,
+            "Pete": 0,
+            "Will": 11
+          },
+          "tunk": "Pete",
+          "tinks": [
+            "Clancy"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "4",
+          "scores": {
+            "Asha": 12,
+            "Clancy": 30,
+            "Pete": 2,
+            "Will": 0
+          },
+          "tunk": "Will",
+          "tinks": [],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "5",
+          "scores": {
+            "Asha": 2,
+            "Clancy": 29,
+            "Pete": 29,
+            "Will": 0
+          },
+          "tunk": "Will",
+          "tinks": [],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "6",
+          "scores": {
+            "Asha": 0,
+            "Clancy": 17,
+            "Pete": 7,
+            "Will": 51
+          },
+          "tunk": "Asha",
+          "tinks": [],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "7",
+          "scores": {
+            "Asha": 16,
+            "Clancy": 19,
+            "Pete": 0,
+            "Will": 65
+          },
+          "tunk": "Pete",
+          "tinks": [],
+          "magic65s": [
+            "Will"
+          ],
+          "falseTunks": []
+        },
+        {
+          "round": "8",
+          "scores": {
+            "Asha": 5,
+            "Clancy": 5,
+            "Pete": 0,
+            "Will": 0
+          },
+          "tunk": "Will",
+          "tinks": [
+            "Pete"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "9",
+          "scores": {
+            "Asha": 0,
+            "Clancy": 8,
+            "Pete": 6,
+            "Will": 7
+          },
+          "tunk": "Asha",
+          "tinks": [],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "10",
+          "scores": {
+            "Asha": 33,
+            "Clancy": 0,
+            "Pete": 13,
+            "Will": 21
+          },
+          "tunk": "Clancy",
+          "tinks": [],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "J",
+          "scores": {
+            "Asha": 3,
+            "Clancy": 0,
+            "Pete": 5,
+            "Will": 0
+          },
+          "tunk": "Clancy",
+          "tinks": [
+            "Will"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "Q",
+          "scores": {
+            "Asha": 13,
+            "Clancy": 50,
+            "Pete": 0,
+            "Will": 0
+          },
+          "tunk": "Pete",
+          "tinks": [
+            "Will"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "K",
+          "scores": {
+            "Asha": 4,
+            "Clancy": 0,
+            "Pete": 33,
+            "Will": 9
+          },
+          "tunk": "Clancy",
+          "tinks": [],
+          "magic65s": [],
+          "falseTunks": []
+        }
+      ],
+      "totals": {
+        "Asha": 116,
+        "Clancy": 158,
+        "Pete": 95,
+        "Will": 99
+      },
+      "winner": "Pete"
+    },
+    {
+      "id": "f6d348a4-27f7-45da-8c6d-4b0747649cd2",
+      "date": "2026-03-13",
+      "players": [
+        "Cori",
+        "Larry",
+        "Asha",
+        "Will",
+        "Clancy",
+        "Pete",
+        "Tim"
+      ],
+      "rounds": [
+        {
+          "round": "3",
+          "scores": {
+            "Cori": 23,
+            "Larry": 27,
+            "Asha": 0,
+            "Will": 23,
+            "Clancy": 28,
+            "Pete": 18,
+            "Tim": 20
+          },
+          "tunk": "Asha",
+          "tinks": [],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "4",
+          "scores": {
+            "Cori": 34,
+            "Larry": 0,
+            "Asha": 2,
+            "Will": 0,
+            "Clancy": 0,
+            "Pete": 2,
+            "Tim": 2
+          },
+          "tunk": "Clancy",
+          "tinks": [
+            "Larry",
+            "Will"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "5",
+          "scores": {
+            "Cori": 2,
+            "Larry": 13,
+            "Asha": 2,
+            "Will": 0,
+            "Clancy": 0,
+            "Pete": 0,
+            "Tim": 7
+          },
+          "tunk": "Pete",
+          "tinks": [
+            "Will",
+            "Clancy"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "6",
+          "scores": {
+            "Cori": 18,
+            "Larry": 16,
+            "Asha": 28,
+            "Will": 41,
+            "Clancy": 0,
+            "Pete": 25,
+            "Tim": 0
+          },
+          "tunk": "Clancy",
+          "tinks": [
+            "Tim"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "7",
+          "scores": {
+            "Cori": 0,
+            "Larry": 0,
+            "Asha": 4,
+            "Will": 6,
+            "Clancy": 0,
+            "Pete": 0,
+            "Tim": 0
+          },
+          "tunk": "Pete",
+          "tinks": [
+            "Cori",
+            "Larry",
+            "Clancy",
+            "Tim"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "8",
+          "scores": {
+            "Cori": 0,
+            "Larry": 0,
+            "Asha": 38,
+            "Will": 44,
+            "Clancy": 0,
+            "Pete": 43,
+            "Tim": 16
+          },
+          "tunk": "Clancy",
+          "tinks": [
+            "Cori",
+            "Larry"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "9",
+          "scores": {
+            "Cori": 27,
+            "Larry": 28,
+            "Asha": 29,
+            "Will": 0,
+            "Clancy": 22,
+            "Pete": 10,
+            "Tim": 5
+          },
+          "tunk": "Will",
+          "tinks": [],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "10",
+          "scores": {
+            "Cori": 13,
+            "Larry": 2,
+            "Asha": 0,
+            "Will": 0,
+            "Clancy": 0,
+            "Pete": 16,
+            "Tim": 27
+          },
+          "tunk": "Asha",
+          "tinks": [
+            "Will",
+            "Clancy"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "J",
+          "scores": {
+            "Cori": 4,
+            "Larry": 4,
+            "Asha": 0,
+            "Will": 9,
+            "Clancy": 3,
+            "Pete": 17,
+            "Tim": 2
+          },
+          "tunk": "Asha",
+          "tinks": [],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "Q",
+          "scores": {
+            "Cori": 7,
+            "Larry": 0,
+            "Asha": 25,
+            "Will": 0,
+            "Clancy": 2,
+            "Pete": 61,
+            "Tim": 24
+          },
+          "tunk": "Larry",
+          "tinks": [
+            "Will"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        },
+        {
+          "round": "K",
+          "scores": {
+            "Cori": 21,
+            "Larry": 0,
+            "Asha": 24,
+            "Will": 17,
+            "Clancy": 2,
+            "Pete": 2,
+            "Tim": 0
+          },
+          "tunk": "Larry",
+          "tinks": [
+            "Tim"
+          ],
+          "magic65s": [],
+          "falseTunks": []
+        }
+      ],
+      "totals": {
+        "Cori": 149,
+        "Larry": 90,
+        "Asha": 152,
+        "Will": 140,
+        "Clancy": 57,
+        "Pete": 194,
+        "Tim": 103
+      },
+      "winner": "Clancy"
+    }
+  ]
+}

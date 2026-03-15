@@ -56,7 +56,7 @@ Creates new entries, which entails:
 All past game scoresheets, displayed as tabular data:
 
 - Games listed newest-first in an accordion; only one game can be expanded at a time
-- Export button downloads `stored-games.json`
+- Export button downloads `exported-games.json`
 - Delete (trash icon, two-click confirm) for non-fixture games
 - Editable dates (double-click)
 - A tunk is visually represented as a star (★) with a green highlight
@@ -203,4 +203,4 @@ Dev controls for testing and fixtures:
 - **Load / Ignore stored games** — When `fixtures/stored-games.json` has games, "Load stored games (N)" or "Ignore stored games (N)" appears on New Game and Archive, where N is the fixture game count. Load merges fixture data into storage; Ignore clears fixture rows. See `fixtures/README.md` for export/load instructions.
 - **Scratch entry** — New Game: generates a test draft. Archive: generates a test game. Both use realistic scores borrowed from stored games (round scores and totals capped to match real data).
 - **Fill sheet** — Scoresheet toolbar button that fills the sheet with realistic scores from stored games and tunks, or clears when already filled.
-- **Export** — Archive Export button downloads `stored-games.json` excluding scratch entries.
+- **Export** — Archive Export button downloads `exported-games.json` excluding scratch entries.

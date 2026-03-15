@@ -21,4 +21,4 @@ Paste the result into `stored-games.json`, replacing the existing content.
 
 ## Export button
 
-The **Archive** view has an **Export** button in the toolbar. Clicking it downloads `stored-games.json` containing the current player list and all saved games (excluding scratch entries). Use this to back up your data or refresh the fixtures file without using DevTools.
+The **Archive** view has an **Export** button in the toolbar. Clicking it downloads `exported-games.json` containing the current player list and all saved games (excluding scratch entries). Use this to back up your data or refresh the fixtures file without using DevTools.

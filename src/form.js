@@ -1,10 +1,12 @@
 import './form.css';
-import { getPlayerRows, getAllPlayerNames, addCustomPlayer, removeCustomPlayer, getCustomPlayers, saveGame, saveDraft, loadDraft, clearDraft } from './api.js';
+import { getPlayerRows, getAllPlayerNames, addCustomPlayer, removeCustomPlayer, getCustomPlayers, saveGame, saveDraft, loadDraft, clearDraft, loadGames } from './api.js';
 import { createScratchDraftInNewGame, buildFillDraft } from './scratch.js';
 import { formatDate, todayShort } from './utils.js';
-import { ROUNDS, PLAYER_COLORS } from './constants.js';
+import { ROUNDS, PILL_COLOR } from './constants.js';
 
 const PILL_TRASH_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
+
+const KEBAB_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg>';
 
 let selectedPlayers = [];
 
@@ -39,9 +41,8 @@ function parseShortDate(str) {
   return `${fullYear}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
-function pillHTML(name, selected, colorIndex, isCustom = false) {
-  const color = PLAYER_COLORS[colorIndex % PLAYER_COLORS.length];
-  return `<button type="button" class="pill${selected ? ' selected' : ''}" draggable="true" data-player="${name}" data-custom="${isCustom}" style="--pill-color: ${color}">${name}<span class="pill-remove" aria-label="Deselect">×</span></button>`;
+function pillHTML(name, selected, _colorIndex, isCustom = false) {
+  return `<button type="button" class="pill${selected ? ' selected' : ''}" draggable="true" data-player="${name}" data-custom="${isCustom}" style="--pill-color: ${PILL_COLOR}">${name}<span class="pill-remove" aria-label="Deselect">×</span></button>`;
 }
 
 async function buildSetupHTML(draft = null) {
@@ -54,12 +55,19 @@ async function buildSetupHTML(draft = null) {
     : players;
   return `
     <section class="game-setup card">
+      <div class="game-setup-kebab">
+        <button type="button" class="game-setup-kebab-btn" aria-label="Options">${KEBAB_ICON}</button>
+        <div class="game-setup-menu" hidden>
+          <button type="button" class="game-setup-option" id="players-edit-btn">edit players</button>
+          <button type="button" class="game-setup-option" id="players-import-all-btn">reset</button>
+        </div>
+      </div>
       <div class="field">
         <label for="game-date">Date <span class="hint">(M/D/YY)</span></label>
         <input type="text" id="game-date" value="${initialDate}" placeholder="3/11/26" inputmode="numeric">
       </div>
       <fieldset class="field">
-        <legend>Players <span class="hint">tap to select, drag to reorder</span><span class="players-actions"> · <button type="button" class="players-clear-link" id="players-clear-btn">clear</button> · <button type="button" class="players-manage-link" id="players-manage-btn">manage</button></span></legend>
+        <legend>Players <span class="hint">tap to select, drag to reorder</span><span class="players-actions"> · <button type="button" class="players-clear-link" id="players-clear-btn">clear</button></span></legend>
         <div class="player-pills" data-original-order="${JSON.stringify(players).replace(/"/g, '&quot;')}">
           ${pillOrder.map((n, i) => pillHTML(n, selectedSet.has(n), i, customPlayers.has(n.toLowerCase()))).join('')}
           <button type="button" class="pill pill-add" id="add-pill-btn">+</button>
@@ -76,25 +84,8 @@ async function buildSetupHTML(draft = null) {
   `;
 }
 
-function syncSelectedPlayers(wrapper, reorder = true) {
+function syncSelectedPlayers(wrapper) {
   const container = wrapper.querySelector('.player-pills');
-  const addBtn = container.querySelector('.pill-add');
-
-  if (reorder) {
-    const selected = [...container.querySelectorAll('.pill.selected')];
-    const unselected = [...container.querySelectorAll('.pill:not(.selected):not(.pill-add)')];
-    const originalOrder = JSON.parse(container?.dataset.originalOrder || '[]');
-    unselected.sort((a, b) => {
-      const ai = originalOrder.indexOf(a.dataset.player);
-      const bi = originalOrder.indexOf(b.dataset.player);
-      if (ai === -1 && bi === -1) return 0;
-      if (ai === -1) return 1;
-      if (bi === -1) return -1;
-      return ai - bi;
-    });
-    selected.forEach(p => container.insertBefore(p, addBtn));
-    unselected.forEach(p => container.insertBefore(p, addBtn));
-  }
 
   selectedPlayers = [...container.querySelectorAll('.pill.selected')].map(p => p.dataset.player);
   wrapper.querySelector('#start-game-btn').disabled = selectedPlayers.length < 2;
@@ -112,8 +103,8 @@ function syncSelectedPlayers(wrapper, reorder = true) {
       container.dataset.manageMode = 'false';
       const fieldset = container?.closest('.field');
       if (fieldset) fieldset.dataset.manageMode = '';
-      const manageBtn = wrapper.querySelector('#players-manage-btn');
-      if (manageBtn) manageBtn.textContent = 'manage';
+      const editBtn = wrapper.querySelector('#players-edit-btn');
+      if (editBtn) editBtn.textContent = 'edit players';
       updatePillIcons(wrapper);
     }
   }
@@ -185,7 +176,7 @@ function bindSetupEvents(wrapper) {
       const wasUnselected = !draggedPill.classList.contains('selected');
       if (wasUnselected) draggedPill.classList.add('selected');
       draggedPill.classList.remove('dragging');
-      syncSelectedPlayers(wrapper, wasUnselected);
+      syncSelectedPlayers(wrapper);
       draggedPill = null;
     }
   });
@@ -257,21 +248,87 @@ function bindSetupEvents(wrapper) {
       } else {
         const wasUnselected = !draggedPill.classList.contains('selected');
         if (wasUnselected) draggedPill.classList.add('selected');
-        syncSelectedPlayers(wrapper, wasUnselected);
+        syncSelectedPlayers(wrapper);
       }
       draggedPill = null;
     }
     touchStarted = false;
   });
 
-  wrapper.querySelector('#players-manage-btn')?.addEventListener('click', () => {
+  const kebabBtn = wrapper.querySelector('.game-setup-kebab-btn');
+  const kebabMenu = wrapper.querySelector('.game-setup-menu');
+  const editBtn = wrapper.querySelector('#players-edit-btn');
+
+  kebabBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = !kebabMenu.hidden;
+    kebabMenu.hidden = isOpen;
+    if (!kebabMenu.hidden) {
+      document.addEventListener('click', () => { kebabMenu.hidden = true; }, { once: true });
+    }
+  });
+
+  function exitManageMode() {
+    pillsContainer.dataset.manageMode = 'false';
+    const fieldset = pillsContainer.closest('.field');
+    if (fieldset) fieldset.dataset.manageMode = '';
+    editBtn.textContent = 'edit players';
+    wrapper.querySelector('#players-clear-btn').disabled = false;
+    updatePillIcons(wrapper);
+    syncSelectedPlayers(wrapper);
+  }
+
+  editBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    kebabMenu.hidden = true;
     const manageMode = pillsContainer.dataset.manageMode === 'true';
     pillsContainer.dataset.manageMode = manageMode ? 'false' : 'true';
     const inManage = pillsContainer.dataset.manageMode === 'true';
     const fieldset = pillsContainer.closest('.field');
     if (fieldset) fieldset.dataset.manageMode = inManage ? 'true' : '';
-    wrapper.querySelector('#players-manage-btn').textContent = manageMode ? 'manage' : 'done';
-    wrapper.querySelector('#players-clear-btn').disabled = !manageMode;
+    editBtn.innerHTML = inManage ? 'done ✓ <span class="shortcut-hint">esc</span>' : 'edit players';
+    wrapper.querySelector('#players-clear-btn').disabled = inManage;
+    updatePillIcons(wrapper);
+    syncSelectedPlayers(wrapper);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && wrapper.isConnected && pillsContainer.dataset.manageMode === 'true') {
+      e.preventDefault();
+      exitManageMode();
+    }
+  });
+
+  wrapper.querySelector('#players-import-all-btn')?.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    kebabMenu.hidden = true;
+    const games = await loadGames();
+    const playersFromGames = [...new Set(games.flatMap((g) => (g.players ?? []).map((p) => String(p).trim())).filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    for (const name of playersFromGames) {
+      await addCustomPlayer(name);
+    }
+    const existingPills = new Set([...pillsContainer.querySelectorAll('.pill:not(.pill-add)')].map((p) => p.dataset.player.toLowerCase()));
+    const addBtn = pillsContainer.querySelector('.pill-add');
+    const originalOrder = JSON.parse(pillsContainer.dataset.originalOrder || '[]');
+    for (const name of playersFromGames) {
+      if (existingPills.has(name.toLowerCase())) continue;
+      const pill = document.createElement('button');
+      pill.type = 'button';
+      pill.className = 'pill selected';
+      pill.draggable = true;
+      pill.dataset.player = name;
+      pill.dataset.custom = 'true';
+      pill.style.setProperty('--pill-color', PILL_COLOR);
+      const manageMode = pillsContainer.dataset.manageMode === 'true';
+      const removeContent = manageMode ? PILL_TRASH_ICON : '×';
+      const removeLabel = manageMode ? 'Remove' : 'Deselect';
+      pill.innerHTML = `${name}<span class="pill-remove" aria-label="${removeLabel}">${removeContent}</span>`;
+      pillsContainer.insertBefore(pill, addBtn);
+      originalOrder.push(name);
+      existingPills.add(name.toLowerCase());
+    }
+    pillsContainer.dataset.originalOrder = JSON.stringify(originalOrder);
+    pillsContainer.querySelectorAll('.pill:not(.pill-add)').forEach((p) => p.classList.add('selected'));
     updatePillIcons(wrapper);
     syncSelectedPlayers(wrapper);
   });
@@ -312,9 +369,21 @@ function bindSetupEvents(wrapper) {
     const input = wrapper.querySelector('#new-player-name');
     const name = input.value.trim();
     if (!name) return;
+
+    const existingPill = [...pillsContainer.querySelectorAll('.pill:not(.pill-add)')].find(
+      (p) => p.dataset.player.toLowerCase() === name.toLowerCase()
+    );
+    if (existingPill) {
+      existingPill.classList.add('selected');
+      syncSelectedPlayers(wrapper);
+      input.value = '';
+      input.focus();
+      return;
+    }
+
     await addCustomPlayer(name);
     const allNames = await getAllPlayerNames();
-    if (!allNames.includes(name)) return;
+    if (!allNames.some((n) => n.toLowerCase() === name.toLowerCase())) return;
 
     const pill = document.createElement('button');
     pill.type = 'button';
@@ -322,9 +391,7 @@ function bindSetupEvents(wrapper) {
     pill.draggable = true;
     pill.dataset.player = name;
     pill.dataset.custom = 'true';
-    const colorIndex = pillsContainer.querySelectorAll('.pill:not(.pill-add)').length;
-    const color = PLAYER_COLORS[colorIndex % PLAYER_COLORS.length];
-    pill.style.setProperty('--pill-color', color);
+    pill.style.setProperty('--pill-color', PILL_COLOR);
     const manageMode = pillsContainer.dataset.manageMode === 'true';
     const removeContent = manageMode ? PILL_TRASH_ICON : '×';
     const removeLabel = manageMode ? 'Remove' : 'Deselect';

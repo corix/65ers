@@ -400,7 +400,18 @@ function renderAvgRoundChart(canvas, games, playerColorMap) {
     });
   });
 
-  const allPlayers = Object.keys(playerCumulativeTotals).filter(p => playerGameCounts[p] > 1);
+  const lastRound = ROUNDS[ROUNDS.length - 1];
+  const allPlayers = Object.keys(playerCumulativeTotals).sort((a, b) => {
+    const gamesA = playerGameCounts[a];
+    const gamesB = playerGameCounts[b];
+    if (gamesB !== gamesA) return gamesB - gamesA;
+    const avgFinalA = gamesA ? playerCumulativeTotals[a][lastRound] / gamesA : 0;
+    const avgFinalB = gamesB ? playerCumulativeTotals[b][lastRound] / gamesB : 0;
+    return avgFinalA - avgFinalB;
+  });
+  const visiblePlayers = allPlayers.filter(p => playerGameCounts[p] > 1);
+  const singleGamePlayers = allPlayers.filter(p => playerGameCounts[p] === 1);
+  const showAllDefault = false;
 
   const playerSlopes = {};
   allPlayers.forEach(player => {
@@ -410,7 +421,6 @@ function renderAvgRoundChart(canvas, games, playerColorMap) {
     }));
     playerSlopes[player] = linearRegression(pts).slope;
   });
-  allPlayers.sort((a, b) => playerSlopes[a] - playerSlopes[b]);
 
   const GRAY = '#e4e4e4';
   const numPlayers = allPlayers.length;
@@ -418,10 +428,13 @@ function renderAvgRoundChart(canvas, games, playerColorMap) {
   const lineDatasets = [];
   const scatterDatasets = [];
 
-  allPlayers.forEach((player) => {
+  allPlayers.forEach((player, i) => {
     const color = playerColorMap[player];
-    const scatterData = ROUNDS.map((r, i) => ({
-      x: i,
+    const isSingleGame = playerGameCounts[player] === 1;
+    const hidden = isSingleGame && !showAllDefault;
+
+    const scatterData = ROUNDS.map((r, idx) => ({
+      x: idx,
       y: playerGameCounts[player] ? Math.round(playerCumulativeTotals[player][r] / playerGameCounts[player]) : 0,
     }));
 
@@ -439,6 +452,7 @@ function renderAvgRoundChart(canvas, games, playerColorMap) {
       pointRadius: 0,
       pointHitRadius: 0,
       tension: 0,
+      hidden,
     });
 
     scatterDatasets.push({
@@ -453,6 +467,7 @@ function renderAvgRoundChart(canvas, games, playerColorMap) {
       pointStyle: 'circle',
       pointRadius: 5,
       pointHoverRadius: 7,
+      hidden,
     });
   });
 
@@ -536,11 +551,16 @@ function renderAvgRoundChart(canvas, games, playerColorMap) {
     chart.draw();
   }
 
-  allPlayers.forEach((player, i) => {
+  const singleStartIdx = visiblePlayers.length;
+  let showAll = showAllDefault;
+
+  function addLegendItem(player, i) {
     const color = scatterDatasets[i]._realColor;
+    const n = playerGameCounts[player] ?? 0;
     const item = document.createElement('span');
     item.className = 'chart-legend-item';
-    item.innerHTML = `<span class="chart-legend-dot" style="background:${color}"></span>${player}`;
+    item.dataset.playerIdx = String(i);
+    item.innerHTML = `<span class="chart-legend-dot" style="background:${color}"></span>${player} (${n})`;
     item.addEventListener('mouseenter', () => {
       if (lockedIdx === null) highlightPlayer(i);
     });
@@ -558,8 +578,48 @@ function renderAvgRoundChart(canvas, games, playerColorMap) {
         highlightPlayer(i);
       }
     });
-    legendEl.appendChild(item);
+    return item;
+  }
+
+  visiblePlayers.forEach((player, i) => {
+    legendEl.appendChild(addLegendItem(player, i));
   });
+
+  let toggleBtn = null;
+  if (singleGamePlayers.length > 0) {
+    toggleBtn = document.createElement('button');
+    toggleBtn.type = 'button';
+    toggleBtn.className = 'chart-toggle-btn';
+    toggleBtn.textContent = 'Show all';
+    toggleBtn.addEventListener('click', () => {
+      showAll = !showAll;
+      for (let i = singleStartIdx; i < numPlayers; i++) {
+        chart.data.datasets[i].hidden = !showAll;
+        chart.data.datasets[numPlayers + i].hidden = !showAll;
+      }
+      chart.update();
+
+      if (showAll) {
+        for (let j = singleGamePlayers.length - 1; j >= 0; j--) {
+          const player = singleGamePlayers[j];
+          const i = singleStartIdx + j;
+          legendEl.insertBefore(addLegendItem(player, i), toggleBtn);
+        }
+        toggleBtn.textContent = 'Show less';
+      } else {
+        legendEl.querySelectorAll('.chart-legend-item').forEach((item) => {
+          const idx = parseInt(item.dataset.playerIdx, 10);
+          if (idx >= singleStartIdx) item.remove();
+        });
+        toggleBtn.textContent = 'Show all';
+        if (lockedIdx !== null && lockedIdx >= singleStartIdx) {
+          lockedIdx = null;
+          clearHighlight();
+        }
+      }
+    });
+    legendEl.appendChild(toggleBtn);
+  }
 
   canvas.addEventListener('click', () => {
     if (lockedIdx !== null) {

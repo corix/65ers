@@ -43,16 +43,27 @@ function rowToGame(row) {
     rounds: row.rounds ?? [],
     scratch: row.scratch ?? false,
     source: row.source,
+    created_at: row.created_at,
   };
 }
 
-export function isTestDataGame(game) {
-  return game?.source === 'fixture';
-}
-
-export async function deleteGame(gameId) {
+export async function deleteGame(gameId, playersInGame = []) {
   const { error } = await supabase.from('games').delete().eq('id', gameId);
   if (error) throw error;
+
+  const remainingGames = await loadGames();
+  const playersStillInGames = new Set(
+    remainingGames.flatMap((g) => (g.players ?? []).map((p) => String(p).trim().toLowerCase()))
+  );
+
+  for (const name of playersInGame) {
+    const trimmed = String(name).trim();
+    if (!trimmed) continue;
+    if (playersStillInGames.has(trimmed.toLowerCase())) continue;
+
+    const { data: row } = await supabase.from('players').select('id').ilike('name', trimmed).maybeSingle();
+    if (row) await supabase.from('players').delete().eq('id', row.id);
+  }
 }
 
 export async function updateGame(gameId, updates) {
@@ -69,15 +80,9 @@ export async function updateGame(gameId, updates) {
   if (error) throw error;
 }
 
-export function isScratchGame(game) {
-  return game && (game.scratch === true || game.scratch === 'true');
-}
-
 export async function getExportData() {
-  const players = await getAllPlayerNames();
   const allGames = await loadGames();
-  const games = allGames.filter(g => !isScratchGame(g));
-  return { players, games };
+  return { games: allGames };
 }
 
 export function saveDraft(draft) {
@@ -107,6 +112,27 @@ export async function getAllPlayerNames() {
   return loadCustomPlayers();
 }
 
+export async function cleanOrphanedPlayers(draftPlayers = []) {
+  const [playersData, games] = await Promise.all([
+    supabase.from('players').select('id, name'),
+    loadGames(),
+  ]);
+  if (playersData.error) throw playersData.error;
+
+  const inGames = new Set(
+    games.flatMap((g) => (g.players ?? []).map((p) => String(p).trim().toLowerCase()))
+  );
+  const inDraft = new Set(
+    (draftPlayers ?? []).map((p) => String(p).trim().toLowerCase())
+  );
+
+  for (const row of playersData.data ?? []) {
+    const key = (row.name || '').trim().toLowerCase();
+    if (inGames.has(key) || inDraft.has(key)) continue;
+    await supabase.from('players').delete().eq('id', row.id);
+  }
+}
+
 export async function addCustomPlayer(name) {
   const trimmed = name.trim();
   if (!trimmed) return;
@@ -132,5 +158,5 @@ export async function getCustomPlayers() {
 async function loadCustomPlayers() {
   const { data, error } = await supabase.from('players').select('name').order('name');
   if (error) throw error;
-  return (data ?? []).map(r => r.name);
+  return (data ?? []).map((r) => r.name);
 }

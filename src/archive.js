@@ -1,16 +1,77 @@
 import './archive.css';
-import { loadGames, getExportData, isTestDataGame, deleteGame, updateGame } from './api.js';
-import { createScratchGameInArchive } from './scratch.js';
+import { loadGames, getExportData, deleteGame, updateGame, cleanOrphanedPlayers, loadDraft } from './api.js';
 import { formatDate } from './utils.js';
 
 const TRASH_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
 
+const PENCIL_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path></svg>';
+
+const KEBAB_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg>';
+
+const DELETE_CONFIRM_TEXT = 'DELETE';
+
+let archiveDocClickListener = null;
+
+function showDeleteConfirmModal(container, gameId, onConfirm, gameItem) {
+  const modal = document.createElement('div');
+  modal.className = 'delete-confirm-modal';
+  modal.setAttribute('role', 'dialog');
+  modal.setAttribute('aria-modal', 'true');
+  modal.setAttribute('aria-labelledby', 'delete-confirm-title');
+  modal.innerHTML = `
+    <div class="delete-confirm-backdrop"></div>
+    <div class="delete-confirm-content">
+      <h3 id="delete-confirm-title">Delete game?</h3>
+      <p class="delete-confirm-instruction">Type ${DELETE_CONFIRM_TEXT} to confirm</p>
+      <input type="text" class="delete-confirm-input" autocomplete="off" spellcheck="false">
+      <div class="delete-confirm-actions">
+        <button type="button" class="delete-confirm-cancel">Cancel</button>
+        <button type="button" class="delete-confirm-submit" disabled>Delete</button>
+      </div>
+    </div>
+  `;
+
+  const input = modal.querySelector('.delete-confirm-input');
+  const submitBtn = modal.querySelector('.delete-confirm-submit');
+  const cancelBtn = modal.querySelector('.delete-confirm-cancel');
+  const backdrop = modal.querySelector('.delete-confirm-backdrop');
+
+  if (gameItem) gameItem.classList.add('archive-item--delete-pending');
+
+  const close = () => {
+    if (gameItem) gameItem.classList.remove('archive-item--delete-pending');
+    modal.remove();
+  };
+
+  const checkInput = () => {
+    submitBtn.disabled = input.value.trim().toUpperCase() !== DELETE_CONFIRM_TEXT;
+  };
+
+  input.addEventListener('input', checkInput);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      close();
+    }
+  });
+
+  submitBtn.addEventListener('click', async () => {
+    if (submitBtn.disabled) return;
+    submitBtn.disabled = true;
+    await onConfirm();
+    close();
+  });
+
+  cancelBtn.addEventListener('click', close);
+  backdrop.addEventListener('click', close);
+
+  document.body.appendChild(modal);
+  requestAnimationFrame(() => input.focus());
+}
+
 export async function renderArchive(container) {
-  const loaded = await loadGames();
-  const games = loaded
-    .map((g, i) => ({ game: g, i }))
-    .sort((a, b) => b.game.date.localeCompare(a.game.date) || b.i - a.i)
-    .map(({ game }) => game);
+  const games = await loadGames();
+  await cleanOrphanedPlayers(loadDraft()?.players ?? []);
   container.innerHTML = '';
 
   if (games.length === 0) {
@@ -18,15 +79,7 @@ export async function renderArchive(container) {
     emptyDiv.className = 'archive-empty';
     emptyDiv.innerHTML = `
       <div class="card empty-state"><p>No games saved yet. Go to <strong>New Game</strong> to add one.</p></div>
-      <div class="archive-toolbar archive-toolbar--empty">
-        <button type="button" class="scratch-entry-btn" title="Dev: generate test game entry">Scratch entry</button>
-      </div>
     `;
-    emptyDiv.querySelector('.scratch-entry-btn').addEventListener('click', async () => {
-      await createScratchGameInArchive();
-      container.innerHTML = '';
-      await renderArchive(container);
-    });
     container.appendChild(emptyDiv);
     return;
   }
@@ -34,53 +87,86 @@ export async function renderArchive(container) {
   const toolbar = document.createElement('div');
   toolbar.className = 'archive-toolbar';
   toolbar.innerHTML = `
-    <button type="button" class="scratch-entry-btn" title="Dev: generate test game entry">Scratch entry</button>
-    <button type="button" class="archive-export-btn primary-btn">Export</button>
+    <div class="download-dropdown">
+      <button type="button" class="download-kebab download-trigger" aria-label="Options">${KEBAB_ICON}</button>
+      <div class="download-menu" hidden>
+        <button type="button" class="download-option" data-action="download">Download JSON backup</button>
+      </div>
+    </div>
   `;
-  toolbar.querySelector('.archive-export-btn').addEventListener('click', async () => {
+
+  const downloadTrigger = toolbar.querySelector('.download-trigger');
+  const downloadMenu = toolbar.querySelector('.download-menu');
+
+  downloadTrigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = !downloadMenu.hidden;
+    document.querySelectorAll('.download-menu').forEach(m => { m.hidden = true; });
+    downloadMenu.hidden = isOpen;
+    if (!downloadMenu.hidden) {
+      document.addEventListener('click', () => { downloadMenu.hidden = true; }, { once: true });
+    }
+  });
+
+  toolbar.querySelector('.download-option').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    downloadMenu.hidden = true;
     const data = await getExportData();
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'stored-games.json';
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    a.download = `65_Almanac_Backup_${y}-${m}-${d}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
-  });
-  toolbar.querySelector('.scratch-entry-btn').addEventListener('click', async () => {
-    await createScratchGameInArchive();
-    container.innerHTML = '';
-    await renderArchive(container);
   });
   container.appendChild(toolbar);
 
   const list = document.createElement('div');
   list.className = 'archive-list';
 
-  let awaitingDeleteGameId = null;
-  let deleteConfirmTimeout = null;
-
-  const hideAllDeleteTooltips = () => {
-    list.querySelectorAll('.archive-delete-tooltip').forEach(t => { t.hidden = true; });
+  const hideAllReveals = () => {
+    list.querySelectorAll('.archive-delete-wrap--revealed').forEach(w => w.classList.remove('archive-delete-wrap--revealed'));
+    list.querySelectorAll('.archive-edit-wrap--revealed').forEach(w => w.classList.remove('archive-edit-wrap--revealed'));
   };
 
+  const handleDocumentClick = (e) => {
+    if (!list.isConnected) return;
+    if (list.contains(e.target) && (e.target.closest('.archive-delete-wrap') || e.target.closest('.archive-edit-wrap'))) return;
+    hideAllReveals();
+  };
+
+  if (archiveDocClickListener) {
+    document.removeEventListener('click', archiveDocClickListener);
+  }
+  document.addEventListener('click', handleDocumentClick);
+  archiveDocClickListener = handleDocumentClick;
+
   games.forEach(game => {
-    const canDelete = game.id && !isTestDataGame(game);
+    const canDelete = !!game.id;
     const item = document.createElement('div');
     item.className = 'archive-item card';
     item.dataset.gameId = game.id || '';
     item.innerHTML = `
-      <div class="archive-header-row">
-        <button class="archive-header" aria-expanded="false">
+      <div class="archive-header-row" ${canDelete ? 'data-can-delete' : ''}>
+        <div class="archive-header" role="button" tabindex="0" aria-expanded="false">
           <span class="archive-date">${formatDate(game.date)}</span>
+          ${canDelete ? `
+            <span class="archive-edit-wrap">
+              <button type="button" class="archive-edit-btn" aria-label="Edit date" title="Edit date">${PENCIL_ICON}</button>
+            </span>
+          ` : ''}
           <span class="archive-players">${game.players.join(', ')}</span>
           <span class="archive-header-right">
             <span class="archive-winner">Winner: ${game.winner}</span>
             <span class="archive-chevron" aria-hidden="true">&#9662;</span>
           </span>
-        </button>
+        </div>
         ${canDelete ? `
           <div class="archive-delete-wrap">
-            <div class="archive-delete-tooltip" hidden>Click again to delete</div>
             <button type="button" class="archive-delete-btn" aria-label="Delete game" title="Delete game">${TRASH_ICON}</button>
           </div>
         ` : ''}
@@ -91,123 +177,134 @@ export async function renderArchive(container) {
     `;
 
     if (canDelete) {
+      const headerRow = item.querySelector('.archive-header-row');
+      const deleteWrap = item.querySelector('.archive-delete-wrap');
       const deleteBtn = item.querySelector('.archive-delete-btn');
-      const tooltip = item.querySelector('.archive-delete-tooltip');
+      const editWrap = item.querySelector('.archive-edit-wrap');
+      const editBtn = item.querySelector('.archive-edit-btn');
 
-      const scheduleCancel = () => {
-        if (deleteConfirmTimeout) clearTimeout(deleteConfirmTimeout);
-        deleteConfirmTimeout = setTimeout(() => {
-          awaitingDeleteGameId = null;
-          hideAllDeleteTooltips();
-          deleteConfirmTimeout = null;
-        }, 1000);
+      const revealActions = (e) => {
+        if (e) e.preventDefault();
+        hideAllReveals();
+        deleteWrap.classList.add('archive-delete-wrap--revealed');
+        editWrap.classList.add('archive-edit-wrap--revealed');
       };
 
-      const cancelSchedule = () => {
-        if (deleteConfirmTimeout) {
-          clearTimeout(deleteConfirmTimeout);
-          deleteConfirmTimeout = null;
+      headerRow.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        revealActions();
+      });
+
+      let longPressTimer = null;
+      headerRow.addEventListener('touchstart', (e) => {
+        longPressTimer = setTimeout(() => {
+          longPressTimer = null;
+          revealActions(e);
+        }, 500);
+      });
+      headerRow.addEventListener('touchend', () => {
+        if (longPressTimer) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
         }
-      };
+      });
+      headerRow.addEventListener('touchcancel', () => {
+        if (longPressTimer) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+        }
+      });
 
       deleteBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (awaitingDeleteGameId === game.id) {
-          cancelSchedule();
-          awaitingDeleteGameId = null;
-          hideAllDeleteTooltips();
-          await deleteGame(game.id);
+        hideAllReveals();
+        showDeleteConfirmModal(container, game.id, async () => {
+          await deleteGame(game.id, game.players ?? []);
           container.innerHTML = '';
           await renderArchive(container);
-        } else {
-          cancelSchedule();
-          hideAllDeleteTooltips();
-          awaitingDeleteGameId = game.id;
-          tooltip.hidden = false;
-        }
+        }, item);
       });
 
-      deleteBtn.addEventListener('mouseleave', () => {
-        if (awaitingDeleteGameId === game.id) scheduleCancel();
-      });
+      const startDateEdit = () => {
+        const dateSpan = item.querySelector('.archive-date');
+        if (!game.id || dateSpan.dataset.editing === 'true') return;
+        dateSpan.dataset.editing = 'true';
+        const originalDate = game.date;
+        const input = document.createElement('input');
+        input.type = 'date';
+        input.value = originalDate;
+        input.className = 'archive-date-input';
+        dateSpan.replaceWith(input);
+        input.focus();
+        input.select?.();
 
-      deleteBtn.addEventListener('blur', () => {
-        if (awaitingDeleteGameId === game.id) scheduleCancel();
-      });
+        let cancelled = false;
+        const commit = async () => {
+          if (cancelled) return;
+          const newDate = input.value?.trim();
+          if (newDate && newDate !== originalDate) {
+            await updateGame(game.id, { date: newDate });
+            game.date = newDate;
+          }
+          dateSpan.textContent = formatDate(game.date);
+          input.replaceWith(dateSpan);
+          dateSpan.dataset.editing = '';
+          item.dataset.justCommittedDate = '1';
+        };
 
-      deleteBtn.addEventListener('mouseenter', () => {
-        if (awaitingDeleteGameId === game.id) cancelSchedule();
-      });
+        const cancel = () => {
+          cancelled = true;
+          dateSpan.textContent = formatDate(originalDate);
+          input.replaceWith(dateSpan);
+          dateSpan.dataset.editing = '';
+        };
 
-      deleteBtn.addEventListener('focus', () => {
-        if (awaitingDeleteGameId === game.id) cancelSchedule();
+        input.addEventListener('blur', () => {
+          if (!cancelled) commit();
+        }, { once: true });
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            input.blur();
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            cancel();
+          }
+        });
+      };
+
+      editBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hideAllReveals();
+        startDateEdit();
       });
     }
 
-    const dateSpan = item.querySelector('.archive-date');
-    if (game.id) {
-      dateSpan.title = 'Double-click to edit date';
-    }
-    dateSpan.addEventListener('dblclick', (e) => {
-      if (!game.id) return;
-      e.stopPropagation();
-      if (dateSpan.dataset.editing === 'true') return;
-      dateSpan.dataset.editing = 'true';
-      const originalDate = game.date;
-      const input = document.createElement('input');
-      input.type = 'date';
-      input.value = originalDate;
-      input.className = 'archive-date-input';
-      dateSpan.replaceWith(input);
-      input.focus();
-      input.select?.();
-
-      let cancelled = false;
-      const commit = async () => {
-        if (cancelled) return;
-        const newDate = input.value?.trim();
-        if (newDate && newDate !== originalDate) {
-          await updateGame(game.id, { date: newDate });
-          game.date = newDate;
-        }
-        dateSpan.textContent = formatDate(game.date);
-        input.replaceWith(dateSpan);
-        dateSpan.dataset.editing = '';
-      };
-
-      const cancel = () => {
-        cancelled = true;
-        dateSpan.textContent = formatDate(originalDate);
-        input.replaceWith(dateSpan);
-        dateSpan.dataset.editing = '';
-      };
-
-      input.addEventListener('blur', () => {
-        if (!cancelled) commit();
-      }, { once: true });
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          input.blur();
-        } else if (e.key === 'Escape') {
-          e.preventDefault();
-          cancel();
-        }
-      });
-    });
-
-    item.querySelector('.archive-header').addEventListener('click', (e) => {
-      if (e.target.closest('.archive-date-input')) return;
-      const btn = item.querySelector('.archive-header');
-      const expanded = btn.getAttribute('aria-expanded') === 'true';
+    const header = item.querySelector('.archive-header');
+    const toggleExpand = (e) => {
+      if (e && e.target.closest('.archive-date-input')) return;
+      if (e && e.target.closest('.archive-edit-wrap')) return;
+      if (item.dataset.justCommittedDate) {
+        delete item.dataset.justCommittedDate;
+        return;
+      }
+      const expanded = header.getAttribute('aria-expanded') === 'true';
 
       list.querySelectorAll('.archive-item').forEach(other => {
         other.querySelector('.archive-header').setAttribute('aria-expanded', 'false');
         other.querySelector('.archive-body').hidden = true;
       });
 
-      btn.setAttribute('aria-expanded', String(!expanded));
+      header.setAttribute('aria-expanded', String(!expanded));
       item.querySelector('.archive-body').hidden = expanded;
+    };
+
+    header.addEventListener('click', toggleExpand);
+    header.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleExpand();
+      }
     });
 
     item.querySelector('.archive-body')?.addEventListener('click', (e) => {

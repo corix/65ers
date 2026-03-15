@@ -1,5 +1,5 @@
 import { ROUNDS } from './constants.js';
-import { loadGames, isScratchGame, saveDraft, saveGame } from './api.js';
+import { loadGames, saveDraft, saveGame } from './api.js';
 import { todayShort } from './utils.js';
 
 const SCRATCH_PLAYERS = [
@@ -46,11 +46,10 @@ function pickScoresForRound(roundSamples, round, players, maxTotal, runningTotal
 
 async function buildRoundSamples() {
   const games = await loadGames();
-  const realGames = games.filter(g => !isScratchGame(g));
   const roundSamples = {};
   let maxTotal = null;
   ROUNDS.forEach(r => { roundSamples[r] = []; });
-  realGames.forEach(game => {
+  games.forEach(game => {
     const playerTotals = {};
     game.rounds?.forEach(r => {
       const roundName = r.round;
@@ -154,7 +153,7 @@ function createScratchGame({ roundSamples, maxTotal }) {
     rounds,
     totals,
     winner,
-    scratch: true,
+    scratch: false,
   };
 }
 

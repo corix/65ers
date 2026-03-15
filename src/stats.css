@@ -203,6 +203,23 @@
   border-radius: 50%;
 }
 
+.chart-toggle-btn {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 3px 8px;
+  font-size: 0.82rem;
+  color: #888;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 12px;
+}
+
+.chart-toggle-btn:hover {
+  color: #555;
+  background-color: #f0f0f0;
+}
+
 .avg-tooltip {
   position: absolute;
   display: none;
