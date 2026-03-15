@@ -56,12 +56,14 @@ Creates new entries, which entails:
 All past game scoresheets, displayed as tabular data:
 
 - Games listed newest-first in an accordion; only one game can be expanded at a time
-- Delete (trash icon; type DELETE to confirm in modal)
-- Editable dates (double-click)
+- Edit date/delete entries
+  - Right-click on the entry to expose controls
+  - Delete via trash icon; type DELETE to confirm in modal
+  - Date can be changed with input and picker
 - A tunk is visually represented as a star (★) 
 - A tink is shown as a number ("0") 
-- A magic 65 is shown as "65*" 
-- False tunks show a red "FT" badge
+- A magic 65 is shown as "(65)"
+- False tunks (Penalties) show a red badge with "+65"
 - Export button (header kebab: Download backup) downloads `65_Almanac_Backup_YYYY-MM-DD.json` (see [fixtures/README.md](fixtures/README.md) for format)
 
 ### 3. Stats
@@ -83,7 +85,7 @@ Data insights and visualizations (display order):
 - Ability to edit entries — delete and date-edit are supported; further edits not needed
 - Multiple databases/different types of entries — only one collection of scoresheets, for one type of game
 - The game itself (playing 65 with the computer) — this tool is just to store the scoresheets and show insights about the players
-- CSV export — no value
+- CSV export — no real value
 
 ---
 
