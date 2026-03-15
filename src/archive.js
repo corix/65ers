@@ -1,5 +1,5 @@
 import './archive.css';
-import { loadGames, getExportData, deleteGame, updateGame, cleanOrphanedPlayers, loadDraft } from './api.js';
+import { loadGames, deleteGame, updateGame, cleanOrphanedPlayers, loadDraft } from './api.js';
 import { createScratchGameInArchive } from './scratch.js';
 import { formatDate } from './utils.js';
 
@@ -203,7 +203,7 @@ export async function renderArchive(container) {
         e.stopPropagation();
         hideAllReveals();
         showDeleteConfirmModal(container, game.id, async () => {
-          await deleteGame(game.id, game.players ?? []);
+          await deleteGame(game.id);
           container.innerHTML = '';
           await renderArchive(container);
         }, item);

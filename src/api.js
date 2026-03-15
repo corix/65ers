@@ -177,7 +177,7 @@ export async function loadGames() {
   return merged;
 }
 
-export async function deleteGame(gameId, playersInGame = []) {
+export async function deleteGame(gameId) {
   if (isLocalGame(gameId)) {
     const localGames = getLocalGames().filter((g) => g.id !== gameId);
     setLocalGames(localGames);
@@ -210,11 +210,6 @@ export async function updateGame(gameId, updates) {
   } else {
     setGameOverride(gameId, updates);
   }
-}
-
-export async function getExportData() {
-  const allGames = await loadGames();
-  return { games: allGames };
 }
 
 export function saveDraft(draft) {
