@@ -1,5 +1,5 @@
 import './shared.css';
-import { getExportData } from './api.js';
+import { getExportData, loadGames, getPlayerRowsAndCustom } from './api.js';
 import { renderForm } from './form.js';
 import { renderArchive } from './archive.js';
 import { renderStats } from './stats.js';
@@ -107,6 +107,10 @@ window.addEventListener('storage', (e) => {
 (async () => {
   await showView(getStoredView());
   requestAnimationFrame(() => updateNavSlider());
+  // Preload games and players so Archive/Stats/New Game are fast when user navigates
+  const stored = getStoredView();
+  if (stored !== 'archive' && stored !== 'stats') loadGames();
+  if (stored !== 'entry') getPlayerRowsAndCustom();
 })();
 
 // Use ResizeObserver on nav so we update when its layout changes (e.g. at 850px breakpoint).

@@ -136,7 +136,6 @@ These are the building stages for this project.
   - `winner` (text)
   - `totals` (jsonb)
   - `rounds` (jsonb) — array of objects; each has `round`, `scores`, `tunk`, `tinks`, `magic65s`, `falseTunks`
-  - `scratch` (boolean)
   - `source` (text, optional) — `'fixture'` for migration-sourced games
 - **Recommendations**
   - Add `created_at timestamptz default now()` to both tables
@@ -186,7 +185,7 @@ Dev controls for testing and fixtures:
 - **Clear local** — Red option in header kebab. Deletes all localStorage data (draft, local games, custom players, hidden IDs, overrides).
 - **Scratch entry** — New Game: generates a test draft. Archive: generates a test game. Both use realistic scores borrowed from stored games (round scores and totals capped to match real data).
 - **Fill sheet** — Scoresheet toolbar button that fills the sheet with realistic scores from stored games and tunks, or clears when already filled.
-- **Export** — Archive Export button downloads `exported-games.json` excluding scratch entries (main branch only; disabled on dev-mode).
+- **Export** — Archive Export button downloads `exported-games.json` (main branch only; disabled on dev-mode).
 
 ### Deprecated
 

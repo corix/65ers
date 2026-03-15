@@ -1,3 +1,18 @@
+/* Archive loading */
+
+.archive-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 12rem;
+  color: var(--accent);
+}
+
+.archive-loading p {
+  margin: 0;
+  font-size: 1rem;
+}
+
 /* Archive cells */
 
 .cell-tunk {

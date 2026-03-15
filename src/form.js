@@ -1,5 +1,5 @@
 import './form.css';
-import { getPlayerRows, getAllPlayerNames, addCustomPlayer, removeCustomPlayer, getCustomPlayers, saveGame, saveDraft, loadDraft, clearDraft, loadGames } from './api.js';
+import { getPlayerRowsAndCustom, getAllPlayerNames, addCustomPlayer, removeCustomPlayer, saveGame, saveDraft, loadDraft, clearDraft, loadGames } from './api.js';
 import { formatDate, todayShort, todayISO } from './utils.js';
 import { ROUNDS, PILL_COLOR } from './constants.js';
 
@@ -47,8 +47,7 @@ function pillHTML(name, selected, _colorIndex, isCustom = false) {
 }
 
 async function buildSetupHTML(draft = null) {
-  const { players } = await getPlayerRows();
-  const customPlayers = new Set((await getCustomPlayers()).map(n => n.toLowerCase()));
+  const { players, customPlayers } = await getPlayerRowsAndCustom();
   const initialDate = draft?.date ?? todayISO();
   const selectedSet = draft?.players?.length ? new Set(draft.players) : new Set(players);
   const pillOrder = draft?.players?.length

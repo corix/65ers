@@ -153,7 +153,6 @@ function createScratchGame({ roundSamples, maxTotal }) {
     rounds,
     totals,
     winner,
-    scratch: false,
   };
 }
 

@@ -2,7 +2,20 @@ import { supabase } from './supabase.js';
 
 const DRAFT_KEY = '65ers_draft';
 
+let gamesCache = null;
+let playersCache = null;
+
+export function invalidateGamesCache() {
+  gamesCache = null;
+}
+
+export function invalidatePlayersCache() {
+  playersCache = null;
+}
+
 export async function saveGame(game) {
+  invalidateGamesCache();
+  invalidatePlayersCache();
   const playerNames = game.players ?? [];
   for (const name of playerNames) {
     const trimmed = String(name).trim();
@@ -17,7 +30,6 @@ export async function saveGame(game) {
     winner: game.winner,
     totals: game.totals ?? {},
     rounds: game.rounds ?? [],
-    scratch: game.scratch ?? false,
     source: game.source ?? null,
   };
   const { error } = await supabase.from('games').insert(row);
@@ -25,12 +37,14 @@ export async function saveGame(game) {
 }
 
 export async function loadGames() {
+  if (gamesCache) return gamesCache;
   const { data, error } = await supabase
     .from('games')
-    .select('id, date, players, winner, totals, rounds, scratch, source, created_at')
+    .select('id, date, players, winner, totals, rounds, source')
     .order('date', { ascending: false });
   if (error) throw error;
-  return (data ?? []).map(rowToGame);
+  gamesCache = (data ?? []).map(rowToGame);
+  return gamesCache;
 }
 
 function rowToGame(row) {
@@ -41,13 +55,13 @@ function rowToGame(row) {
     winner: row.winner,
     totals: row.totals ?? {},
     rounds: row.rounds ?? [],
-    scratch: row.scratch ?? false,
     source: row.source,
-    created_at: row.created_at,
   };
 }
 
 export async function deleteGame(gameId, playersInGame = []) {
+  invalidateGamesCache();
+  invalidatePlayersCache();
   const { error } = await supabase.from('games').delete().eq('id', gameId);
   if (error) throw error;
 
@@ -67,13 +81,13 @@ export async function deleteGame(gameId, playersInGame = []) {
 }
 
 export async function updateGame(gameId, updates) {
+  invalidateGamesCache();
   const row = {};
   if (updates.date != null) row.date = updates.date;
   if (updates.players != null) row.players = updates.players;
   if (updates.winner != null) row.winner = updates.winner;
   if (updates.totals != null) row.totals = updates.totals;
   if (updates.rounds != null) row.rounds = updates.rounds;
-  if (updates.scratch != null) row.scratch = updates.scratch;
   if (updates.source != null) row.source = updates.source;
   if (Object.keys(row).length === 0) return;
   const { error } = await supabase.from('games').update(row).eq('id', gameId);
@@ -112,10 +126,18 @@ export async function getAllPlayerNames() {
   return loadCustomPlayers();
 }
 
-export async function cleanOrphanedPlayers(draftPlayers = []) {
+/** Returns { players, customPlayers } from a single fetch. Use for form setup. */
+export async function getPlayerRowsAndCustom() {
+  const players = await loadCustomPlayers();
+  players.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  const customPlayers = new Set(players.map(n => n.toLowerCase()));
+  return { players, customPlayers };
+}
+
+export async function cleanOrphanedPlayers(draftPlayers = [], gamesOverride = null) {
   const [playersData, games] = await Promise.all([
     supabase.from('players').select('id, name'),
-    loadGames(),
+    gamesOverride ? Promise.resolve(gamesOverride) : loadGames(),
   ]);
   if (playersData.error) throw playersData.error;
 
@@ -131,11 +153,13 @@ export async function cleanOrphanedPlayers(draftPlayers = []) {
     if (inGames.has(key) || inDraft.has(key)) continue;
     await supabase.from('players').delete().eq('id', row.id);
   }
+  invalidatePlayersCache();
 }
 
 export async function addCustomPlayer(name) {
   const trimmed = name.trim();
   if (!trimmed) return;
+  invalidatePlayersCache();
   const all = await getAllPlayerNames();
   if (all.some(n => n.toLowerCase() === trimmed.toLowerCase())) return;
   const { error } = await supabase.from('players').insert({ name: trimmed });
@@ -145,6 +169,7 @@ export async function addCustomPlayer(name) {
 export async function removeCustomPlayer(name) {
   const trimmed = name.trim();
   if (!trimmed) return;
+  invalidatePlayersCache();
   const { data } = await supabase.from('players').select('id').ilike('name', trimmed).maybeSingle();
   if (!data) return;
   const { error } = await supabase.from('players').delete().eq('id', data.id);
@@ -156,7 +181,9 @@ export async function getCustomPlayers() {
 }
 
 async function loadCustomPlayers() {
+  if (playersCache) return playersCache;
   const { data, error } = await supabase.from('players').select('name').order('name');
   if (error) throw error;
-  return (data ?? []).map((r) => r.name);
+  playersCache = (data ?? []).map((r) => r.name);
+  return playersCache;
 }

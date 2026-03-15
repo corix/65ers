@@ -67,9 +67,12 @@ function showDeleteConfirmModal(container, gameId, onConfirm, gameItem) {
   requestAnimationFrame(() => input.focus());
 }
 
-export async function renderArchive(container) {
+export async function renderArchive(container, { runCleanup = false } = {}) {
+  container.innerHTML = '<div class="archive-loading"><p>Loading…</p></div>';
   const games = await loadGames();
-  await cleanOrphanedPlayers(loadDraft()?.players ?? []);
+  if (runCleanup) {
+    await cleanOrphanedPlayers(loadDraft()?.players ?? [], games);
+  }
   container.innerHTML = '';
 
   if (games.length === 0) {
@@ -178,7 +181,7 @@ export async function renderArchive(container) {
         showDeleteConfirmModal(container, game.id, async () => {
           await deleteGame(game.id, game.players ?? []);
           container.innerHTML = '';
-          await renderArchive(container);
+          await renderArchive(container, { runCleanup: true });
         }, item);
       });
 

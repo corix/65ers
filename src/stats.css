@@ -1,5 +1,18 @@
 /* Stats view */
 
+.stats-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 12rem;
+  color: var(--accent);
+}
+
+.stats-loading p {
+  margin: 0;
+  font-size: 1rem;
+}
+
 .stats-view {
   display: flex;
   flex-direction: column;
