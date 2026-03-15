@@ -1,4 +1,6 @@
-import './shared.css';
+// Remove critical-theme style after first paint so shared.css transitions apply
+requestAnimationFrame(() => { document.getElementById('critical-theme')?.remove(); });
+
 import { getExportData, loadGames, getPlayerRowsAndCustom } from './api.js';
 import { renderForm } from './form.js';
 import { renderArchive } from './archive.js';
@@ -56,6 +58,7 @@ function updateNavSlider(animate = false) {
 async function showView(view, { animateNav = false, animateContent = false } = {}) {
   currentView = view;
   localStorage.setItem(VIEW_KEY, view);
+  nav?.setAttribute('data-active-view', view);
   navBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.view === view));
   updateNavSlider(animateNav);
 

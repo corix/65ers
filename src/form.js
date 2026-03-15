@@ -1,4 +1,3 @@
-import './form.css';
 import { getPlayerRowsAndCustom, getAllPlayerNames, addCustomPlayer, removeCustomPlayer, saveGame, saveDraft, loadDraft, clearDraft, loadGames } from './api.js';
 import { formatDate, todayShort, todayISO } from './utils.js';
 import { ROUNDS, SUITS, PILL_COLOR } from './constants.js';

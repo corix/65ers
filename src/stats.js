@@ -1,6 +1,6 @@
 import './stats.css';
 import { loadGames } from './api.js';
-import { ROUNDS, PLAYER_COLORS, CHART_PLAYER_COLORS, SUITS } from './constants.js';
+import { ROUNDS, PLAYER_COLORS, CHART_PLAYER_COLORS } from './constants.js';
 import { computeStats, linearRegression } from './stats-compute.js';
 import { formatDate } from './utils.js';
 import { Chart, registerables } from 'chart.js';
@@ -80,13 +80,9 @@ function buildLeaderboardHTML(stats) {
   const hasMore = leaderboard.length > LEADERBOARD_VISIBLE;
   const rows = leaderboard.map((p, i) => {
     const overflowClass = i >= LEADERBOARD_VISIBLE ? ' leaderboard-row-overflow' : '';
-    const suit = SUITS[i % SUITS.length];
-    const isRed = suit === '♥' || suit === '♦';
-    const suitClass = isRed ? 'suit suit-red' : 'suit';
-    const cellClass = isRed ? 'rank-cell rank-cell-red' : 'rank-cell';
     return `
     <tr class="leaderboard-row${overflowClass}" data-player="${p.name}">
-      <td class="${cellClass}"><span class="rank-num">${i + 1}</span> <span class="${suitClass}">${suit}</span></td>
+      <td class="rank-cell">${i + 1}</td>
       <td class="player-name-cell">${p.name}</td>
       <td>${p.wins}</td>
       <td>${p.games}</td>

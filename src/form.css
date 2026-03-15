@@ -1374,11 +1374,15 @@ input.score-input {
   }
 
   .scoresheet-table .round-row[aria-expanded="false"] .suit-red {
-    color: var(--red);
+    color: var(--round-suit-red);
+  }
+
+  .scoresheet-table .round-row[aria-expanded="false"] .suit:not(.suit-red) {
+    color: var(--round-suit-black);
   }
 
   .scoresheet-table .round-row[aria-expanded="false"] .round-title.round-red .round-num {
-    color: var(--red);
+    color: var(--round-suit-red);
   }
 
   .scoresheet-table .score-cell,
@@ -1498,7 +1502,12 @@ input.score-input {
 
   .scoresheet-table .round-title[data-suit="♥"]::before,
   .scoresheet-table .round-title[data-suit="♦"]::before {
-    color: var(--red);
+    color: var(--round-suit-red);
+  }
+
+  .scoresheet-table .round-title[data-suit="♣"]::before,
+  .scoresheet-table .round-title[data-suit="♠"]::before {
+    color: var(--round-suit-black);
   }
 
   .scoresheet-table .round-title::after {
@@ -1509,7 +1518,12 @@ input.score-input {
 
   .scoresheet-table .round-title[data-suit="♥"]::after,
   .scoresheet-table .round-title[data-suit="♦"]::after {
-    color: var(--red);
+    color: var(--round-suit-red);
+  }
+
+  .scoresheet-table .round-title[data-suit="♣"]::after,
+  .scoresheet-table .round-title[data-suit="♠"]::after {
+    color: var(--round-suit-black);
   }
 
   .scoresheet-table .round-toggle-wrap {
@@ -1519,11 +1533,11 @@ input.score-input {
     width: 2.5rem;
     min-width: 2.5rem;
     padding: 0.25rem 0.25rem 0.5rem 0.05rem;
-    border-left: 1px solid var(--border-muted);
-    border-top: 1px solid var(--border-muted);
+    border-left: 1px solid var(--round-wrapper-border);
+    border-top: 1px solid var(--round-wrapper-border);
     border-radius: 6px 0 0 0;
     box-sizing: border-box;
-    box-shadow: -5px -5px 8px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--round-wrapper-shadow);
   }
 
   .scoresheet-table .round-toggle {

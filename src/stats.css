@@ -100,9 +100,9 @@
 }
 
 
-.rank-cell {
+.leaderboard-table .rank-cell {
   font-weight: 700;
-  color: var(--accent);
+  color: var(--text);
 }
 
 /* Leaderboard popout */

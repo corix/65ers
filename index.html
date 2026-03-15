@@ -3,18 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (function() {
+        document.documentElement.classList.add('theme-loading');
+        var theme = localStorage.getItem('65ers_theme');
+        var isDark = theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (isDark) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+        var s = document.createElement('style');
+        s.id = 'critical-theme';
+        s.textContent = 'html.theme-loading header{visibility:hidden}'
+          + (isDark
+            ? 'html,body{background:#0f0f18}header{color:#b4b0c4}header h1{color:#8b7cb8}.nav-btn{color:#4a6ad9!important;transition:none!important}.nav-btn.active{color:#b4b0c4!important}'
+            : 'header{color:#fff!important}.nav-btn{color:#b8d4ff!important;transition:none!important}.nav-btn.active{color:#1a1a2e!important}');
+        document.head.appendChild(s);
+        requestAnimationFrame(function() {
+          document.documentElement.classList.remove('theme-loading');
+        });
+      })();
+    </script>
     <title>The 65 Almanac</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    <script>
-      (function() {
-        var theme = localStorage.getItem('65ers_theme');
-        if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-          document.documentElement.setAttribute('data-theme', 'dark');
-        }
-      })();
-    </script>
+    <link rel="stylesheet" href="/src/shared.css">
+    <link rel="stylesheet" href="/src/form.css">
   </head>
   <body>
     <header>
@@ -40,6 +54,19 @@
       </div>
     </header>
     <main id="app"></main>
+    <script>
+      (function() {
+        var view = localStorage.getItem('65ers_view');
+        if (view === 'archive' || view === 'stats') {
+          var nav = document.querySelector('nav');
+          var btns = document.querySelectorAll('.nav-btn');
+          if (nav && btns.length) {
+            nav.setAttribute('data-active-view', view);
+            btns.forEach(function(b) { b.classList.toggle('active', b.dataset.view === view); });
+          }
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
