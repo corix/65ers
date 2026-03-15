@@ -43,7 +43,7 @@ function parseShortDate(str) {
 }
 
 function pillHTML(name, selected, _colorIndex, isCustom = false) {
-  return `<button type="button" class="pill${selected ? ' selected' : ''}" draggable="true" data-player="${name}" data-custom="${isCustom}" style="--pill-color: ${PILL_COLOR}">${name}<span class="pill-remove" aria-label="Deselect">×</span></button>`;
+  return `<button type="button" class="pill${selected ? ' selected' : ''}" draggable="true" data-player="${name}" data-custom="${isCustom}" style="--pill-color: ${PILL_COLOR}"><span class="pill-name">${name}</span><span class="pill-remove" aria-label="Deselect">×</span></button>`;
 }
 
 async function buildSetupHTML(draft = null) {
@@ -63,10 +63,6 @@ async function buildSetupHTML(draft = null) {
           <button type="button" class="game-setup-option" id="players-import-all-btn">reset</button>
         </div>
       </div>
-      <div class="field">
-        <label for="game-date">Date</label>
-        <input type="date" id="game-date" value="${initialDate}">
-      </div>
       <fieldset class="field">
         <legend>Players <span class="hint">tap to select, drag to reorder</span><span class="players-actions"> · <button type="button" class="players-clear-link" id="players-clear-btn">clear</button></span></legend>
         <div class="player-pills" data-original-order="${JSON.stringify(players).replace(/"/g, '&quot;')}">
@@ -78,7 +74,15 @@ async function buildSetupHTML(draft = null) {
           <button type="button" id="add-player-btn">Add</button>
         </div>
       </fieldset>
-      <button type="button" id="start-game-btn" class="primary-btn">Start Scoresheet</button>
+      <div class="game-setup-footer">
+        <div class="field game-setup-date-field">
+          <label for="game-date">Date</label>
+          <input type="date" id="game-date" value="${initialDate}">
+        </div>
+        <div class="game-setup-actions">
+          <button type="button" id="start-game-btn" class="primary-btn">Start Scoresheet</button>
+        </div>
+      </div>
     </section>
     <section id="scoresheet-area"></section>
   `;
@@ -157,7 +161,16 @@ function bindSetupEvents(wrapper) {
       syncSelectedPlayers(wrapper);
       return;
     }
+    const wasSelected = pill.classList.contains('selected');
     pill.classList.toggle('selected');
+    if (pill.classList.contains('selected') && !wasSelected) {
+      const pills = pillsContainer.querySelectorAll('.pill:not(.pill-add)');
+      const firstUnselected = [...pills].find(p => !p.classList.contains('selected'));
+      const insertBefore = firstUnselected || pillsContainer.querySelector('.pill-add');
+      if (insertBefore && pill !== insertBefore) {
+        pillsContainer.insertBefore(pill, insertBefore);
+      }
+    }
     syncSelectedPlayers(wrapper);
   });
 
@@ -243,7 +256,16 @@ function bindSetupEvents(wrapper) {
     if (draggedPill) {
       draggedPill.classList.remove('dragging');
       if (!touchStarted) {
+        const wasSelected = draggedPill.classList.contains('selected');
         draggedPill.classList.toggle('selected');
+        if (draggedPill.classList.contains('selected') && !wasSelected) {
+          const pills = pillsContainer.querySelectorAll('.pill:not(.pill-add)');
+          const firstUnselected = [...pills].find(p => !p.classList.contains('selected'));
+          const insertBefore = firstUnselected || pillsContainer.querySelector('.pill-add');
+          if (insertBefore && draggedPill !== insertBefore) {
+            pillsContainer.insertBefore(draggedPill, insertBefore);
+          }
+        }
         syncSelectedPlayers(wrapper);
       } else {
         const wasUnselected = !draggedPill.classList.contains('selected');
