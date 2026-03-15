@@ -7,7 +7,11 @@ Data entry tool for digitizing paper scoresheets from the card game "65."
 - **New Game** — Date, players, scoresheet entry with keyboard shortcuts
 - **Archive** — Record of past games
 - **Stats** — Record cards, leaderboard, Chart.js visualizations
+
+Extras:
 - **Backups** — See [fixtures/README.md](fixtures/README.md)
+- **Dark/Light mode** — Theme toggle in header
+
 
 ## Branches
 
