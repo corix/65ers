@@ -279,22 +279,3 @@ nav {
   }
 }
 
-/* Dev control: Scratch entry */
-
-.scratch-entry-btn {
-  font-size: 0.75rem;
-  padding: 0.25rem 0.5rem;
-  color: #c77a8a;
-  background: transparent;
-  border: 1px dashed #d4a0ab;
-  border-radius: 4px;
-  cursor: pointer;
-  font-family: inherit;
-  opacity: 0.9;
-}
-
-.scratch-entry-btn:hover {
-  color: #b85c6f;
-  border-color: #c77a8a;
-  opacity: 1;
-}
