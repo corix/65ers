@@ -1519,10 +1519,11 @@ input.score-input {
     width: 2.5rem;
     min-width: 2.5rem;
     padding: 0.25rem 0.25rem 0.5rem 0.05rem;
-    border-left: 1px solid var(--border);
-    border-top: 1px solid var(--border);
+    border-left: 1px solid var(--border-muted);
+    border-top: 1px solid var(--border-muted);
     border-radius: 6px 0 0 0;
     box-sizing: border-box;
+    box-shadow: -5px -5px 8px rgba(0, 0, 0, 0.06);
   }
 
   .scoresheet-table .round-toggle {

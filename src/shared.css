@@ -20,6 +20,7 @@ html {
   --red: #d64045;
   --card-bg: #ffffff;
   --border: #d8d8e0;
+  --border-muted: rgba(0, 0, 0, 0.12);
   --radius: 8px;
   --text: #1a1a2e;
   --text-muted: #555;
@@ -91,6 +92,7 @@ html[data-theme="dark"] {
   --red: #c84a4f;
   --card-bg: #1a1a28;
   --border: #2a2a38;
+  --border-muted: rgba(255, 255, 255, 0.12);
   --text: #d0d0d8;
   --text-muted: #8888a0;
   --text-muted-2: #6a6a7a;
