@@ -56,6 +56,10 @@
   margin-top: 1rem;
 }
 
+.archive-empty .empty-state .scratch-entry-btn {
+  margin-top: 1rem;
+}
+
 .download-dropdown {
   margin-left: auto;
   position: relative;

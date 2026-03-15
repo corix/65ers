@@ -1,5 +1,6 @@
 import './archive.css';
 import { loadGames, getExportData, deleteGame, updateGame, cleanOrphanedPlayers, loadDraft } from './api.js';
+import { createScratchGameInArchive } from './scratch.js';
 import { formatDate } from './utils.js';
 
 const TRASH_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
@@ -78,8 +79,19 @@ export async function renderArchive(container) {
     const emptyDiv = document.createElement('div');
     emptyDiv.className = 'archive-empty';
     emptyDiv.innerHTML = `
-      <div class="card empty-state"><p>No games saved yet. Go to <strong>New Game</strong> to add one.</p></div>
+      <div class="card empty-state">
+        <p>No games saved yet. Go to <strong>New Game</strong> to add one.</p>
+        <button type="button" class="scratch-entry-btn" title="Dev: generate test game">Scratch entry</button>
+      </div>
     `;
+    const scratchBtn = emptyDiv.querySelector('.scratch-entry-btn');
+    if (scratchBtn) {
+      scratchBtn.addEventListener('click', async () => {
+        await createScratchGameInArchive();
+        container.innerHTML = '';
+        await renderArchive(container);
+      });
+    }
     container.appendChild(emptyDiv);
     return;
   }
@@ -87,6 +99,7 @@ export async function renderArchive(container) {
   const toolbar = document.createElement('div');
   toolbar.className = 'archive-toolbar';
   toolbar.innerHTML = `
+    <button type="button" class="scratch-entry-btn" title="Dev: generate test game">Scratch entry</button>
     <div class="download-dropdown">
       <button type="button" class="download-kebab download-trigger" aria-label="Options">${KEBAB_ICON}</button>
       <div class="download-menu" hidden>
@@ -94,6 +107,15 @@ export async function renderArchive(container) {
       </div>
     </div>
   `;
+
+  const archiveScratchBtn = toolbar.querySelector('.scratch-entry-btn');
+  if (archiveScratchBtn) {
+    archiveScratchBtn.addEventListener('click', async () => {
+      await createScratchGameInArchive();
+      container.innerHTML = '';
+      await renderArchive(container);
+    });
+  }
 
   const downloadTrigger = toolbar.querySelector('.download-trigger');
   const downloadMenu = toolbar.querySelector('.download-menu');
