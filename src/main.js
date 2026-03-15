@@ -154,6 +154,7 @@ function getTheme() {
 }
 
 function setTheme(theme) {
+  document.documentElement.classList.add('theme-switching');
   if (theme === 'dark') {
     document.documentElement.setAttribute('data-theme', 'dark');
     localStorage.setItem(THEME_KEY, 'dark');
@@ -162,6 +163,9 @@ function setTheme(theme) {
     localStorage.setItem(THEME_KEY, 'light');
   }
   updateThemeToggleLabel();
+  setTimeout(() => {
+    document.documentElement.classList.remove('theme-switching');
+  }, 380);
   window.dispatchEvent(new CustomEvent('theme-change', { detail: { theme } }));
 }
 

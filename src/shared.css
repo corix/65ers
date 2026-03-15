@@ -201,6 +201,16 @@ html:not([data-theme="dark"]) .nav-btn.active {
   box-sizing: border-box;
 }
 
+/* Smooth, uniform transition during theme switch */
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition-property: background, background-color, color, border-color, box-shadow, fill, stroke !important;
+  transition-duration: 0.35s !important;
+  transition-timing-function: ease-out !important;
+  transition-delay: 0s !important;
+}
+
 body {
   margin: 0;
   padding: 0;
