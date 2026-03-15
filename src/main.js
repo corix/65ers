@@ -94,6 +94,15 @@ window.addEventListener('navigate-to-view', (e) => {
   }
 });
 
+window.addEventListener('theme-change', () => {
+  if (currentView === 'stats') {
+    const container = viewContainers.stats;
+    if (container && !container.hidden) {
+      renderStats(container);
+    }
+  }
+});
+
 navBtns.forEach(btn => {
   btn.addEventListener('click', () => showView(btn.dataset.view, { animateNav: true }));
 });
@@ -150,6 +159,7 @@ function setTheme(theme) {
     localStorage.setItem(THEME_KEY, 'light');
   }
   updateThemeToggleLabel();
+  window.dispatchEvent(new CustomEvent('theme-change', { detail: { theme } }));
 }
 
 function updateThemeToggleLabel() {

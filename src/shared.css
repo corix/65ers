@@ -61,6 +61,8 @@ html {
   --chart-legend-hover-bg: #f0f0f0;
   --chart-legend-active-bg: #e8e8e8;
   --chart-legend-active-color: #111;
+  --chart-inactive: #e4e4e4;
+  --chart-line-highlight: #888;
   --avg-tooltip-bg: rgba(0, 0, 0, 0.75);
   --avg-tooltip-color: #b4b0c4;
   --text-on-color: #b4b0c4;
@@ -107,9 +109,9 @@ html[data-theme="dark"] {
   --round-separator-tunk: #553030;
   --heading-accent: #b86a42;
   --heading-accent-hover: #9a5a38;
-  --primary-btn-bg: #5a2810;
-  --primary-btn-bg-hover: #6a3418;
-  --primary-btn-color: #b0a090;
+  --primary-btn-bg: #4a3d7a;
+  --primary-btn-bg-hover: #5a4a94;
+  --primary-btn-color: #d0c8e8;
   --focus-outline: #6a6a7a;
   --hover-overlay: rgba(255, 255, 255, 0.05);
   --icon-btn-bg: #3a3a4a;
@@ -127,6 +129,8 @@ html[data-theme="dark"] {
   --chart-legend-hover-bg: #3a3a48;
   --chart-legend-active-bg: #3a3a48;
   --chart-legend-active-color: #b4b0c4;
+  --chart-inactive: #2a2a38;
+  --chart-line-highlight: #8a8898;
   --avg-tooltip-bg: rgba(0, 0, 0, 0.85);
   --avg-tooltip-color: #b4b0c4;
   --text-on-color: #b4b0c4;

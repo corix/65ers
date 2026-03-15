@@ -1,6 +1,6 @@
 import './stats.css';
 import { loadGames } from './api.js';
-import { ROUNDS, PLAYER_COLORS } from './constants.js';
+import { ROUNDS, PLAYER_COLORS, CHART_PLAYER_COLORS } from './constants.js';
 import { computeStats, linearRegression } from './stats-compute.js';
 import { formatDate } from './utils.js';
 import { Chart, registerables } from 'chart.js';
@@ -34,9 +34,11 @@ export async function renderStats(container) {
   bindLeaderboardPopout(wrapper);
 
   const allPlayerNames = [...new Set(games.flatMap(g => g.players))];
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const colors = isDark ? CHART_PLAYER_COLORS : PLAYER_COLORS;
   const playerColorMap = {};
   allPlayerNames.forEach((p, i) => {
-    playerColorMap[p] = PLAYER_COLORS[i % PLAYER_COLORS.length];
+    playerColorMap[p] = colors[i % colors.length];
   });
 
   // Defer chart rendering so records/leaderboard paint first
@@ -203,7 +205,7 @@ function renderRecentGameChart(canvas, games, playerColorMap) {
   const game = games.sort((a, b) => b.date.localeCompare(a.date))[0];
   if (!game) return;
 
-  const GRAY = '#e4e4e4';
+  const GRAY = getComputedStyle(document.documentElement).getPropertyValue('--chart-inactive').trim() || '#e4e4e4';
   const labels = ['', ...ROUNDS];
 
   const ranked = [...game.players].sort((a, b) => game.totals[a] - game.totals[b]);
@@ -426,7 +428,8 @@ function renderAvgRoundChart(canvas, games, playerColorMap) {
     playerSlopes[player] = linearRegression(pts).slope;
   });
 
-  const GRAY = '#e4e4e4';
+  const GRAY = getComputedStyle(document.documentElement).getPropertyValue('--chart-inactive').trim() || '#e4e4e4';
+  const LINE_HIGHLIGHT = getComputedStyle(document.documentElement).getPropertyValue('--chart-line-highlight').trim() || '#888';
   const numPlayers = allPlayers.length;
 
   const lineDatasets = [];
@@ -531,7 +534,7 @@ function renderAvgRoundChart(canvas, games, playerColorMap) {
     for (let j = 0; j < numPlayers; j++) {
       const active = j === idx;
       const c = active ? datasets[j]._realColor : GRAY;
-      chart.getDatasetMeta(j).dataset.options.borderColor = active ? '#888' : 'transparent';
+      chart.getDatasetMeta(j).dataset.options.borderColor = active ? LINE_HIGHLIGHT : 'transparent';
       chart.getDatasetMeta(j + numPlayers).data.forEach(pt => {
         pt.options.backgroundColor = c;
         pt.options.hoverBackgroundColor = c;

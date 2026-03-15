@@ -24,3 +24,10 @@ export const PLAYER_COLORS = [
   '#a88bf8', '#4fc9dc', '#fb9a5a', '#f27ab3',
   '#5ac9bf', '#8b8df4',
 ];
+
+/** Muted versions for charts – less bright lines and dots */
+export const CHART_PLAYER_COLORS = [
+  '#5a7ad8', '#4a9a5e', '#c4a030', '#b86669',
+  '#8870d8', '#3fa9bc', '#d88a4a', '#c86a93',
+  '#4ab9af', '#6b6dd4',
+];
