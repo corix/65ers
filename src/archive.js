@@ -6,8 +6,6 @@ const TRASH_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="1
 
 const PENCIL_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path></svg>';
 
-const KEBAB_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg>';
-
 const DELETE_CONFIRM_TEXT = 'DELETE';
 
 let archiveDocClickListener = null;
@@ -83,47 +81,6 @@ export async function renderArchive(container) {
     container.appendChild(emptyDiv);
     return;
   }
-
-  const toolbar = document.createElement('div');
-  toolbar.className = 'archive-toolbar';
-  toolbar.innerHTML = `
-    <div class="download-dropdown">
-      <button type="button" class="download-kebab download-trigger" aria-label="Options">${KEBAB_ICON}</button>
-      <div class="download-menu" hidden>
-        <button type="button" class="download-option" data-action="download">Download JSON backup</button>
-      </div>
-    </div>
-  `;
-
-  const downloadTrigger = toolbar.querySelector('.download-trigger');
-  const downloadMenu = toolbar.querySelector('.download-menu');
-
-  downloadTrigger.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const isOpen = !downloadMenu.hidden;
-    document.querySelectorAll('.download-menu').forEach(m => { m.hidden = true; });
-    downloadMenu.hidden = isOpen;
-    if (!downloadMenu.hidden) {
-      document.addEventListener('click', () => { downloadMenu.hidden = true; }, { once: true });
-    }
-  });
-
-  toolbar.querySelector('.download-option').addEventListener('click', async (e) => {
-    e.stopPropagation();
-    downloadMenu.hidden = true;
-    const data = await getExportData();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    a.download = `65_Almanac_Backup_${y}-${m}-${d}.json`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  });
-  container.appendChild(toolbar);
 
   const list = document.createElement('div');
   list.className = 'archive-list';

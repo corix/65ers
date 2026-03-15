@@ -14,6 +14,16 @@
         <button class="nav-btn" data-view="archive">Archive</button>
         <button class="nav-btn" data-view="stats">Stats</button>
       </nav>
+      <div class="header-nav-kebab" id="header-nav-kebab">
+        <button type="button" class="header-kebab-btn" aria-label="Options"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg></button>
+        <div class="header-kebab-menu" hidden>
+          <button type="button" class="header-kebab-option" data-action="download">
+            <span class="header-kebab-option-title">Download backup</span>
+            <span class="header-kebab-option-divider"></span>
+            <span class="header-kebab-option-caption" id="last-backup-caption">Not backed up</span>
+          </button>
+        </div>
+      </div>
     </header>
     <main id="app"></main>
     <script type="module" src="/src/main.js"></script>
