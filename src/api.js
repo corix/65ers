@@ -1,6 +1,9 @@
 import { supabase } from './supabase.js';
+import exportedData from '../fixtures/exported-games.json';
 
 const DRAFT_KEY = '65ers_draft';
+const SUPABASE_DISABLED_KEY = '65ers_supabase_disabled';
+const EXPORTED_DATA_ENABLED_KEY = '65ers_read_exported_data';
 const LOCAL_GAMES_KEY = '65ers_local_games';
 const HIDDEN_GAME_IDS_KEY = '65ers_hidden_game_ids';
 const GAME_OVERRIDES_KEY = '65ers_game_overrides';
@@ -76,6 +79,39 @@ function isLocalGame(gameId) {
   return getLocalGames().some((g) => g.id === gameId);
 }
 
+export function isSupabaseDisabled() {
+  return localStorage.getItem(SUPABASE_DISABLED_KEY) === '1';
+}
+
+export function setSupabaseDisabled(disabled) {
+  if (disabled) {
+    localStorage.setItem(SUPABASE_DISABLED_KEY, '1');
+  } else {
+    localStorage.removeItem(SUPABASE_DISABLED_KEY);
+  }
+}
+
+export function isExportedDataEnabled() {
+  return localStorage.getItem(EXPORTED_DATA_ENABLED_KEY) === '1';
+}
+
+export function setExportedDataEnabled(enabled) {
+  if (enabled) {
+    localStorage.setItem(EXPORTED_DATA_ENABLED_KEY, '1');
+  } else {
+    localStorage.removeItem(EXPORTED_DATA_ENABLED_KEY);
+  }
+}
+
+export function clearLocalData() {
+  localStorage.removeItem(DRAFT_KEY);
+  localStorage.removeItem(LOCAL_GAMES_KEY);
+  localStorage.removeItem(HIDDEN_GAME_IDS_KEY);
+  localStorage.removeItem(GAME_OVERRIDES_KEY);
+  localStorage.removeItem(CUSTOM_PLAYERS_KEY);
+  localStorage.removeItem(HIDDEN_PLAYER_NAMES_KEY);
+}
+
 export async function saveGame(game) {
   const localGames = getLocalGames();
   const row = {
@@ -93,27 +129,50 @@ export async function saveGame(game) {
 }
 
 export async function loadGames() {
-  const [supabaseResult, localGames, hiddenIds, overrides] = await Promise.all([
-    supabase
-      .from('games')
-      .select('id, date, players, winner, totals, rounds, scratch, source, created_at')
-      .order('date', { ascending: false }),
+  const [localGames, hiddenIds, overrides] = await Promise.all([
     Promise.resolve(getLocalGames()),
     Promise.resolve(getHiddenGameIds()),
     Promise.resolve(getGameOverrides()),
   ]);
 
-  if (supabaseResult.error) throw supabaseResult.error;
+  let supabaseGames = [];
+  if (!isSupabaseDisabled()) {
+    const supabaseResult = await supabase
+      .from('games')
+      .select('id, date, players, winner, totals, rounds, scratch, source, created_at')
+      .order('date', { ascending: false });
+    if (supabaseResult.error) throw supabaseResult.error;
+    supabaseGames = (supabaseResult.data ?? [])
+      .filter((row) => !hiddenIds.has(row.id))
+      .map(rowToGame)
+      .map((g) => {
+        const o = overrides[g.id];
+        return o ? { ...g, ...o } : g;
+      });
+  }
 
-  const supabaseGames = (supabaseResult.data ?? [])
-    .filter((row) => !hiddenIds.has(row.id))
-    .map(rowToGame)
-    .map((g) => {
-      const o = overrides[g.id];
-      return o ? { ...g, ...o } : g;
-    });
+  let exportedGames = [];
+  if (isExportedDataEnabled() && exportedData?.games?.length) {
+    exportedGames = exportedData.games
+      .filter((g) => g.id && !hiddenIds.has(g.id))
+      .map((g) => ({
+        id: g.id,
+        date: g.date,
+        players: g.players ?? [],
+        winner: g.winner,
+        totals: g.totals ?? {},
+        rounds: g.rounds ?? [],
+        scratch: g.scratch ?? false,
+        source: 'exported',
+        created_at: g.created_at,
+      }))
+      .map((g) => {
+        const o = overrides[g.id];
+        return o ? { ...g, ...o } : g;
+      });
+  }
 
-  const merged = [...supabaseGames, ...localGames];
+  const merged = [...supabaseGames, ...exportedGames, ...localGames];
   merged.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   return merged;
 }
@@ -225,25 +284,34 @@ export async function removeCustomPlayer(name) {
 }
 
 export async function getCustomPlayers() {
-  const [supabaseResult, games, localCustom, hiddenNames] = await Promise.all([
-    supabase.from('players').select('name').order('name'),
+  const [games, localCustom, hiddenNames] = await Promise.all([
     loadGames(),
     Promise.resolve(getLocalCustomPlayers()),
     Promise.resolve(getHiddenPlayerNames()),
   ]);
 
-  if (supabaseResult.error) throw supabaseResult.error;
+  let fromSupabase = [];
+  if (!isSupabaseDisabled()) {
+    const supabaseResult = await supabase.from('players').select('name').order('name');
+    if (supabaseResult.error) throw supabaseResult.error;
+    fromSupabase = (supabaseResult.data ?? [])
+      .map((r) => (r.name || '').trim())
+      .filter((n) => n && !hiddenNames.has(n.toLowerCase()));
+  }
 
-  const fromSupabase = (supabaseResult.data ?? [])
-    .map((r) => (r.name || '').trim())
-    .filter((n) => n && !hiddenNames.has(n.toLowerCase()));
+  let fromExported = [];
+  if (isExportedDataEnabled() && exportedData?.players?.length) {
+    fromExported = (exportedData.players ?? [])
+      .map((n) => String(n).trim())
+      .filter((n) => n && !hiddenNames.has(n.toLowerCase()));
+  }
 
   const fromGames = games.flatMap((g) =>
     (g.players ?? []).map((p) => String(p).trim()).filter(Boolean)
   );
   const fromGamesFiltered = fromGames.filter((n) => !hiddenNames.has(n.toLowerCase()));
 
-  const merged = [...new Set([...fromSupabase, ...fromGamesFiltered, ...localCustom])];
+  const merged = [...new Set([...fromSupabase, ...fromExported, ...fromGamesFiltered, ...localCustom])];
   merged.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
   return merged;
 }

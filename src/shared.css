@@ -217,6 +217,32 @@ nav {
   color: #888;
 }
 
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.status-indicator::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-indicator[data-status="on"]::before {
+  background: var(--green);
+}
+
+.status-indicator[data-status="off"]::before {
+  background: #bbb;
+}
+
+.header-kebab-option--danger .header-kebab-option-title {
+  color: var(--red);
+}
+
 .test-data-link {
   background: none;
   border: none;

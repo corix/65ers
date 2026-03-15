@@ -17,10 +17,17 @@
       <div class="header-nav-kebab" id="header-nav-kebab">
         <button type="button" class="header-kebab-btn" aria-label="Options"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg></button>
         <div class="header-kebab-menu" hidden>
-          <button type="button" class="header-kebab-option" data-action="download">
-            <span class="header-kebab-option-title">Download backup</span>
-            <span class="header-kebab-option-divider"></span>
-            <span class="header-kebab-option-caption" id="last-backup-caption">Not backed up</span>
+          <button type="button" class="header-kebab-option" data-action="local-only">
+            <span class="header-kebab-option-title">Read Supabase</span>
+            <span class="header-kebab-option-caption status-indicator" id="local-only-caption" data-status="on" aria-label="On">On</span>
+          </button>
+          <button type="button" class="header-kebab-option" data-action="exported-data">
+            <span class="header-kebab-option-title">Read backup</span>
+            <span class="header-kebab-option-caption status-indicator" id="exported-data-caption" data-status="off" aria-label="Off">Off</span>
+          </button>
+          <span class="header-kebab-option-divider"></span>
+          <button type="button" class="header-kebab-option header-kebab-option--danger" data-action="clear-local">
+            <span class="header-kebab-option-title">Clear local</span>
           </button>
         </div>
       </div>
