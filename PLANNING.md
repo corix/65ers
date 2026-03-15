@@ -68,29 +68,10 @@ All past game scoresheets, displayed as tabular data:
 
 Data insights and visualizations (display order):
 
-1. Most Recent Game chart — line chart of cumulative scores by round
-2. Player leaderboard — ranked by wins, then avg score with clickable names that expand to show detailed stats
-3. Record cards: Lowest All-Time Score, Most Tunks in a Game, Highest Winning Score
-4. Average Score by Round chart — scatter plot with regression lines
-
----
-
-## Ideas
-
-### Backlog
-
-- Additional chart types or filters
-
-### Completed
-
-- Written stats
-  - Highest and lowest all-time final scores
-  - Most tunks (rounds won) in a single game
-  - Player leaderboard (ranked by games won, ranked by average final score)
-  - Individual player stats — total games won, total rounds won, average rounds won per game
-- Graphs
-  - Most recent game (multiple line graph, each line is a player, Y axis is score and X axis is rounds)
-  - Average player performance (scatter plot of how a player tends to score in each round)
+- Most Recent Game chart — line chart of cumulative scores by round
+- Player leaderboard — ranked by wins, then avg score with clickable names that expand to show detailed stats
+- Record cards: Lowest All-Time Score, Most Tunks in a Game, Highest Winning Score
+- Average Score by Round chart — scatter plot with regression lines
 
 ### Out of scope / not doing
 
@@ -155,7 +136,6 @@ These are the building stages for this project.
   - `winner` (text)
   - `totals` (jsonb)
   - `rounds` (jsonb) — array of objects; each has `round`, `scores`, `tunk`, `tinks`, `magic65s`, `falseTunks`
-  - `scratch` (boolean)
   - `source` (text, optional) — `'fixture'` for migration-sourced games
 - **Recommendations**
   - Add `created_at timestamptz default now()` to both tables
@@ -205,7 +185,7 @@ Dev controls for testing and fixtures:
 - **Clear local** — Red option in header kebab. Deletes all localStorage data (draft, local games, custom players, hidden IDs, overrides).
 - **Scratch entry** — New Game: generates a test draft. Archive: generates a test game. Both use realistic scores borrowed from stored games (round scores and totals capped to match real data).
 - **Fill sheet** — Scoresheet toolbar button that fills the sheet with realistic scores from stored games and tunks, or clears when already filled.
-- **Export** — Archive Export button downloads `exported-games.json` excluding scratch entries (main branch only; disabled on dev-mode).
+- **Export** — Archive Export button downloads `exported-games.json` (main branch only; disabled on dev-mode).
 
 ### Deprecated
 

@@ -69,9 +69,7 @@ function rowToGame(row) {
     winner: row.winner,
     totals: row.totals ?? {},
     rounds: row.rounds ?? [],
-    scratch: row.scratch ?? false,
     source: row.source,
-    created_at: row.created_at,
   };
 }
 
@@ -121,7 +119,6 @@ export async function saveGame(game) {
     winner: game.winner,
     totals: game.totals ?? {},
     rounds: game.rounds ?? [],
-    scratch: game.scratch ?? false,
     source: game.source ?? null,
   };
   localGames.push(row);
@@ -139,7 +136,7 @@ export async function loadGames() {
   if (!isSupabaseDisabled()) {
     const supabaseResult = await supabase
       .from('games')
-      .select('id, date, players, winner, totals, rounds, scratch, source, created_at')
+      .select('id, date, players, winner, totals, rounds, source')
       .order('date', { ascending: false });
     if (supabaseResult.error) throw supabaseResult.error;
     supabaseGames = (supabaseResult.data ?? [])
@@ -162,9 +159,7 @@ export async function loadGames() {
         winner: g.winner,
         totals: g.totals ?? {},
         rounds: g.rounds ?? [],
-        scratch: g.scratch ?? false,
         source: 'exported',
-        created_at: g.created_at,
       }))
       .map((g) => {
         const o = overrides[g.id];
@@ -212,6 +207,11 @@ export async function updateGame(gameId, updates) {
   }
 }
 
+export async function getExportData() {
+  const allGames = await loadGames();
+  return { games: allGames };
+}
+
 export function saveDraft(draft) {
   if (draft) {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
@@ -237,6 +237,14 @@ export async function getPlayerRows() {
 
 export async function getAllPlayerNames() {
   return getCustomPlayers();
+}
+
+/** Returns { players, customPlayers } from a single fetch. Use for form setup. */
+export async function getPlayerRowsAndCustom() {
+  const players = await getCustomPlayers();
+  players.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  const customPlayers = new Set(players.map((n) => n.toLowerCase()));
+  return { players, customPlayers };
 }
 
 export async function cleanOrphanedPlayers(draftPlayers = []) {

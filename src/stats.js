@@ -13,6 +13,7 @@ export async function renderStats(container) {
   activeCharts.forEach(c => c.destroy());
   activeCharts = [];
 
+  container.innerHTML = '<div class="stats-loading"><p>Loading…</p></div>';
   const games = await loadGames();
   container.innerHTML = '';
 
@@ -38,8 +39,11 @@ export async function renderStats(container) {
     playerColorMap[p] = PLAYER_COLORS[i % PLAYER_COLORS.length];
   });
 
-  renderRecentGameChart(wrapper.querySelector('#recent-game-chart'), games, playerColorMap);
-  renderAvgRoundChart(wrapper.querySelector('#avg-round-chart'), games, playerColorMap);
+  // Defer chart rendering so records/leaderboard paint first
+  requestAnimationFrame(() => {
+    renderRecentGameChart(wrapper.querySelector('#recent-game-chart'), games, playerColorMap);
+    renderAvgRoundChart(wrapper.querySelector('#avg-round-chart'), games, playerColorMap);
+  });
 }
 
 // --- Written stats HTML ---

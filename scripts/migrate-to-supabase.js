@@ -55,7 +55,6 @@ async function migrate() {
     winner: g.winner,
     totals: g.totals ?? {},
     rounds: g.rounds ?? [],
-    scratch: g.scratch ?? false,
     source: 'fixture',
   }));
 
