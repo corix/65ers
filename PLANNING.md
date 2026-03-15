@@ -68,29 +68,10 @@ All past game scoresheets, displayed as tabular data:
 
 Data insights and visualizations (display order):
 
-1. Most Recent Game chart — line chart of cumulative scores by round
-2. Player leaderboard — ranked by wins, then avg score with clickable names that expand to show detailed stats
-3. Record cards: Lowest All-Time Score, Most Tunks in a Game, Highest Winning Score
-4. Average Score by Round chart — scatter plot with regression lines
-
----
-
-## Ideas
-
-### Backlog
-
-- Additional chart types or filters
-
-### Completed
-
-- Written stats
-  - Highest and lowest all-time final scores
-  - Most tunks (rounds won) in a single game
-  - Player leaderboard (ranked by games won, ranked by average final score)
-  - Individual player stats — total games won, total rounds won, average rounds won per game
-- Graphs
-  - Most recent game (multiple line graph, each line is a player, Y axis is score and X axis is rounds)
-  - Average player performance (scatter plot of how a player tends to score in each round)
+- Most Recent Game chart — line chart of cumulative scores by round
+- Player leaderboard — ranked by wins, then avg score with clickable names that expand to show detailed stats
+- Record cards: Lowest All-Time Score, Most Tunks in a Game, Highest Winning Score
+- Average Score by Round chart — scatter plot with regression lines
 
 ### Out of scope / not doing
 
