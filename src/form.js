@@ -1,7 +1,7 @@
 import './form.css';
 import { getPlayerRowsAndCustom, getAllPlayerNames, addCustomPlayer, removeCustomPlayer, saveGame, saveDraft, loadDraft, clearDraft, loadGames } from './api.js';
 import { formatDate, todayShort, todayISO } from './utils.js';
-import { ROUNDS, PILL_COLOR } from './constants.js';
+import { ROUNDS, SUITS, PILL_COLOR } from './constants.js';
 
 const PILL_TRASH_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
 
@@ -500,10 +500,15 @@ function renderScoresheet(container, date, displayDate, players) {
             </tr>
           </thead>
           <tbody>
-            ${ROUNDS.map((round, i) => `
+            ${ROUNDS.map((round, i) => {
+              const suit = SUITS[i % SUITS.length];
+              const isRed = suit === '♥' || suit === '♦';
+              const suitClass = isRed ? 'suit suit-red' : 'suit';
+              const titleClass = isRed ? 'round-title round-red' : 'round-title';
+              return `
               <tr data-round="${round}" class="round-row" aria-expanded="${i === 0}">
-                <td class="round-label" data-round="${round}">
-                  <button type="button" class="round-toggle" aria-expanded="${i === 0}" tabindex="-1"><span class="round-title" data-round="${round}">Round ${round}</span></button>
+                <td class="round-label" data-round="${round}" data-suit="${suit}">
+                  <span class="round-toggle-wrap"><button type="button" class="round-toggle" aria-expanded="${i === 0}" tabindex="-1"><span class="${titleClass}" data-round="${round}" data-suit="${suit}"><span class="round-num">${round}</span> <span class="${suitClass}">${suit}</span></span></button></span>
                 </td>
                 ${players.map(p => `
                   <td class="score-cell" data-player="${p}">
@@ -518,7 +523,8 @@ function renderScoresheet(container, date, displayDate, players) {
                   </td>
                 `).join('')}
               </tr>
-            `).join('')}
+            `;
+            }).join('')}
           </tbody>
           <tfoot>
             <tr class="totals-row">

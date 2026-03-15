@@ -406,6 +406,16 @@
     display: none;
   }
 
+  .archive-table.scoresheet-table td.round-label,
+  .archive-table.scoresheet-table th.round-col {
+    text-align: center !important;
+  }
+
+  .archive-table.scoresheet-table .round-toggle {
+    display: inline-flex !important;
+    justify-content: center !important;
+  }
+
   .archive-table .cell-value {
     margin-left: 0;
   }

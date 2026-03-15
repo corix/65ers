@@ -467,6 +467,49 @@ nav {
 
 .round-col {
   text-align: left !important;
+  color: var(--text-muted-2);
+}
+
+.round-title,
+.round-title::before,
+.round-title::after,
+.round-num,
+.suit {
+  font-family: 'Libre Baskerville', Georgia, serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.round-num,
+.suit {
+  font-weight: 700;
+}
+
+.round-title[data-round="10"] .round-num,
+.round-title[data-round="J"] .round-num,
+.round-title[data-round="Q"] .round-num,
+.round-title[data-round="K"] .round-num {
+  font-size: 0.82em;
+}
+
+.round-title[data-round="10"] .suit,
+.round-title[data-round="J"] .suit,
+.round-title[data-round="Q"] .suit,
+.round-title[data-round="K"] .suit {
+  margin-left: -0.15em;
+}
+
+.suit {
+  font-size: 0.85em;
+}
+
+.suit-red {
+  color: var(--red);
+}
+
+.round-title.round-red .round-num,
+.rank-cell-red .rank-num {
+  color: var(--red);
+  font-weight: 700;
 }
 
 .totals-row {

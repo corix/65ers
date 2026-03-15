@@ -17,6 +17,9 @@
 
 export const ROUNDS = ['3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 
+/** Playing card suits for alternating round/rank display (red, black, red, black); Jack = ♦ */
+export const SUITS = ['♦', '♣', '♥', '♠'];
+
 export const PILL_COLOR = '#6b85d0';
 
 export const PLAYER_COLORS = [

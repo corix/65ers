@@ -652,7 +652,7 @@ input.score-input {
     background: transparent;
   }
 
-  .scoresheet .scoresheet-table tbody tr:nth-child(-n+10):nth-child(odd) td {
+  .scoresheet .scoresheet-table tbody tr:nth-child(-n+10):nth-child(odd) td:not(.round-label) {
     border-bottom: none;
     background-image: linear-gradient(to right, var(--round-separator) 25%, transparent 0%);
     background-position: bottom;
@@ -660,12 +660,16 @@ input.score-input {
     background-repeat: repeat-x;
   }
 
-  .scoresheet .scoresheet-table tbody tr:nth-child(-n+10):nth-child(even) td {
+  .scoresheet .scoresheet-table tbody tr:nth-child(-n+10):nth-child(even) td:not(.round-label) {
     border-bottom: none;
     background-image: linear-gradient(to right, var(--round-separator-tunk) 25%, transparent 0%);
     background-position: bottom;
     background-size: 12px 1px;
     background-repeat: repeat-x;
+  }
+
+  .scoresheet .scoresheet-table tbody tr td.round-label {
+    border-bottom: none;
   }
 
   .scoresheet .scoresheet-table td.score-cell:nth-child(2n) .score-input {
@@ -1369,6 +1373,14 @@ input.score-input {
     color: var(--text-muted-2);
   }
 
+  .scoresheet-table .round-row[aria-expanded="false"] .suit-red {
+    color: var(--red);
+  }
+
+  .scoresheet-table .round-row[aria-expanded="false"] .round-title.round-red .round-num {
+    color: var(--red);
+  }
+
   .scoresheet-table .score-cell,
   .scoresheet-table .total-cell {
     display: flex;
@@ -1464,9 +1476,53 @@ input.score-input {
     font-size: 0;
   }
 
-  .scoresheet-table .round-title::after {
+  .scoresheet-table .round-title::before {
     content: attr(data-round);
-    font-size: 0.9rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+
+  .scoresheet-table .round-title[data-round="10"]::before,
+  .scoresheet-table .round-title[data-round="J"]::before,
+  .scoresheet-table .round-title[data-round="Q"]::before,
+  .scoresheet-table .round-title[data-round="K"]::before {
+    font-size: 0.72rem;
+  }
+
+  .scoresheet-table .round-title[data-round="10"]::after,
+  .scoresheet-table .round-title[data-round="J"]::after,
+  .scoresheet-table .round-title[data-round="Q"]::after,
+  .scoresheet-table .round-title[data-round="K"]::after {
+    letter-spacing: -0.12em;
+  }
+
+  .scoresheet-table .round-title[data-suit="♥"]::before,
+  .scoresheet-table .round-title[data-suit="♦"]::before {
+    color: var(--red);
+  }
+
+  .scoresheet-table .round-title::after {
+    content: " " attr(data-suit);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .scoresheet-table .round-title[data-suit="♥"]::after,
+  .scoresheet-table .round-title[data-suit="♦"]::after {
+    color: var(--red);
+  }
+
+  .scoresheet-table .round-toggle-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    min-width: 2.5rem;
+    padding: 0.25rem 0.25rem 0.5rem 0.05rem;
+    border-left: 1px solid var(--border);
+    border-top: 1px solid var(--border);
+    border-radius: 6px 0 0 0;
+    box-sizing: border-box;
   }
 
   .scoresheet-table .round-toggle {
@@ -1474,6 +1530,8 @@ input.score-input {
     padding: 0;
     cursor: default;
     pointer-events: none;
+    border: none;
+    background: transparent;
   }
 
   .scoresheet-table .round-toggle::after {
