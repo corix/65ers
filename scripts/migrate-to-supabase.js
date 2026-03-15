@@ -2,7 +2,7 @@
 /**
  * One-time migration: load fixture JSON and insert into Supabase.
  * Run: npm run migrate
- * Requires: fixtures/test-games.json (or fixtures/stored-games.json)
+ * Requires: fixtures/test-games.json, fixtures/exported-games.json, or fixtures/stored-games.json
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -22,10 +22,12 @@ if (!url || !key) {
 
 const fixturePath = existsSync(join(__dirname, '../fixtures/test-games.json'))
   ? join(__dirname, '../fixtures/test-games.json')
-  : join(__dirname, '../fixtures/stored-games.json');
+  : existsSync(join(__dirname, '../fixtures/exported-games.json'))
+    ? join(__dirname, '../fixtures/exported-games.json')
+    : join(__dirname, '../fixtures/stored-games.json');
 
 if (!existsSync(fixturePath)) {
-  console.error(`Fixture file not found. Create fixtures/test-games.json or fixtures/stored-games.json`);
+  console.error(`Fixture file not found. Create fixtures/test-games.json, fixtures/exported-games.json, or fixtures/stored-games.json`);
   process.exit(1);
 }
 
