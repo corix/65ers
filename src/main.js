@@ -5,7 +5,7 @@ import { initDemoModeFromUrl, isDemoMode, setDemoMode } from './demo-mode.js';
 initDemoModeFromUrl();
 
 import './shared.css';
-import { isSupabaseDisabled, setSupabaseDisabled, isExportedDataEnabled, setExportedDataEnabled, clearLocalData, loadGames, getPlayerRowsAndCustom, getExportData, getDownloadBackupCounts, getLastExportedAt, setLastExportedAt } from './api.js';
+import { isSupabaseDisabled, setSupabaseDisabled, isExportedDataEnabled, setExportedDataEnabled, hasLocalData, clearLocalData, clearLocalPlayerData, clearDraft, getSupabaseGameCount, getExportedGameCount, getLocalGameCount, loadGames, getPlayerRowsAndCustom, getExportData, getDownloadBackupCounts, getLastExportedAt, setLastExportedAt } from './api.js';
 import { formatDurationAgo } from './utils.js';
 import { renderForm } from './form.js';
 import { renderArchive } from './archive.js';
@@ -90,7 +90,8 @@ async function showView(view, { animateNav = false, animateContent = false } = {
     } else {
       await renderStats(container);
     }
-  } else if (container.children.length === 0) {
+  } else if (view === 'entry') {
+    container.innerHTML = '';
     await renderForm(container);
   }
 }
@@ -128,6 +129,8 @@ window.addEventListener('storage', (e) => {
   const stored = getStoredView();
   if (stored !== 'archive' && stored !== 'stats') loadGames();
   if (stored !== 'entry') getPlayerRowsAndCustom();
+  // Prime Supabase count for demo mode (persisted, never overwritten with 0)
+  if (!isSupabaseDisabled()) getSupabaseGameCount();
 })();
 
 // Use ResizeObserver on nav so we update when its layout changes (e.g. at 850px breakpoint).
@@ -208,8 +211,13 @@ if (kebabBtn && kebabMenu) {
     if (demoOption) demoOption.setAttribute('aria-pressed', String(on));
   }
 
-  function updateLocalOnlyCaption() {
+  async function updateLocalOnlyCaption() {
+    const titleEl = headerKebab?.querySelector('.header-kebab-option[data-action="local-only"] .header-kebab-option-title');
     const caption = document.getElementById('local-only-caption');
+    if (titleEl) {
+      const count = await getSupabaseGameCount();
+      titleEl.textContent = count > 0 ? `Supabase data (${count})` : 'Supabase data';
+    }
     if (caption) {
       const on = !isSupabaseDisabled();
       caption.dataset.status = on ? 'on' : 'off';
@@ -219,13 +227,36 @@ if (kebabBtn && kebabMenu) {
   }
 
   function updateExportedDataCaption() {
+    const titleEl = headerKebab?.querySelector('.header-kebab-option[data-action="exported-data"] .header-kebab-option-title');
     const caption = document.getElementById('exported-data-caption');
+    if (titleEl) {
+      const count = getExportedGameCount();
+      titleEl.textContent = count > 0 ? `Backup data (${count})` : 'Backup data';
+    }
     if (caption) {
       const on = isExportedDataEnabled();
       caption.dataset.status = on ? 'on' : 'off';
       caption.textContent = on ? 'On' : 'Off';
       caption.setAttribute('aria-label', on ? 'On' : 'Off');
     }
+  }
+
+  function updateClearDataTitle() {
+    const titleEl = headerKebab?.querySelector('.header-kebab-option[data-action="clear-local"] .header-kebab-option-title');
+    if (titleEl) {
+      const count = getLocalGameCount();
+      titleEl.textContent = count > 0 ? `Clear demo data (${count})` : 'Clear demo data';
+    }
+  }
+
+  function updateClearDataVisibility() {
+    const clearBtn = headerKebab?.querySelector('.header-kebab-option[data-action="clear-local"]');
+    if (!clearBtn) return;
+    const hidden = !isDemoMode() || !hasLocalData();
+    if (isDemoMode()) updateClearDataTitle();
+    clearBtn.hidden = hidden;
+    const prevDivider = clearBtn.previousElementSibling;
+    if (prevDivider?.classList.contains('header-kebab-option-divider')) prevDivider.hidden = hidden;
   }
 
   async function updateDownloadBackupCaption() {
@@ -277,8 +308,9 @@ if (kebabBtn && kebabMenu) {
     if (!kebabMenu.hidden) {
       updateThemeToggleUI();
       updateDemoModeUI();
-      updateLocalOnlyCaption();
+      await updateLocalOnlyCaption();
       updateExportedDataCaption();
+      updateClearDataVisibility();
       updateDownloadBackupCaption();
       document.addEventListener('click', () => { kebabMenu.hidden = true; }, { once: true });
     }
@@ -287,14 +319,19 @@ if (kebabBtn && kebabMenu) {
   demoModeOption?.addEventListener('click', async (e) => {
     e.stopPropagation();
     const turningOn = !isDemoMode();
+    if (!turningOn) {
+      clearLocalPlayerData();
+      clearDraft();
+    }
     setDemoMode(turningOn);
     if (turningOn) {
       setSupabaseDisabled(true);
       setExportedDataEnabled(false);
     }
     updateDemoModeUI();
-    updateLocalOnlyCaption();
+    await updateLocalOnlyCaption();
     updateExportedDataCaption();
+    updateClearDataVisibility();
     viewContainers[currentView].innerHTML = '';
     await showView(currentView, { animateNav: false });
   });
@@ -319,7 +356,7 @@ if (kebabBtn && kebabMenu) {
   headerKebab.querySelector('.header-kebab-option[data-action="local-only"]')?.addEventListener('click', async (e) => {
     e.stopPropagation();
     setSupabaseDisabled(!isSupabaseDisabled());
-    updateLocalOnlyCaption();
+    await updateLocalOnlyCaption();
     viewContainers[currentView].innerHTML = '';
     await showView(currentView, { animateNav: false });
   });
@@ -333,6 +370,7 @@ if (kebabBtn && kebabMenu) {
   headerKebab.querySelector('.header-kebab-option[data-action="clear-local"]')?.addEventListener('click', async (e) => {
     e.stopPropagation();
     clearLocalData();
+    updateClearDataVisibility();
     viewContainers[currentView].innerHTML = '';
     await showView(currentView, { animateNav: false });
   });

@@ -420,7 +420,7 @@ function bindSetupEvents(wrapper) {
       if (existingPills.has(name.toLowerCase())) continue;
       const pill = document.createElement('button');
       pill.type = 'button';
-      pill.className = 'pill selected';
+      pill.className = 'pill';
       pill.draggable = true;
       pill.dataset.player = name;
       pill.dataset.custom = 'true';
@@ -433,10 +433,17 @@ function bindSetupEvents(wrapper) {
       originalOrder.push(name);
       existingPills.add(name.toLowerCase());
     }
-    pillsContainer.dataset.originalOrder = JSON.stringify(originalOrder);
-    pillsContainer.querySelectorAll('.pill:not(.pill-add)').forEach((p) => p.classList.add('selected'));
-    updatePillIcons(wrapper);
-    syncSelectedPlayers(wrapper);
+    const allPills = [...pillsContainer.querySelectorAll('.pill:not(.pill-add)')];
+    const sortedNames = allPills.map((p) => p.dataset.player).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    const pillByPlayer = new Map(allPills.map((p) => [p.dataset.player.toLowerCase(), p]));
+    for (const name of sortedNames) {
+      const pill = pillByPlayer.get(name.toLowerCase());
+      if (pill) pillsContainer.insertBefore(pill, addBtn);
+    }
+    pillsContainer.dataset.originalOrder = JSON.stringify(sortedNames);
+    pillsContainer.querySelectorAll('.pill:not(.pill-add)').forEach((p) => p.classList.remove('selected'));
+    if (pillsContainer.dataset.manageMode === 'true') exitManageMode();
+    else { updatePillIcons(wrapper); syncSelectedPlayers(wrapper); }
   });
 
   wrapper.querySelector('#players-clear-btn')?.addEventListener('click', () => {

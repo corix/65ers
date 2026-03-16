@@ -4,6 +4,8 @@ import exportedData from '../fixtures/exported-games.json';
 
 const DRAFT_KEY = '65ers_draft';
 const EXPORTED_DATA_ENABLED_KEY = '65ers_read_exported_data';
+const READ_SUPABASE_KEY = '65ers_read_supabase';
+const SUPABASE_COUNT_KEY = '65ers_supabase_count';
 const LAST_SAVE_KEY = '65ers_last_save';
 const LAST_EXPORTED_AT_KEY = '65ers_last_exported_at';
 const LOCAL_GAMES_KEY = '65ers_local_games';
@@ -80,11 +82,16 @@ export function isLocalGame(gameId) {
 }
 
 export function isSupabaseDisabled() {
-  return isDemoMode();
+  if (!isDemoMode()) return false;
+  return localStorage.getItem(READ_SUPABASE_KEY) !== '1';
 }
 
 export function setSupabaseDisabled(disabled) {
-  setDemoMode(disabled);
+  if (isDemoMode()) {
+    localStorage.setItem(READ_SUPABASE_KEY, disabled ? '0' : '1');
+  } else if (disabled) {
+    setDemoMode(true);
+  }
 }
 
 export function isExportedDataEnabled() {
@@ -103,12 +110,50 @@ export function setLastExportedAt() {
   localStorage.setItem(LAST_EXPORTED_AT_KEY, new Date().toISOString());
 }
 
+const CLEARABLE_KEYS = [
+  DRAFT_KEY,
+  LAST_SAVE_KEY,
+  LOCAL_GAMES_KEY,
+  HIDDEN_GAME_IDS_KEY,
+  GAME_OVERRIDES_KEY,
+  CUSTOM_PLAYERS_KEY,
+  HIDDEN_PLAYER_NAMES_KEY,
+];
+
+export function hasLocalData() {
+  return CLEARABLE_KEYS.some((key) => localStorage.getItem(key) != null);
+}
+
+/** Count of games in Supabase. Persisted so it's available when Supabase is disabled; never overwritten with 0. */
+export async function getSupabaseGameCount() {
+  if (!isSupabaseDisabled()) {
+    const result = await supabase.from('games').select('*', { count: 'exact', head: true });
+    const count = result.count ?? 0;
+    if (count > 0) localStorage.setItem(SUPABASE_COUNT_KEY, String(count));
+  }
+  const persisted = localStorage.getItem(SUPABASE_COUNT_KEY);
+  return persisted != null ? parseInt(persisted, 10) : 0;
+}
+
+/** Count of games in exported-games.json. */
+export function getExportedGameCount() {
+  const games = exportedData?.games ?? [];
+  return games.filter((g) => g.id).length;
+}
+
+/** Count of local games in localStorage. */
+export function getLocalGameCount() {
+  return getLocalGames().length;
+}
+
 export function clearLocalData() {
-  localStorage.removeItem(DRAFT_KEY);
-  localStorage.removeItem(LAST_SAVE_KEY);
-  localStorage.removeItem(LOCAL_GAMES_KEY);
-  localStorage.removeItem(HIDDEN_GAME_IDS_KEY);
-  localStorage.removeItem(GAME_OVERRIDES_KEY);
+  for (const key of CLEARABLE_KEYS) {
+    localStorage.removeItem(key);
+  }
+}
+
+/** Clear player names stored in localStorage (custom players, hidden names). */
+export function clearLocalPlayerData() {
   localStorage.removeItem(CUSTOM_PLAYERS_KEY);
   localStorage.removeItem(HIDDEN_PLAYER_NAMES_KEY);
 }
@@ -158,7 +203,7 @@ export async function loadGames() {
   ]);
 
   let supabaseGames = [];
-  if (!isDemoMode()) {
+  if (!isSupabaseDisabled()) {
     const supabaseResult = await supabase
       .from('games')
       .select('id, date, players, winner, totals, rounds, source')
@@ -193,8 +238,12 @@ export async function loadGames() {
   }
 
   const localForMerge = isDemoMode() ? localGames : [];
-  const merged = [...supabaseGames, ...exportedGames, ...localForMerge];
-  merged.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  // In demo mode: prefer local > exported > Supabase so localStorage/backup data is never overwritten
+  const byId = new Map();
+  for (const g of supabaseGames) byId.set(g.id, g);
+  for (const g of exportedGames) byId.set(g.id, g);
+  for (const g of localForMerge) byId.set(g.id, g);
+  const merged = [...byId.values()].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   return merged;
 }
 
@@ -360,7 +409,7 @@ export async function getCustomPlayers() {
   ]);
 
   let fromSupabase = [];
-  if (!isDemoMode()) {
+  if (!isSupabaseDisabled()) {
     const supabaseResult = await supabase.from('players').select('name').order('name');
     if (supabaseResult.error) throw supabaseResult.error;
     fromSupabase = (supabaseResult.data ?? [])
