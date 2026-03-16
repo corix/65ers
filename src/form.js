@@ -1,5 +1,6 @@
 import { getPlayerRowsAndCustom, getAllPlayerNames, addCustomPlayer, removeCustomPlayer, saveGame, saveDraft, loadDraft, clearDraft, loadGames } from './api.js';
-import { formatDate } from './utils.js';
+import { createScratchDraftInNewGame, buildFillDraft } from './scratch.js';
+import { formatDate, todayShort, todayISO } from './utils.js';
 import { ROUNDS, SUITS, PILL_COLOR } from './constants.js';
 
 const PILL_TRASH_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
@@ -84,6 +85,9 @@ async function buildSetupHTML(draft = null) {
         </div>
       </div>
     </section>
+    <div class="game-setup-scratch-wrap">
+      <button type="button" class="scratch-entry-btn" title="Dev: generate test scoresheet (unsaved)">Scratch entry</button>
+    </div>
     <section id="scoresheet-area"></section>
   `;
 }
@@ -495,6 +499,16 @@ function bindSetupEvents(wrapper) {
     if (e.key === 'Enter') { e.preventDefault(); commitNewPlayer(); }
   });
 
+  const scratchBtn = wrapper.querySelector('.scratch-entry-btn');
+  if (scratchBtn) {
+    scratchBtn.addEventListener('click', async () => {
+      await createScratchDraftInNewGame();
+      const container = wrapper.closest('.view-container') || wrapper.parentElement;
+      container.innerHTML = '';
+      await renderForm(container);
+    });
+  }
+
   startBtn.addEventListener('click', () => {
     const raw = wrapper.querySelector('#game-date').value;
     const date = parseShortDate(raw);
@@ -528,6 +542,7 @@ function renderScoresheet(container, date, displayDate, players) {
       <div class="scoresheet-header">
         <h2>Scoresheet &mdash; <span class="scoresheet-date" data-date="${date || ''}" role="button" tabindex="0" aria-label="Game date (double-click to edit)">${displayDate || (date ? formatDate(date, true) : '')}</span> <button type="button" class="scoresheet-shortcuts-btn" aria-label="Keyboard shortcuts">ℹ</button></h2>
         <div class="scoresheet-header-actions">
+          <button type="button" class="fill-sheet-btn scratch-entry-btn" title="Dev: fill with realistic scores and tunks">Fill sheet</button>
           <button type="button" class="scoresheet-clear-btn text-btn icon-btn" aria-label="Clear scores"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
           <div class="start-over-wrap">
             <div class="start-over-tooltip" id="start-over-tooltip" hidden>Click to start over</div>
@@ -716,6 +731,8 @@ function restoreDraft(wrapper, draft) {
   }
 
   recalcTotals(table, draft.players || []);
+  const container = wrapper.querySelector('#scoresheet-area');
+  if (container) updateFillSheetButtonState(container);
   wrapper.dispatchEvent(new CustomEvent('scoresheet-restored', { bubbles: true }));
 }
 
@@ -726,6 +743,23 @@ function getPlayersFromTable(table) {
 function getTunkPlayerForRound(table, round) {
   const input = table.querySelector(`.score-input[data-round="${round}"].tunk-locked`);
   return input?.dataset.player || null;
+}
+
+function scoresheetHasFilledFields(container) {
+  const table = container.querySelector('.scoresheet-table');
+  if (!table) return false;
+  const hasScore = [...table.querySelectorAll('.score-input')].some((input) => input.value?.trim() !== '');
+  const hasTunk = table.querySelector('.score-input.tunk-locked') != null;
+  const hasPenalty = container.querySelector('.penalty-list [data-penalty]') != null;
+  return hasScore || hasTunk || hasPenalty;
+}
+
+function updateFillSheetButtonState(container) {
+  const btn = container.querySelector('.fill-sheet-btn');
+  if (!btn) return;
+  const filled = scoresheetHasFilledFields(container);
+  btn.textContent = filled ? 'Clear sheet' : 'Fill sheet';
+  btn.title = filled ? 'Dev: clear all scores and tunks' : 'Dev: fill with realistic scores and tunks';
 }
 
 function bindColumnReorder(table, wrapper) {
@@ -872,6 +906,8 @@ function persistDraft(wrapper) {
   persistDraftTimer = setTimeout(() => {
     const draft = getDraftFromForm(wrapper);
     if (draft) saveDraft(draft);
+    const container = wrapper.querySelector('#scoresheet-area');
+    if (container?.querySelector('.scoresheet')) updateFillSheetButtonState(container);
   }, 300);
 }
 
@@ -900,6 +936,27 @@ function bindScoresheetEvents(container, date, players) {
     shortcutsModal.querySelector('.scoresheet-shortcuts-modal-backdrop')?.addEventListener('click', closeModal);
   }
 
+  const fillSheetBtn = container.querySelector('.fill-sheet-btn');
+  if (fillSheetBtn) {
+    fillSheetBtn.addEventListener('click', async () => {
+      const filled = scoresheetHasFilledFields(container);
+      if (filled) {
+        table.querySelectorAll('.score-input').forEach(input => {
+          input.value = '';
+          input.classList.remove('tunk-locked', 'magic-65');
+        });
+        container.querySelectorAll('.penalty-list [data-penalty]').forEach(li => li.remove());
+        recalcTotals(table, players);
+        clearDraft();
+      } else {
+        const draft = await buildFillDraft(players, date, formatDate(date, true));
+        restoreDraft(wrapper, draft);
+      }
+      persistDraft(wrapper);
+      updateFillSheetButtonState(container);
+    });
+  }
+
   const clearBtn = container.querySelector('.scoresheet-clear-btn');
   if (clearBtn) {
     clearBtn.addEventListener('click', () => {
@@ -911,6 +968,7 @@ function bindScoresheetEvents(container, date, players) {
       recalcTotals(table, players);
       clearDraft();
       persistDraft(wrapper);
+      updateFillSheetButtonState(container);
     });
   }
 
@@ -1072,6 +1130,7 @@ function bindScoresheetEvents(container, date, players) {
       if (isTunkShortcut) {
         input.classList.remove('magic-65');
         setTunk(table, round, player, players);
+        persistDraft(wrapper);
         return;
       }
 
@@ -1227,6 +1286,7 @@ function bindScoresheetEvents(container, date, players) {
   })();
 
   recalcTotals(table, players);
+  updateFillSheetButtonState(container);
 }
 
 function getPenalties(table) {

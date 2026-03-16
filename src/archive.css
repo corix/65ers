@@ -58,6 +58,16 @@
   transform: translateY(-50%);
 }
 
+.archive-empty .empty-state .scratch-entry-btn {
+  margin-top: 1rem;
+}
+
+.archive-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
 /* Archive list */
 
 .archive-list {

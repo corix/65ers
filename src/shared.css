@@ -238,6 +238,40 @@ header h1 {
   color: var(--header-title-color, var(--heading-accent));
 }
 
+header h1.header-title {
+  position: relative;
+}
+
+.dev-mode-badge {
+  position: absolute;
+  top: -0.5em;
+  right: 0.4em;
+  font-family: ui-monospace, monospace;
+  font-size: 0.35em;
+  font-weight: 600;
+  background: #ffeb3b;
+  color: #1a1a2e;
+  padding: 0.12em 0.1em 0.05em 0.2em;
+  border-radius: 2px;
+}
+
+.scratch-entry-btn,
+.fill-sheet-btn {
+  font-size: 0.7rem;
+  padding: 0.2rem 0.4rem;
+  background: #fef5f5;
+  color: var(--red);
+  border: 2px dotted #e8b8b8;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.scratch-entry-btn:hover,
+.fill-sheet-btn:hover {
+  background: #fce8e8;
+}
+
 nav {
   position: absolute;
   left: 50%;
@@ -249,11 +283,6 @@ nav {
   padding: 3px;
   min-width: 420px;
   max-width: 800px;
-}
-
-#test-data-control {
-  margin-left: auto;
-  align-self: center;
 }
 
 .nav-slider {
@@ -384,6 +413,32 @@ nav[data-active-view="stats"] .nav-slider {
   display: block;
   font-size: 0.7rem;
   color: var(--text-muted-2);
+}
+
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.status-indicator::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-indicator[data-status="on"]::before {
+  background: var(--green);
+}
+
+.status-indicator[data-status="off"]::before {
+  background: #bbb;
+}
+
+.header-kebab-option--danger .header-kebab-option-title {
+  color: var(--red);
 }
 
 .test-data-link {

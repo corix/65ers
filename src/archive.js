@@ -1,5 +1,6 @@
 import './archive.css';
-import { loadGames, getExportData, deleteGame, updateGame, cleanOrphanedPlayers, loadDraft } from './api.js';
+import { loadGames, deleteGame, updateGame, cleanOrphanedPlayers, loadDraft } from './api.js';
+import { createScratchGameInArchive } from './scratch.js';
 import { formatDate } from './utils.js';
 import { ROUNDS, SUITS } from './constants.js';
 
@@ -72,7 +73,7 @@ export async function renderArchive(container, { runCleanup = false } = {}) {
   container.innerHTML = '<div class="archive-loading"><p>Loading…</p></div>';
   const games = await loadGames();
   if (runCleanup) {
-    await cleanOrphanedPlayers(loadDraft()?.players ?? [], games);
+    await cleanOrphanedPlayers(loadDraft()?.players ?? []);
   }
   container.innerHTML = '';
 
@@ -80,11 +81,37 @@ export async function renderArchive(container, { runCleanup = false } = {}) {
     const emptyDiv = document.createElement('div');
     emptyDiv.className = 'archive-empty';
     emptyDiv.innerHTML = `
-      <div class="card empty-state"><p>No games saved yet. Go to <strong>New Game</strong> to add one.</p></div>
+      <div class="card empty-state">
+        <p>No games saved yet. Go to <strong>New Game</strong> to add one.</p>
+        <button type="button" class="scratch-entry-btn" title="Dev: generate test game">Scratch entry</button>
+      </div>
     `;
+    const scratchBtn = emptyDiv.querySelector('.scratch-entry-btn');
+    if (scratchBtn) {
+      scratchBtn.addEventListener('click', async () => {
+        await createScratchGameInArchive();
+        container.innerHTML = '';
+        await renderArchive(container);
+      });
+    }
     container.appendChild(emptyDiv);
     return;
   }
+
+  const toolbar = document.createElement('div');
+  toolbar.className = 'archive-toolbar';
+  toolbar.innerHTML = `
+    <button type="button" class="scratch-entry-btn" title="Dev: generate test game">Scratch entry</button>
+  `;
+  const scratchToolbarBtn = toolbar.querySelector('.scratch-entry-btn');
+  if (scratchToolbarBtn) {
+    scratchToolbarBtn.addEventListener('click', async () => {
+      await createScratchGameInArchive();
+      container.innerHTML = '';
+      await renderArchive(container);
+    });
+  }
+  container.appendChild(toolbar);
 
   const list = document.createElement('div');
   list.className = 'archive-list';
@@ -180,7 +207,7 @@ export async function renderArchive(container, { runCleanup = false } = {}) {
         e.stopPropagation();
         hideAllReveals();
         showDeleteConfirmModal(container, game.id, async () => {
-          await deleteGame(game.id, game.players ?? []);
+          await deleteGame(game.id);
           container.innerHTML = '';
           await renderArchive(container, { runCleanup: true });
         }, item);

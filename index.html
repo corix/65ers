@@ -23,7 +23,7 @@
         });
       })();
     </script>
-    <title>The 65 Almanac</title>
+    <title>The 65 Almanac [DEMO]</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -32,7 +32,7 @@
   </head>
   <body>
     <header>
-      <h1>The 65 Almanac</h1>
+      <h1 class="header-title"><span class="dev-mode-badge">DEMO</span>The 65 Almanac</h1>
       <nav>
         <span class="nav-slider"></span>
         <button class="nav-btn active" data-view="entry">New Game</button>
@@ -45,10 +45,18 @@
           <button type="button" class="header-kebab-option" data-action="theme" id="theme-toggle-btn">
             <span class="header-kebab-option-title" id="theme-toggle-label">Dark mode</span>
           </button>
-          <button type="button" class="header-kebab-option" data-action="download">
-            <span class="header-kebab-option-title">Download backup</span>
-            <span class="header-kebab-option-divider"></span>
-            <span class="header-kebab-option-caption" id="last-backup-caption">Not backed up</span>
+          <span class="header-kebab-option-divider"></span>
+          <button type="button" class="header-kebab-option" data-action="local-only">
+            <span class="header-kebab-option-title">Read Supabase</span>
+            <span class="header-kebab-option-caption status-indicator" id="local-only-caption" data-status="on" aria-label="On">On</span>
+          </button>
+          <button type="button" class="header-kebab-option" data-action="exported-data">
+            <span class="header-kebab-option-title">Read backup</span>
+            <span class="header-kebab-option-caption status-indicator" id="exported-data-caption" data-status="off" aria-label="Off">Off</span>
+          </button>
+          <span class="header-kebab-option-divider"></span>
+          <button type="button" class="header-kebab-option header-kebab-option--danger" data-action="clear-local">
+            <span class="header-kebab-option-title">Clear local</span>
           </button>
         </div>
       </div>

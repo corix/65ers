@@ -1,8 +1,8 @@
 // Remove critical-theme style after first paint so shared.css transitions apply
 requestAnimationFrame(() => { document.getElementById('critical-theme')?.remove(); });
 
-import { getExportData, loadGames, getPlayerRowsAndCustom } from './api.js';
-import exportedGames from '../fixtures/exported-games.json';
+import './shared.css';
+import { isSupabaseDisabled, setSupabaseDisabled, isExportedDataEnabled, setExportedDataEnabled, clearLocalData, loadGames, getPlayerRowsAndCustom } from './api.js';
 import { renderForm } from './form.js';
 import { renderArchive } from './archive.js';
 import { renderStats } from './stats.js';
@@ -178,50 +178,39 @@ function toggleTheme() {
   setTheme(getTheme() === 'dark' ? 'light' : 'dark');
 }
 
-function formatBackupDuration(iso) {
-  if (!iso) return null;
-  const d = new Date(iso);
-  const now = new Date();
-  const diffMs = now - d;
-  if (diffMs < 0) return null;
-  const minutes = Math.floor(diffMs / (60 * 1000));
-  const hours = Math.floor(diffMs / (60 * 60 * 1000));
-  const days = Math.floor(diffMs / (24 * 60 * 60 * 1000));
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m`;
-  if (hours < 24) return `${hours}h`;
-  if (days < 30) return `${days}d`;
-  const months = Math.max(1, (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth()));
-  return `${months}mo`;
-}
-
-async function updateLastBackupCaption() {
-  const caption = document.getElementById('last-backup-caption');
-  if (!caption) return;
-  const games = await loadGames();
-  const y = games.length;
-  const x = Array.isArray(exportedGames?.games) ? exportedGames.games.length : 0;
-  const lastModified = typeof __EXPORTED_GAMES_MTIME__ === 'string' ? __EXPORTED_GAMES_MTIME__ : null;
-  const duration = lastModified ? formatBackupDuration(lastModified) : null;
-  if (!lastModified || !duration) {
-    caption.textContent = `${x} of ${y} saved`;
-    return;
-  }
-  caption.textContent = duration === 'just now' ? `${x} of ${y} saved just now` : `${x} of ${y} saved ${duration} ago`;
-}
-
 // Header kebab (Archive options)
 const headerKebab = document.getElementById('header-nav-kebab');
 const kebabBtn = headerKebab?.querySelector('.header-kebab-btn');
 const kebabMenu = headerKebab?.querySelector('.header-kebab-menu');
 if (kebabBtn && kebabMenu) {
+  function updateLocalOnlyCaption() {
+    const caption = document.getElementById('local-only-caption');
+    if (caption) {
+      const on = !isSupabaseDisabled();
+      caption.dataset.status = on ? 'on' : 'off';
+      caption.textContent = on ? 'On' : 'Off';
+      caption.setAttribute('aria-label', on ? 'On' : 'Off');
+    }
+  }
+
+  function updateExportedDataCaption() {
+    const caption = document.getElementById('exported-data-caption');
+    if (caption) {
+      const on = isExportedDataEnabled();
+      caption.dataset.status = on ? 'on' : 'off';
+      caption.textContent = on ? 'On' : 'Off';
+      caption.setAttribute('aria-label', on ? 'On' : 'Off');
+    }
+  }
+
   updateThemeToggleLabel();
   kebabBtn.addEventListener('click', async (e) => {
     e.stopPropagation();
     const isOpen = !kebabMenu.hidden;
     kebabMenu.hidden = isOpen;
     if (!kebabMenu.hidden) {
-      await updateLastBackupCaption();
+      updateLocalOnlyCaption();
+      updateExportedDataCaption();
       document.addEventListener('click', () => { kebabMenu.hidden = true; }, { once: true });
     }
   });
@@ -230,20 +219,24 @@ if (kebabBtn && kebabMenu) {
     kebabMenu.hidden = true;
     toggleTheme();
   });
-  headerKebab.querySelector('.header-kebab-option[data-action="download"]')?.addEventListener('click', async (e) => {
+  headerKebab.querySelector('.header-kebab-option[data-action="local-only"]')?.addEventListener('click', async (e) => {
     e.stopPropagation();
-    kebabMenu.hidden = true;
-    const data = await getExportData();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    a.download = `65_Almanac_Backup_${y}-${m}-${d}.json`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-    updateLastBackupCaption();
+    setSupabaseDisabled(!isSupabaseDisabled());
+    updateLocalOnlyCaption();
+    viewContainers[currentView].innerHTML = '';
+    await showView(currentView, { animateNav: false });
+  });
+  headerKebab.querySelector('.header-kebab-option[data-action="exported-data"]')?.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    setExportedDataEnabled(!isExportedDataEnabled());
+    updateExportedDataCaption();
+    viewContainers[currentView].innerHTML = '';
+    await showView(currentView, { animateNav: false });
+  });
+  headerKebab.querySelector('.header-kebab-option[data-action="clear-local"]')?.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    clearLocalData();
+    viewContainers[currentView].innerHTML = '';
+    await showView(currentView, { animateNav: false });
   });
 }
