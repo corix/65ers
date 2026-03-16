@@ -2,6 +2,7 @@ import './archive.css';
 import { loadGames, deleteGame, updateGame, cleanOrphanedPlayers, loadDraft } from './api.js';
 import { createScratchGameInArchive } from './scratch.js';
 import { formatDate } from './utils.js';
+import { ROUNDS, SUITS } from './constants.js';
 
 const TRASH_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
 
@@ -363,9 +364,13 @@ function buildArchiveTable(game) {
       return `<td class="${cls}" data-player="${p}"><span class="player-col-label">${p}</span><span class="cell-value">${display}</span></td>`;
     }).join('');
 
+    const suit = SUITS[ROUNDS.indexOf(r.round) % SUITS.length];
+    const isRed = suit === '♥' || suit === '♦';
+    const suitClass = isRed ? 'suit suit-red' : 'suit';
+    const titleClass = isRed ? 'round-title round-red' : 'round-title';
     return `<tr data-round="${r.round}" class="round-row" aria-expanded="${i === 0}">
-      <td class="round-label" data-round="${r.round}">
-        <button type="button" class="round-toggle" aria-expanded="${i === 0}"><span class="round-title" data-round="${r.round}">Round ${r.round}</span></button>
+      <td class="round-label" data-round="${r.round}" data-suit="${suit}">
+        <button type="button" class="round-toggle" aria-expanded="${i === 0}"><span class="${titleClass}" data-round="${r.round}" data-suit="${suit}"><span class="round-num">${r.round}</span> <span class="${suitClass}">${suit}</span></span></button>
       </td>${cells}</tr>`;
   }).join('');
 

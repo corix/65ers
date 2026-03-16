@@ -38,9 +38,21 @@ input[type="text"] {
   max-width: 160px;
 }
 
+#game-date::-webkit-datetime-edit {
+  color: transparent;
+}
+#game-date:focus::-webkit-datetime-edit,
+#game-date.has-value::-webkit-datetime-edit {
+  color: inherit;
+}
+
+input[type="text"]::placeholder {
+  color: var(--text-muted-2);
+}
+
 .hint {
   font-weight: 400;
-  color: #888;
+  color: var(--text-muted-2);
   font-size: 0.82rem;
 }
 
@@ -50,7 +62,7 @@ input[type="text"] {
   padding: 0;
   margin-left: 0.25rem;
   font-size: 0.82rem;
-  color: #888;
+  color: var(--text-muted-2);
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -58,7 +70,7 @@ input[type="text"] {
 }
 
 .players-clear-link:hover {
-  color: #555;
+  color: var(--text-muted);
 }
 
 .players-clear-link:disabled {
@@ -68,7 +80,7 @@ input[type="text"] {
 }
 
 .players-clear-link:disabled:hover {
-  color: #888;
+  color: var(--text-muted-2);
 }
 
 .input-error {
@@ -119,15 +131,15 @@ input[type="text"] {
   padding: 0;
   background: none;
   border: none;
-  color: #888;
+  color: var(--text-muted-2);
   cursor: pointer;
   font-family: inherit;
   border-radius: 4px;
 }
 
 .game-setup-kebab-btn:hover {
-  color: #555;
-  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-muted);
+  background: var(--hover-overlay);
 }
 
 .game-setup-kebab-btn svg {
@@ -159,16 +171,16 @@ input[type="text"] {
   border-radius: 4px;
   cursor: pointer;
   font-family: inherit;
-  color: #333;
+  color: var(--text);
 }
 
 .game-setup-option:hover {
-  background: #f5f6fa;
+  background: var(--surface);
 }
 
 .shortcut-hint {
   font-size: 0.7rem;
-  color: #999;
+  color: var(--text-muted-2);
   font-weight: 400;
 }
 
@@ -178,7 +190,7 @@ input[type="text"] {
   padding: 0;
   margin-left: 0.25rem;
   font-size: 0.82rem;
-  color: #888;
+  color: var(--text-muted-2);
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -186,7 +198,7 @@ input[type="text"] {
 }
 
 .players-done-btn:hover {
-  color: #555;
+  color: var(--text-muted);
 }
 
 /* Scoresheet exit flourish */
@@ -308,7 +320,7 @@ input[type="text"] {
   padding: 0.5rem 1.25rem;
   font-size: 0.9rem;
   font-weight: 500;
-  color: #555;
+  color: var(--text-muted);
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -367,7 +379,7 @@ input[type="text"] {
   border-radius: 100px;
   border: 1px solid var(--border);
   background: var(--card-bg);
-  color: #555;
+  color: var(--text-muted);
   font-size: 0.82rem;
   font-family: inherit;
   font-weight: 500;
@@ -387,20 +399,20 @@ input[type="text"] {
 }
 
 .pill:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--pill-accent);
+  color: var(--pill-accent);
 }
 
 .pill.selected {
-  background: #e3edff;
-  color: var(--accent);
-  border-color: var(--accent);
+  background: var(--pill-selected-bg);
+  color: var(--pill-accent);
+  border-color: var(--pill-accent);
 }
 
 .pill.selected:hover {
-  background: #d4e4ff;
-  color: var(--accent);
-  border-color: var(--accent);
+  background: var(--pill-selected-hover-bg);
+  color: var(--pill-accent);
+  border-color: var(--pill-accent);
 }
 
 .pill-remove {
@@ -440,15 +452,15 @@ input[type="text"] {
 }
 
 .player-pills[data-manage-mode="true"] .pill.selected {
-  background: #4a4a4a;
-  border-color: #4a4a4a;
-  color: #fff;
+  background: var(--pill-manage-bg);
+  border-color: var(--pill-manage-bg);
+  color: var(--text-on-color);
 }
 
 .player-pills[data-manage-mode="true"] .pill[data-custom="true"]:hover {
-  background: #1a1a2e;
-  border-color: #1a1a2e;
-  color: #fff;
+  background: var(--pill-manage-hover);
+  border-color: var(--pill-manage-hover);
+  color: var(--text-on-color);
 }
 
 .player-pills[data-manage-mode="true"] .pill[data-custom="true"]:hover .pill-remove {
@@ -479,7 +491,7 @@ input[type="text"] {
   box-sizing: border-box;
   border-radius: 100px;
   background: var(--pill-color, var(--accent));
-  color: #fff;
+  color: var(--text-on-color);
   font-size: 0.82rem;
   font-family: inherit;
   font-weight: 500;
@@ -496,7 +508,7 @@ input[type="text"] {
   align-items: center;
   border: 1px dashed var(--border);
   background: var(--card-bg);
-  color: #999;
+  color: var(--text-muted-2);
   font-size: 0.9rem;
   padding: 0 0.6rem;
   height: 1.75rem;
@@ -535,7 +547,7 @@ input[type="text"] {
 }
 
 .add-player-row button:hover {
-  background: #eee;
+  background: var(--icon-btn-bg);
 }
 
 /* Game setup collapsed */
@@ -557,23 +569,23 @@ input.score-input {
 }
 
 .score-input:focus {
-  outline: 1px solid #000;
+  outline: 1px solid var(--focus-outline);
   outline-offset: 1px;
 }
 
 .score-input.tunk-locked {
-  background: #e8f5e9;
+  background: var(--winner-bg);
   color: var(--green);
 }
 
 .score-input.magic-65 {
-  background: #e3f2fd;
+  background: var(--magic-bg);
   color: var(--accent);
   font-weight: 700;
 }
 
 .score-input.tink {
-  background: #e3f2fd;
+  background: var(--magic-bg);
   color: var(--accent);
   font-weight: 700;
 }
@@ -592,7 +604,7 @@ input.score-input {
   user-select: none;
   pointer-events: none;
   background: var(--red);
-  color: #fff;
+  color: var(--text-on-color);
   padding: 0.1em 0.3em;
   border-radius: 3px;
   display: flex;
@@ -610,7 +622,7 @@ input.score-input {
   transform: translateY(-50%);
   margin-left: 0.35rem;
   font-size: 0.8em;
-  color: #888;
+  color: var(--text-muted-2);
   white-space: nowrap;
   pointer-events: none;
 }
@@ -633,7 +645,7 @@ input.score-input {
 .score-cell.has-penalty .score-input {
   width: 48px !important;
   min-width: 48px;
-  color: #000 !important;
+  color: var(--text) !important;
   border: 1px solid var(--red) !important;
   border-radius: 4px;
 }
@@ -652,37 +664,41 @@ input.score-input {
     background: transparent;
   }
 
-  .scoresheet .scoresheet-table tbody tr:nth-child(-n+10):nth-child(odd) td {
+  .scoresheet .scoresheet-table tbody tr:nth-child(-n+10):nth-child(odd) td:not(.round-label) {
     border-bottom: none;
-    background-image: linear-gradient(to right, #000 25%, transparent 0%);
+    background-image: linear-gradient(to right, var(--round-separator) 25%, transparent 0%);
     background-position: bottom;
     background-size: 12px 1px;
     background-repeat: repeat-x;
   }
 
-  .scoresheet .scoresheet-table tbody tr:nth-child(-n+10):nth-child(even) td {
+  .scoresheet .scoresheet-table tbody tr:nth-child(-n+10):nth-child(even) td:not(.round-label) {
     border-bottom: none;
-    background-image: linear-gradient(to right, var(--red) 25%, transparent 0%);
+    background-image: linear-gradient(to right, var(--round-separator-tunk) 25%, transparent 0%);
     background-position: bottom;
     background-size: 12px 1px;
     background-repeat: repeat-x;
+  }
+
+  .scoresheet .scoresheet-table tbody tr td.round-label {
+    border-bottom: none;
   }
 
   .scoresheet .scoresheet-table td.score-cell:nth-child(2n) .score-input {
-    background-color: #fef5f5;
+    background-color: var(--input-stripe-2);
   }
 
   .scoresheet .scoresheet-table td.score-cell:nth-child(2n+1) .score-input {
-    background-color: #f5f5f5;
+    background-color: var(--input-stripe-1);
   }
 
   .scoresheet .scoresheet-table td.score-cell .score-input.tunk-locked {
-    background-color: #e8f5e9 !important;
+    background-color: var(--winner-bg) !important;
   }
 
   .scoresheet .scoresheet-table td.score-cell .score-input.magic-65,
   .scoresheet .scoresheet-table td.score-cell .score-input.tink {
-    background-color: #e3f2fd !important;
+    background-color: var(--magic-bg) !important;
   }
 
 }
@@ -714,7 +730,7 @@ input.score-input {
   padding: 0;
   font-size: 1rem;
   line-height: 1;
-  color: #888;
+  color: var(--text-muted-2);
   background: transparent;
   border: none;
   border-radius: 4px;
@@ -728,7 +744,7 @@ input.score-input {
 
 .player-remove-btn:hover {
   color: var(--red, #d64045);
-  background: rgba(214, 64, 69, 0.1);
+  background: var(--red-hover-bg);
 }
 
 .player-col-header:active {
@@ -740,7 +756,7 @@ input.score-input {
 }
 
 .player-col-header.drag-over {
-  background: #e8eeff;
+  background: var(--drag-over-bg);
   border-radius: 4px;
 }
 
@@ -762,7 +778,7 @@ input.score-input {
   border: none;
   font-size: 0.8rem;
   font-weight: 400;
-  color: #888;
+  color: var(--text-muted-2);
   cursor: pointer;
   font-family: inherit;
   text-align: left;
@@ -770,7 +786,7 @@ input.score-input {
 }
 
 .penalties-heading:hover {
-  color: #555;
+  color: var(--text-muted);
 }
 
 .penalty-add-row[hidden] {
@@ -826,8 +842,8 @@ input.score-input {
   align-items: center;
   gap: 0.5rem;
   padding: 0.25rem 0.5rem;
-  background: #fdecea;
-  border: 1px solid #f5c6c6;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
   border-radius: 4px;
   color: var(--red);
   font-weight: 500;
@@ -847,7 +863,7 @@ input.score-input {
 }
 
 .remove-penalty:hover {
-  color: #a02025;
+  color: var(--red-hover);
 }
 
 /* Scoresheet header */
@@ -868,6 +884,7 @@ input.score-input {
 .scoresheet-header h2 {
   margin: 0;
   flex: 1;
+  color: var(--heading-accent);
 }
 
 .scoresheet-date {
@@ -880,9 +897,9 @@ input.score-input {
   font: inherit;
   font-weight: 600;
   padding: 0.2rem 0.4rem;
-  border: 1px solid var(--border, #ddd);
+  border: 1px solid var(--border);
   border-radius: 4px;
-  background: var(--card-bg, #fff);
+  background: var(--card-bg);
   max-width: 10rem;
   vertical-align: middle;
 }
@@ -897,8 +914,8 @@ input.score-input {
   padding: 0;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #888;
-  background: #eee;
+  color: var(--text-muted-2);
+  background: var(--icon-btn-bg);
   border: none;
   border-radius: 50%;
   cursor: pointer;
@@ -907,8 +924,8 @@ input.score-input {
 }
 
 .scoresheet-shortcuts-btn:hover {
-  color: #555;
-  background: #e0e0e0;
+  color: var(--text-muted);
+  background: var(--icon-btn-bg-hover);
 }
 
 .scoresheet-header-actions {
@@ -946,17 +963,17 @@ input.score-input {
 .scoresheet-shortcuts-modal-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--backdrop-bg);
   cursor: pointer;
 }
 
 .scoresheet-shortcuts-modal-content {
   position: relative;
-  background: #fff;
+  background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1.25rem 2rem 1.25rem 1.25rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 20px var(--modal-shadow);
   max-width: 420px;
   min-width: 360px;
 }
@@ -975,7 +992,7 @@ input.score-input {
 .shortcuts-table td {
   padding: 0.4rem 0;
   vertical-align: top;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid var(--shortcut-table-border);
 }
 
 .shortcuts-table tr:last-child td {
@@ -999,7 +1016,7 @@ input.score-input {
   padding: 0.1em 0.35em;
   font-size: 0.9em;
   font-family: inherit;
-  background: #f0f0f0;
+  background: var(--kbd-bg);
   border: 1px solid var(--border);
   border-radius: 4px;
 }
@@ -1013,7 +1030,7 @@ input.score-input {
   padding: 0;
   font-size: 1.25rem;
   line-height: 1;
-  color: #888;
+  color: var(--text-muted-2);
   background: none;
   border: none;
   cursor: pointer;
@@ -1021,7 +1038,7 @@ input.score-input {
 }
 
 .shortcuts-modal-close:hover {
-  color: #333;
+  color: var(--text);
 }
 
 .scoresheet {
@@ -1041,8 +1058,8 @@ input.score-input {
   padding: 0.35rem 0.6rem;
   font-size: 0.8rem;
   white-space: nowrap;
-  background: #333;
-  color: #fff;
+  background: var(--tooltip-bg);
+  color: var(--text-on-color);
   border-radius: 4px;
   pointer-events: none;
 }
@@ -1054,7 +1071,7 @@ input.score-input {
   left: 50%;
   transform: translateX(-50%);
   border: 5px solid transparent;
-  border-top-color: #333;
+  border-top-color: var(--tooltip-bg);
 }
 
 .scoresheet .start-over-btn {
@@ -1087,7 +1104,7 @@ input.score-input {
   border: none;
   padding: 0;
   font-size: 0.9rem;
-  color: #888;
+  color: var(--text-muted-2);
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -1095,7 +1112,7 @@ input.score-input {
 }
 
 .text-btn:hover {
-  color: #555;
+  color: var(--text-muted);
 }
 
 .cancel-x-btn {
@@ -1105,7 +1122,7 @@ input.score-input {
   outline: none;
   padding: 0;
   font-size: var(--x-symbol-size);
-  color: #888;
+  color: var(--text-muted-2);
   cursor: pointer;
   text-decoration: none;
   font-family: inherit;
@@ -1117,7 +1134,7 @@ input.score-input {
 }
 
 .players-label {
-  color: #666;
+  color: var(--text-muted);
   font-size: 0.85rem;
   margin: -0.5rem 0 1rem;
 }
@@ -1226,7 +1243,7 @@ input.score-input {
     justify-content: space-between;
     width: 100%;
     padding: 0.5rem 0.75rem;
-    background: #f5f6fa;
+    background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     font: inherit;
@@ -1292,17 +1309,17 @@ input.score-input {
     display: block;
     padding: 0.5rem 0.75rem;
     margin-bottom: 0.35rem;
-    background: #fafbfd;
+    background: var(--surface-alt);
     border: 1px solid var(--border);
     border-radius: var(--radius);
   }
 
   .scoresheet-table tbody tr:nth-child(even) {
-    background: #f5f6fa;
+    background: var(--surface);
   }
 
   .scoresheet-table tfoot tr.totals-row {
-    background: #f0f2f8 !important;
+    background: var(--totals-row-bg) !important;
     font-weight: 700;
   }
 
@@ -1365,7 +1382,19 @@ input.score-input {
 
   .scoresheet-table .round-row[aria-expanded="false"] {
     padding: 0.2rem 0.75rem;
-    color: #888;
+    color: var(--text-muted-2);
+  }
+
+  .scoresheet-table .round-row[aria-expanded="false"] .suit-red {
+    color: var(--round-suit-red);
+  }
+
+  .scoresheet-table .round-row[aria-expanded="false"] .suit:not(.suit-red) {
+    color: var(--round-suit-black);
+  }
+
+  .scoresheet-table .round-row[aria-expanded="false"] .round-title.round-red .round-num {
+    color: var(--round-suit-red);
   }
 
   .scoresheet-table .score-cell,
@@ -1386,7 +1415,7 @@ input.score-input {
   .scoresheet-table .player-col-label {
     display: inline;
     font-weight: 500;
-    color: #555;
+    color: var(--text-muted);
     flex-shrink: 0;
   }
 
@@ -1463,9 +1492,64 @@ input.score-input {
     font-size: 0;
   }
 
-  .scoresheet-table .round-title::after {
+  .scoresheet-table .round-title::before {
     content: attr(data-round);
-    font-size: 0.9rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+
+  .scoresheet-table .round-title[data-round="10"]::before,
+  .scoresheet-table .round-title[data-round="J"]::before,
+  .scoresheet-table .round-title[data-round="Q"]::before,
+  .scoresheet-table .round-title[data-round="K"]::before {
+    font-size: 0.72rem;
+  }
+
+  .scoresheet-table .round-title[data-round="10"]::after,
+  .scoresheet-table .round-title[data-round="J"]::after,
+  .scoresheet-table .round-title[data-round="Q"]::after,
+  .scoresheet-table .round-title[data-round="K"]::after {
+    letter-spacing: -0.12em;
+  }
+
+  .scoresheet-table .round-title[data-suit="♥"]::before,
+  .scoresheet-table .round-title[data-suit="♦"]::before {
+    color: var(--round-suit-red);
+  }
+
+  .scoresheet-table .round-title[data-suit="♣"]::before,
+  .scoresheet-table .round-title[data-suit="♠"]::before {
+    color: var(--round-suit-black);
+  }
+
+  .scoresheet-table .round-title::after {
+    content: " " attr(data-suit);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .scoresheet-table .round-title[data-suit="♥"]::after,
+  .scoresheet-table .round-title[data-suit="♦"]::after {
+    color: var(--round-suit-red);
+  }
+
+  .scoresheet-table .round-title[data-suit="♣"]::after,
+  .scoresheet-table .round-title[data-suit="♠"]::after {
+    color: var(--round-suit-black);
+  }
+
+  .scoresheet-table .round-toggle-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    min-width: 2.5rem;
+    padding: 0.25rem 0.25rem 0.5rem 0.05rem;
+    border-left: 1px solid var(--round-wrapper-border);
+    border-top: 1px solid var(--round-wrapper-border);
+    border-radius: 6px 0 0 0;
+    box-sizing: border-box;
+    box-shadow: var(--round-wrapper-shadow);
   }
 
   .scoresheet-table .round-toggle {
@@ -1473,6 +1557,8 @@ input.score-input {
     padding: 0;
     cursor: default;
     pointer-events: none;
+    border: none;
+    background: transparent;
   }
 
   .scoresheet-table .round-toggle::after {

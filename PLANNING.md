@@ -56,13 +56,15 @@ Creates new entries, which entails:
 All past game scoresheets, displayed as tabular data:
 
 - Games listed newest-first in an accordion; only one game can be expanded at a time
-- Delete (trash icon; type DELETE to confirm in modal)
-- Editable dates (double-click)
+- Edit date/delete entries
+  - Right-click on the entry to expose controls
+  - Delete via trash icon; type DELETE to confirm in modal
+  - Date can be changed with input and picker
 - A tunk is visually represented as a star (★) 
 - A tink is shown as a number ("0") 
-- A magic 65 is shown as "65*" 
-- False tunks show a red "FT" badge
-- Export button (header kebab: Download backup) downloads `65_Almanac_Backup_YYYY-MM-DD.json`
+- A magic 65 is shown as "(65)"
+- False tunks (Penalties) show a red badge with "+65"
+- Export button (header kebab: Download backup) downloads `65_Almanac_Backup_YYYY-MM-DD.json` (see [fixtures/README.md](fixtures/README.md) for format)
 
 ### 3. Stats
 
@@ -73,12 +75,17 @@ Data insights and visualizations (display order):
 - Record cards: Lowest All-Time Score, Most Tunks in a Game, Highest Winning Score
 - Average Score by Round chart — scatter plot with regression lines
 
+### Additional features
+
+- Download JSON backups with last save date (compares exported entries to DB)
+- Theme toggle (header kebab: Dark/Light mode) with system preference fallback; persisted in localStorage
+
 ### Out of scope / not doing
 
 - Ability to edit entries — delete and date-edit are supported; further edits not needed
 - Multiple databases/different types of entries — only one collection of scoresheets, for one type of game
 - The game itself (playing 65 with the computer) — this tool is just to store the scoresheets and show insights about the players
-- CSV export — no value
+- CSV export — no real value
 
 ---
 
@@ -109,27 +116,29 @@ These are the building stages for this project.
 - App runs in production with localStorage; validates deployment pipeline
 - No backend or env vars required yet
 
-### 4. 👉 Phase 4 — Integrate Supabase [WE ARE HERE]
+### 4. Phase 4 — Integrate Supabase 🟢 complete
 
 
 | Todo                 | Purpose                                             | Task(s)                                                                                                                                                    | Status 🚥                                            |
 | -------------------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| Set up schema        | Define DB structure for persistence                 |• Create Supabase project <br />• Games and players tables<br />• Run migrations                                                                                      | 🟢 Tables exist; ready to connect                    |
-| Create env variables | Enable app to connect to Supabase                   |• Get `VITE_SUPABASE_URL` & `VITE_SUPABASE_ANON_KEY` from Supabase dashboard<br />• Create `.env` in project root, add vars<br />• Add to Netlify dashboard          | 🟢 Credentials in place; ready to wire up client     |
+| Set up schema        | Define DB structure for persistence                 | • Create Supabase project • Games and players tables • Run migrations                                                                                      | 🟢 Tables exist; ready to connect                    |
+| Create env variables | Enable app to connect to Supabase                   | • Get `VITE_SUPABASE_URL` & `VITE_SUPABASE_ANON_KEY` from Supabase dashboard • Create `.env` in project root, add vars • Add to Netlify dashboard          | 🟢 Credentials in place; ready to wire up client     |
 | Decide fixture flow  | Unblock Replace api.js                              | See *Implementation notes*                                                                                                                                 | 🟢 Decision made; implementation path clear          |
-| Replace api.js       | Switch app from localStorage to Supabase            |• Install `@supabase/supabase-js`<br />• Initialize Supabase client<br />• Keep drafts in localStorage (saveDraft, loadDraft, clearDraft)                            | 🟢 Supabase connected; main uses it for reads/writes |
-| Migrate entries      | Populate Supabase with existing data                |• Run manual migration script on `exported-games.json` to insert into players and games via Supabase client<br />• Verify row counts and spot-check a few games | 🟢 Data lives in Supabase; begin testing             |
-| Test                 | Verify everything works in production               |• Redeploy to Netlify<br />• Test New Game -> game exists in DB<br />• Test Archive -> game is removed from DB<br />• Test Stats -> players included/removed              | 🌕 Everything works; ready to document               |
-| Document             | Document fixture behavior (decisions and failsafes) |dev-mode branch configured                                                                                                                               | 🌕 Fallback behavior documented                      |
+| Replace api.js       | Switch app from localStorage to Supabase            | • Install `@supabase/supabase-js` • Initialize Supabase client • Keep drafts in localStorage (saveDraft, loadDraft, clearDraft)                            | 🟢 Supabase connected; main uses it for reads/writes |
+| Migrate entries      | Populate Supabase with existing data                | • Run manual migration script on `exported-games.json` to insert into players and games via Supabase client • Verify row counts and spot-check a few games | 🟢 Data lives in Supabase; begin testing             |
+| Test                 | Verify everything works in production               | • Redeploy to Netlify • Test New Game -> game exists in DB • Test Archive -> game is removed from DB • Test Stats -> players included/removed              | 🟢 Everything works; ready to document               |
+| Document             | Document fixture behavior (decisions and failsafes) | dev-mode branch configured                                                                                                                                 | 🟢 Fallback behavior documented                      |
 
 
-### 5. Phase 5 — Password protection and auth
+### 5. Phase 5 — Password protection and auth  👉  WE ARE HERE
+
 See `PHASE-5-Perms.md`
 
 - Password protection (Supabase Auth)
 - Optionally explore login credentials
 
 ### 6. Phase 6 — Explore more features
+
 See `PHASE-6-OCR.md`
 
 - More player stats metrics and chart visualizations
@@ -140,14 +149,26 @@ See `PHASE-6-OCR.md`
 
 ## Implementation notes
 
+### Tech stack
+
+Vite, vanilla JS, Chart.js, Supabase. No framework.
+
 ### Code structure
 
-- `main.js` — Nav, view switching; header kebab
+- `main.js` — Nav, view switching (persists last view in localStorage); header kebab
 - `form.js` — New Game form and scoresheet
 - `archive.js` — Archive view, export, delete, date edit
 - `stats.js` — Stats view and charts
 - `api.js` — Persistence: main = full Supabase; dev-mode = hybrid (read Supabase + optional backup, write localStorage)
+- `supabase.js` — Supabase client initialization (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`)
+- `utils.js` — Shared helpers: `formatDate`, `todayShort`, `todayISO`
 - `scratch.js` — Dev/test data generation
+- Styles: `shared.css`, `form.css`, `archive.css`, `stats.css` (imported by stats.js)
+
+### Dev setup
+
+- **Env vars:** `.env` in project root with `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (from Supabase dashboard). `.env` is gitignored.
+- **Migration:** `pnpm run migrate` (or `npm run migrate`) runs `scripts/migrate-to-supabase.js` with `--env-file=.env` to seed Supabase from `exported-games.json`.
 
 ### Data model
 
@@ -158,6 +179,7 @@ Game and Round schema are defined in `src/constants.js`. Each round tracks `scor
 - **players**
   - `id` (uuid, pk)
   - `name` (text, unique)
+  - `created_at` (timestamptz, default now())
   - Single table for all player names; migration seeds from fixture file (e.g. `exported-games.json`); `getAllPlayerNames` = select from this table
 - **games**
   - `id` (uuid, pk)
@@ -167,8 +189,8 @@ Game and Round schema are defined in `src/constants.js`. Each round tracks `scor
   - `totals` (jsonb)
   - `rounds` (jsonb) — array of objects; each has `round`, `scores`, `tunk`, `tinks`, `magic65s`, `falseTunks`
   - `source` (text, optional) — `'fixture'` for migration-sourced games
+  - `created_at` (timestamptz, default now())
 - **Recommendations**
-  - Add `created_at timestamptz default now()` to both tables
   - Use `default gen_random_uuid()` for `id` columns
   - Index `games (date desc)` for archive "newest first" queries
   - Index `games (source)` for fixture filtering

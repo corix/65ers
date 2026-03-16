@@ -3,7 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (function() {
+        document.documentElement.classList.add('theme-loading');
+        var theme = localStorage.getItem('65ers_theme');
+        var isDark = theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (isDark) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+        var s = document.createElement('style');
+        s.id = 'critical-theme';
+        s.textContent = 'html.theme-loading header{visibility:hidden}'
+          + (isDark
+            ? 'html,body{background:#0f0f18}header{color:#b4b0c4}header h1{color:#8b7cb8}.nav-btn{color:#4a6ad9!important;transition:none!important}.nav-btn.active{color:#b4b0c4!important}'
+            : 'header{color:#fff!important}.nav-btn{color:#b8d4ff!important;transition:none!important}.nav-btn.active{color:#1a1a2e!important}');
+        document.head.appendChild(s);
+        requestAnimationFrame(function() {
+          document.documentElement.classList.remove('theme-loading');
+        });
+      })();
+    </script>
     <title>The 65 Almanac [Dev mode]</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/shared.css">
+    <link rel="stylesheet" href="/src/form.css">
   </head>
   <body>
     <header>
@@ -17,6 +42,10 @@
       <div class="header-nav-kebab" id="header-nav-kebab">
         <button type="button" class="header-kebab-btn" aria-label="Options"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg></button>
         <div class="header-kebab-menu" hidden>
+          <button type="button" class="header-kebab-option" data-action="theme" id="theme-toggle-btn">
+            <span class="header-kebab-option-title" id="theme-toggle-label">Dark mode</span>
+          </button>
+          <span class="header-kebab-option-divider"></span>
           <button type="button" class="header-kebab-option" data-action="local-only">
             <span class="header-kebab-option-title">Read Supabase</span>
             <span class="header-kebab-option-caption status-indicator" id="local-only-caption" data-status="on" aria-label="On">On</span>
@@ -33,6 +62,19 @@
       </div>
     </header>
     <main id="app"></main>
+    <script>
+      (function() {
+        var view = localStorage.getItem('65ers_view');
+        if (view === 'archive' || view === 'stats') {
+          var nav = document.querySelector('nav');
+          var btns = document.querySelectorAll('.nav-btn');
+          if (nav && btns.length) {
+            nav.setAttribute('data-active-view', view);
+            btns.forEach(function(b) { b.classList.toggle('active', b.dataset.view === view); });
+          }
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

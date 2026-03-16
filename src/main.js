@@ -1,5 +1,8 @@
+// Remove critical-theme style after first paint so shared.css transitions apply
+requestAnimationFrame(() => { document.getElementById('critical-theme')?.remove(); });
+
 import './shared.css';
-import { isSupabaseDisabled, setSupabaseDisabled, isExportedDataEnabled, setExportedDataEnabled, clearLocalData, getExportData, loadGames, getPlayerRowsAndCustom } from './api.js';
+import { isSupabaseDisabled, setSupabaseDisabled, isExportedDataEnabled, setExportedDataEnabled, clearLocalData, loadGames, getPlayerRowsAndCustom } from './api.js';
 import { renderForm } from './form.js';
 import { renderArchive } from './archive.js';
 import { renderStats } from './stats.js';
@@ -56,6 +59,7 @@ function updateNavSlider(animate = false) {
 async function showView(view, { animateNav = false, animateContent = false } = {}) {
   currentView = view;
   localStorage.setItem(VIEW_KEY, view);
+  nav?.setAttribute('data-active-view', view);
   navBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.view === view));
   updateNavSlider(animateNav);
 
@@ -91,6 +95,15 @@ window.addEventListener('navigate-to-view', (e) => {
   const { view, animateNav = false, animateContent = false } = e.detail || {};
   if (view && VALID_VIEWS.includes(view)) {
     showView(view, { animateNav, animateContent });
+  }
+});
+
+window.addEventListener('theme-change', () => {
+  if (currentView === 'stats') {
+    const container = viewContainers.stats;
+    if (container && !container.hidden) {
+      renderStats(container);
+    }
   }
 });
 
@@ -134,11 +147,42 @@ window.addEventListener('resize', () => {
   requestAnimationFrame(() => { resizeTicking = false; });
 });
 
+const THEME_KEY = '65ers_theme';
+
+function getTheme() {
+  return document.documentElement.getAttribute('data-theme') || 'light';
+}
+
+function setTheme(theme) {
+  document.documentElement.classList.add('theme-switching');
+  if (theme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    localStorage.setItem(THEME_KEY, 'dark');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem(THEME_KEY, 'light');
+  }
+  updateThemeToggleLabel();
+  setTimeout(() => {
+    document.documentElement.classList.remove('theme-switching');
+  }, 380);
+  window.dispatchEvent(new CustomEvent('theme-change', { detail: { theme } }));
+}
+
+function updateThemeToggleLabel() {
+  const label = document.getElementById('theme-toggle-label');
+  if (label) label.textContent = getTheme() === 'dark' ? 'Light mode' : 'Dark mode';
+}
+
+function toggleTheme() {
+  setTheme(getTheme() === 'dark' ? 'light' : 'dark');
+}
+
 // Header kebab (Archive options)
 const headerKebab = document.getElementById('header-nav-kebab');
 const kebabBtn = headerKebab?.querySelector('.header-kebab-btn');
 const kebabMenu = headerKebab?.querySelector('.header-kebab-menu');
-  if (kebabBtn && kebabMenu) {
+if (kebabBtn && kebabMenu) {
   function updateLocalOnlyCaption() {
     const caption = document.getElementById('local-only-caption');
     if (caption) {
@@ -159,7 +203,8 @@ const kebabMenu = headerKebab?.querySelector('.header-kebab-menu');
     }
   }
 
-  kebabBtn.addEventListener('click', (e) => {
+  updateThemeToggleLabel();
+  kebabBtn.addEventListener('click', async (e) => {
     e.stopPropagation();
     const isOpen = !kebabMenu.hidden;
     kebabMenu.hidden = isOpen;
@@ -169,7 +214,11 @@ const kebabMenu = headerKebab?.querySelector('.header-kebab-menu');
       document.addEventListener('click', () => { kebabMenu.hidden = true; }, { once: true });
     }
   });
-
+  headerKebab.querySelector('.header-kebab-option[data-action="theme"]')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    kebabMenu.hidden = true;
+    toggleTheme();
+  });
   headerKebab.querySelector('.header-kebab-option[data-action="local-only"]')?.addEventListener('click', async (e) => {
     e.stopPropagation();
     setSupabaseDisabled(!isSupabaseDisabled());
@@ -177,7 +226,6 @@ const kebabMenu = headerKebab?.querySelector('.header-kebab-menu');
     viewContainers[currentView].innerHTML = '';
     await showView(currentView, { animateNav: false });
   });
-
   headerKebab.querySelector('.header-kebab-option[data-action="exported-data"]')?.addEventListener('click', async (e) => {
     e.stopPropagation();
     setExportedDataEnabled(!isExportedDataEnabled());
@@ -185,7 +233,6 @@ const kebabMenu = headerKebab?.querySelector('.header-kebab-menu');
     viewContainers[currentView].innerHTML = '';
     await showView(currentView, { animateNav: false });
   });
-
   headerKebab.querySelector('.header-kebab-option[data-action="clear-local"]')?.addEventListener('click', async (e) => {
     e.stopPropagation();
     clearLocalData();

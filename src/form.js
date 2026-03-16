@@ -1,8 +1,7 @@
-import './form.css';
 import { getPlayerRowsAndCustom, getAllPlayerNames, addCustomPlayer, removeCustomPlayer, saveGame, saveDraft, loadDraft, clearDraft, loadGames } from './api.js';
 import { createScratchDraftInNewGame, buildFillDraft } from './scratch.js';
 import { formatDate, todayShort, todayISO } from './utils.js';
-import { ROUNDS, PILL_COLOR } from './constants.js';
+import { ROUNDS, SUITS, PILL_COLOR } from './constants.js';
 
 const PILL_TRASH_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
 
@@ -25,6 +24,7 @@ export async function renderForm(container) {
   if (draft?.players?.length >= 2) {
     const raw = wrapper.querySelector('#game-date').value;
     const date = parseShortDate(raw) || draft.date;
+    if (!date) return;
     const displayDate = date ? formatDate(date, true) : (draft.displayDate ?? '');
     renderScoresheet(wrapper.querySelector('#scoresheet-area'), date, displayDate, draft.players);
     wrapper.querySelector('.game-setup')?.classList.add('collapsed');
@@ -49,8 +49,8 @@ function pillHTML(name, selected, _colorIndex, isCustom = false) {
 
 async function buildSetupHTML(draft = null) {
   const { players, customPlayers } = await getPlayerRowsAndCustom();
-  const initialDate = draft?.date ?? todayISO();
-  const selectedSet = draft?.players?.length ? new Set(draft.players) : new Set(players);
+  const initialDate = '';
+  const selectedSet = draft?.players?.length ? new Set(draft.players) : new Set();
   const pillOrder = draft?.players?.length
     ? [...draft.players, ...players.filter(p => !selectedSet.has(p))]
     : players;
@@ -94,9 +94,14 @@ function syncSelectedPlayers(wrapper) {
   const container = wrapper.querySelector('.player-pills');
 
   selectedPlayers = [...container.querySelectorAll('.pill.selected')].map(p => p.dataset.player);
-  wrapper.querySelector('#start-game-btn').disabled = selectedPlayers.length < 2;
+  const dateInput = wrapper.querySelector('#game-date');
+  const hasDate = dateInput && parseShortDate(dateInput.value?.trim() || '');
+  wrapper.querySelector('#start-game-btn').disabled = selectedPlayers.length < 2 || !hasDate;
 
   const pillCount = container?.querySelectorAll('.pill:not(.pill-add)').length ?? 0;
+  if (selectedPlayers.length === 0 && pillCount > 0) {
+    resetPillOrderToOriginal(container);
+  }
   const actionsSpan = wrapper.querySelector('.players-actions');
   if (actionsSpan) actionsSpan.hidden = pillCount === 0;
 
@@ -121,6 +126,10 @@ function syncSelectedPlayers(wrapper) {
     const manageMode = container?.dataset.manageMode === 'true';
     clearBtn.disabled = !!manageMode;
   }
+
+  if (!wrapper.querySelector('.scoresheet')) {
+    persistDraft(wrapper);
+  }
 }
 
 function updatePillIcons(wrapper) {
@@ -138,6 +147,40 @@ function updatePillIcons(wrapper) {
       removeSpan.setAttribute('aria-label', 'Deselect');
     }
   });
+}
+
+function resetPillOrderToOriginal(pillsContainer) {
+  const originalOrder = JSON.parse(pillsContainer.dataset.originalOrder || '[]');
+  const pills = [...pillsContainer.querySelectorAll('.pill:not(.pill-add)')];
+  if (pills.length === 0) return;
+  const pillByPlayer = new Map(pills.map((p) => [p.dataset.player.toLowerCase(), p]));
+  const addBtn = pillsContainer.querySelector('.pill-add');
+  const seen = new Set();
+  for (const name of originalOrder) {
+    const pill = pillByPlayer.get(name.toLowerCase());
+    if (pill) {
+      pillsContainer.insertBefore(pill, addBtn);
+      seen.add(pill);
+    }
+  }
+  for (const pill of pills) {
+    if (!seen.has(pill)) pillsContainer.insertBefore(pill, addBtn);
+  }
+}
+
+function getInsertBeforeForNewlySelected(pillsContainer, pill) {
+  const pills = [...pillsContainer.querySelectorAll('.pill:not(.pill-add)')];
+  const idx = pills.indexOf(pill);
+  const otherSelected = pills.filter((p) => p !== pill && p.classList.contains('selected'));
+  const addBtn = pillsContainer.querySelector('.pill-add');
+
+  const hasSelectedAfter = pills.slice(idx + 1).some((p) => p.classList.contains('selected'));
+  if (hasSelectedAfter) return null;
+
+  if (otherSelected.length === 0) return pills[0] && pill !== pills[0] ? pills[0] : null;
+  const lastSelected = otherSelected[otherSelected.length - 1];
+  const insertBefore = lastSelected.nextElementSibling || addBtn;
+  return insertBefore && pill !== insertBefore ? insertBefore : null;
 }
 
 function bindSetupEvents(wrapper) {
@@ -166,9 +209,7 @@ function bindSetupEvents(wrapper) {
     const wasSelected = pill.classList.contains('selected');
     pill.classList.toggle('selected');
     if (pill.classList.contains('selected') && !wasSelected) {
-      const pills = pillsContainer.querySelectorAll('.pill:not(.pill-add)');
-      const firstUnselected = [...pills].find(p => !p.classList.contains('selected'));
-      const insertBefore = firstUnselected || pillsContainer.querySelector('.pill-add');
+      const insertBefore = getInsertBeforeForNewlySelected(pillsContainer, pill);
       if (insertBefore && pill !== insertBefore) {
         pillsContainer.insertBefore(pill, insertBefore);
       }
@@ -177,11 +218,13 @@ function bindSetupEvents(wrapper) {
   });
 
   let draggedPill = null;
+  let draggedOverSelected = false;
 
   pillsContainer.addEventListener('dragstart', (e) => {
     const pill = e.target.closest('.pill');
     if (!pill || pill.classList.contains('pill-add')) return;
     draggedPill = pill;
+    draggedOverSelected = false;
     pill.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';
   });
@@ -189,7 +232,15 @@ function bindSetupEvents(wrapper) {
   pillsContainer.addEventListener('dragend', () => {
     if (draggedPill) {
       const wasUnselected = !draggedPill.classList.contains('selected');
-      if (wasUnselected) draggedPill.classList.add('selected');
+      if (wasUnselected) {
+        if (!draggedOverSelected) {
+          const insertBefore = getInsertBeforeForNewlySelected(pillsContainer, draggedPill);
+          if (insertBefore && draggedPill !== insertBefore) {
+            pillsContainer.insertBefore(draggedPill, insertBefore);
+          }
+        }
+        draggedPill.classList.add('selected');
+      }
       draggedPill.classList.remove('dragging');
       syncSelectedPlayers(wrapper);
       draggedPill = null;
@@ -201,7 +252,10 @@ function bindSetupEvents(wrapper) {
     if (!draggedPill) return;
     const target = e.target.closest('.pill');
     if (!target || target === draggedPill || target.classList.contains('pill-add')) return;
-    if (draggedPill.classList.contains('selected') && !target.classList.contains('selected')) return;
+    const hasSelected = pillsContainer.querySelector('.pill.selected');
+    const targetSelected = target.classList.contains('selected');
+    if (!targetSelected && !hasSelected) return;
+    if (!draggedPill.classList.contains('selected')) draggedOverSelected = true;
     const rect = target.getBoundingClientRect();
     const midX = rect.left + rect.width / 2;
     if (e.clientX < midX) {
@@ -219,6 +273,7 @@ function bindSetupEvents(wrapper) {
     const pill = e.target.closest('.pill');
     if (!pill || pill.classList.contains('pill-add')) return;
     draggedPill = pill;
+    draggedOverSelected = false;
     touchStarted = false;
   }, { passive: true });
 
@@ -239,7 +294,10 @@ function bindSetupEvents(wrapper) {
     touchClone.style.top = `${touch.clientY - touchClone.offsetHeight / 2}px`;
 
     const target = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.pill');
-    if (target && target !== draggedPill && pillsContainer.contains(target) && !target.classList.contains('pill-add') && (draggedPill.classList.contains('selected') ? target.classList.contains('selected') : true)) {
+    const hasSelected = pillsContainer.querySelector('.pill.selected');
+    const targetSelected = target?.classList.contains('selected');
+    if (target && target !== draggedPill && pillsContainer.contains(target) && !target.classList.contains('pill-add') && (targetSelected || hasSelected)) {
+      if (!draggedPill.classList.contains('selected')) draggedOverSelected = true;
       const rect = target.getBoundingClientRect();
       const midX = rect.left + rect.width / 2;
       if (touch.clientX < midX) {
@@ -261,9 +319,7 @@ function bindSetupEvents(wrapper) {
         const wasSelected = draggedPill.classList.contains('selected');
         draggedPill.classList.toggle('selected');
         if (draggedPill.classList.contains('selected') && !wasSelected) {
-          const pills = pillsContainer.querySelectorAll('.pill:not(.pill-add)');
-          const firstUnselected = [...pills].find(p => !p.classList.contains('selected'));
-          const insertBefore = firstUnselected || pillsContainer.querySelector('.pill-add');
+          const insertBefore = getInsertBeforeForNewlySelected(pillsContainer, draggedPill);
           if (insertBefore && draggedPill !== insertBefore) {
             pillsContainer.insertBefore(draggedPill, insertBefore);
           }
@@ -271,7 +327,15 @@ function bindSetupEvents(wrapper) {
         syncSelectedPlayers(wrapper);
       } else {
         const wasUnselected = !draggedPill.classList.contains('selected');
-        if (wasUnselected) draggedPill.classList.add('selected');
+        if (wasUnselected) {
+          if (!draggedOverSelected) {
+            const insertBefore = getInsertBeforeForNewlySelected(pillsContainer, draggedPill);
+            if (insertBefore && draggedPill !== insertBefore) {
+              pillsContainer.insertBefore(draggedPill, insertBefore);
+            }
+          }
+          draggedPill.classList.add('selected');
+        }
         syncSelectedPlayers(wrapper);
       }
       draggedPill = null;
@@ -375,21 +439,8 @@ function bindSetupEvents(wrapper) {
   wrapper.querySelector('#players-clear-btn')?.addEventListener('click', () => {
     addRow.hidden = true;
     const selected = pillsContainer.querySelectorAll('.pill.selected');
-    const addBtn = pillsContainer.querySelector('.pill-add');
     if (selected.length > 0) {
       pillsContainer.querySelectorAll('.pill.selected').forEach(p => p.classList.remove('selected'));
-      const originalOrder = JSON.parse(pillsContainer.dataset.originalOrder || '[]');
-      const pillsByPlayer = new Map();
-      pillsContainer.querySelectorAll('.pill:not(.pill-add)').forEach(p => {
-        pillsByPlayer.set(p.dataset.player, p);
-      });
-      const customPills = [...pillsContainer.querySelectorAll('.pill:not(.pill-add)')]
-        .filter(p => !originalOrder.includes(p.dataset.player));
-      const targetOrder = [...originalOrder, ...customPills.map(p => p.dataset.player)];
-      targetOrder.reverse().forEach(name => {
-        const pill = pillsByPlayer.get(name);
-        if (pill) pillsContainer.insertBefore(pill, addBtn);
-      });
     } else {
       pillsContainer.querySelectorAll('.pill:not(.pill-add)').forEach(p => p.classList.add('selected'));
     }
@@ -469,6 +520,18 @@ function bindSetupEvents(wrapper) {
     wrapper.querySelector('.game-setup').classList.add('collapsed');
     persistDraft(wrapper);
   });
+
+  const dateInput = wrapper.querySelector('#game-date');
+  const updateDateInputState = () => {
+    dateInput?.classList.toggle('has-value', !!dateInput?.value?.trim());
+  };
+  dateInput?.addEventListener('change', () => {
+    updateDateInputState();
+    syncSelectedPlayers(wrapper);
+    if (!wrapper.querySelector('.scoresheet')) persistDraft(wrapper);
+  });
+  dateInput?.addEventListener('input', updateDateInputState);
+  updateDateInputState();
 }
 
 function renderScoresheet(container, date, displayDate, players) {
@@ -496,7 +559,7 @@ function renderScoresheet(container, date, displayDate, players) {
               <tr><td class="shortcut-desc">Magic 65</td><td><kbd>65</kbd> or <kbd>!</kbd></td></tr>
               <tr><td class="shortcut-desc">Edit date</td><td>Double-click the date</td></tr>
               <tr><td class="shortcut-desc">Remove a player</td><td>Double-click the name</td></tr>
-              <tr><td class="shortcut-desc">Next cell</td><td><kbd>Tab</kbd> to move right<br /><kbd>Enter</kbd> to move down</td></tr>
+              <tr><td class="shortcut-desc">Next cell</td><td><kbd>Tab</kbd> to move right<br /><kbd>Enter</kbd> to move down<br />(from round K: next player's round 3)</td></tr>
               <tr><td class="shortcut-desc">Previous cell</td><td><kbd>Shift</kbd>+<kbd>Tab</kbd> to move left<br /><kbd>Shift</kbd>+<kbd>Enter</kbd> to move up</td></tr>
             </tbody>
           </table>
@@ -513,10 +576,15 @@ function renderScoresheet(container, date, displayDate, players) {
             </tr>
           </thead>
           <tbody>
-            ${ROUNDS.map((round, i) => `
+            ${ROUNDS.map((round, i) => {
+              const suit = SUITS[i % SUITS.length];
+              const isRed = suit === '♥' || suit === '♦';
+              const suitClass = isRed ? 'suit suit-red' : 'suit';
+              const titleClass = isRed ? 'round-title round-red' : 'round-title';
+              return `
               <tr data-round="${round}" class="round-row" aria-expanded="${i === 0}">
-                <td class="round-label" data-round="${round}">
-                  <button type="button" class="round-toggle" aria-expanded="${i === 0}" tabindex="-1"><span class="round-title" data-round="${round}">Round ${round}</span></button>
+                <td class="round-label" data-round="${round}" data-suit="${suit}">
+                  <span class="round-toggle-wrap"><button type="button" class="round-toggle" aria-expanded="${i === 0}" tabindex="-1"><span class="${titleClass}" data-round="${round}" data-suit="${suit}"><span class="round-num">${round}</span> <span class="${suitClass}">${suit}</span></span></button></span>
                 </td>
                 ${players.map(p => `
                   <td class="score-cell" data-player="${p}">
@@ -531,7 +599,8 @@ function renderScoresheet(container, date, displayDate, players) {
                   </td>
                 `).join('')}
               </tr>
-            `).join('')}
+            `;
+            }).join('')}
           </tbody>
           <tfoot>
             <tr class="totals-row">
@@ -569,6 +638,17 @@ function renderScoresheet(container, date, displayDate, players) {
   `;
 
   bindScoresheetEvents(container, date, players);
+}
+
+function getDraftFromForm(wrapper) {
+  const scoresheet = wrapper.querySelector('.scoresheet');
+  if (scoresheet) return getDraftFromScoresheet(wrapper);
+  const pillsContainer = wrapper.querySelector('.player-pills');
+  const gameDateInput = wrapper.querySelector('#game-date');
+  if (!pillsContainer) return null;
+  const selected = [...pillsContainer.querySelectorAll('.pill.selected')].map((p) => p.dataset.player);
+  const date = gameDateInput?.value?.trim() || null;
+  return { date, players: selected };
 }
 
 function getDraftFromScoresheet(wrapper) {
@@ -803,7 +883,7 @@ function persistDraft(wrapper) {
   if (!wrapper) return;
   clearTimeout(persistDraftTimer);
   persistDraftTimer = setTimeout(() => {
-    const draft = getDraftFromScoresheet(wrapper);
+    const draft = getDraftFromForm(wrapper);
     if (draft) saveDraft(draft);
   }, 300);
 }
@@ -1090,10 +1170,19 @@ function bindScoresheetEvents(container, date, players) {
         const prevInput = table.querySelector(`.score-input[data-round="${prevRound}"][data-player="${player}"]`);
         if (prevInput) prevInput.focus();
       } else {
-        if (roundIdx >= ROUNDS.length - 1) return;
-        const nextRound = ROUNDS[roundIdx + 1];
-        const nextInput = table.querySelector(`.score-input[data-round="${nextRound}"][data-player="${player}"]`);
-        if (nextInput) nextInput.focus();
+        if (roundIdx >= ROUNDS.length - 1) {
+          // On round K: move to round 3 in next column (wrap to first player if last)
+          const currentPlayers = getPlayersFromTable(table);
+          const playerIdx = currentPlayers.indexOf(player);
+          const nextPlayerIdx = (playerIdx + 1) % currentPlayers.length;
+          const nextPlayer = currentPlayers[nextPlayerIdx];
+          const nextInput = table.querySelector(`.score-input[data-round="3"][data-player="${nextPlayer}"]`);
+          if (nextInput) nextInput.focus();
+        } else {
+          const nextRound = ROUNDS[roundIdx + 1];
+          const nextInput = table.querySelector(`.score-input[data-round="${nextRound}"][data-player="${player}"]`);
+          if (nextInput) nextInput.focus();
+        }
       }
     });
   });
