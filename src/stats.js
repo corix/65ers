@@ -1,7 +1,7 @@
 import './stats.css';
 import { loadGames } from './api.js';
 import { ROUNDS, PLAYER_COLORS, CHART_PLAYER_COLORS } from './constants.js';
-import { computeStats, linearRegression } from './stats-compute.js';
+import { computeStats, linearRegression, median } from './stats-compute.js';
 import { formatDate } from './utils.js';
 import { Chart, registerables } from 'chart.js';
 
@@ -28,7 +28,7 @@ export async function renderStats(container) {
   wrapper.innerHTML = buildChartHTML('Most Recent Game', 'recent-game-chart')
     + buildLeaderboardHTML(stats)
     + buildRecordsHTML(stats)
-    + buildChartHTML('Average Score by Round', 'avg-round-chart');
+    + buildChartHTML('Typical score per round', 'avg-round-chart');
   container.appendChild(wrapper);
 
   bindLeaderboardPopout(wrapper);
@@ -382,15 +382,15 @@ function renderRecentGameChart(canvas, games, playerColorMap) {
 }
 
 function renderAvgRoundChart(canvas, games, playerColorMap) {
-  const playerCumulativeTotals = {};
+  const playerCumulativeScores = {};
   const playerGameCounts = {};
 
   games.forEach(game => {
     game.players.forEach(player => {
-      if (!playerCumulativeTotals[player]) {
-        playerCumulativeTotals[player] = {};
+      if (!playerCumulativeScores[player]) {
+        playerCumulativeScores[player] = {};
         playerGameCounts[player] = 0;
-        ROUNDS.forEach(r => { playerCumulativeTotals[player][r] = 0; });
+        ROUNDS.forEach(r => { playerCumulativeScores[player][r] = []; });
       }
       playerGameCounts[player]++;
 
@@ -399,21 +399,17 @@ function renderAvgRoundChart(canvas, games, playerColorMap) {
         let val = r.scores[player] || 0;
         if (r.tunk === player) val = 0;
         else if (val === 65 && r.magic65s && r.magic65s.includes(player)) val = 0;
-        if (r.falseTunks && r.falseTunks.includes(player)) val += 65;
         cumulative += val;
-        playerCumulativeTotals[player][r.round] += cumulative;
+        playerCumulativeScores[player][r.round].push(cumulative);
       });
     });
   });
 
   const lastRound = ROUNDS[ROUNDS.length - 1];
-  const allPlayers = Object.keys(playerCumulativeTotals).sort((a, b) => {
-    const gamesA = playerGameCounts[a];
-    const gamesB = playerGameCounts[b];
-    if (gamesB !== gamesA) return gamesB - gamesA;
-    const avgFinalA = gamesA ? playerCumulativeTotals[a][lastRound] / gamesA : 0;
-    const avgFinalB = gamesB ? playerCumulativeTotals[b][lastRound] / gamesB : 0;
-    return avgFinalA - avgFinalB;
+  const allPlayers = Object.keys(playerCumulativeScores).sort((a, b) => {
+    const medFinalA = median(playerCumulativeScores[a][lastRound] ?? []);
+    const medFinalB = median(playerCumulativeScores[b][lastRound] ?? []);
+    return medFinalA - medFinalB;
   });
   const visiblePlayers = allPlayers.filter(p => playerGameCounts[p] > 1);
   const singleGamePlayers = allPlayers.filter(p => playerGameCounts[p] === 1);
@@ -423,7 +419,7 @@ function renderAvgRoundChart(canvas, games, playerColorMap) {
   allPlayers.forEach(player => {
     const pts = ROUNDS.map((r, i) => ({
       x: i,
-      y: playerGameCounts[player] ? Math.round(playerCumulativeTotals[player][r] / playerGameCounts[player]) : 0,
+      y: Math.round(median(playerCumulativeScores[player][r] ?? [])),
     }));
     playerSlopes[player] = linearRegression(pts).slope;
   });
@@ -442,7 +438,7 @@ function renderAvgRoundChart(canvas, games, playerColorMap) {
 
     const scatterData = ROUNDS.map((r, idx) => ({
       x: idx,
-      y: playerGameCounts[player] ? Math.round(playerCumulativeTotals[player][r] / playerGameCounts[player]) : 0,
+      y: Math.round(median(playerCumulativeScores[player][r] ?? [])),
     }));
 
     const { slope, intercept } = linearRegression(scatterData);
@@ -519,7 +515,7 @@ function renderAvgRoundChart(canvas, games, playerColorMap) {
         y: {
           beginAtZero: true,
           reverse: true,
-          title: { display: true, text: 'Avg Cumulative Score' },
+          title: { display: true, text: 'Median Cumulative Score' },
         },
       },
     },
@@ -649,7 +645,8 @@ function renderAvgRoundChart(canvas, games, playerColorMap) {
     if (!hit) { tipEl.style.display = 'none'; return; }
     const pt = datasets[scatterIdx].data[hit.index];
     const round = ROUNDS[pt.x];
-    tipEl.textContent = `${round}: ${pt.y}`;
+    const roundScore = hit.index === 0 ? pt.y : pt.y - datasets[scatterIdx].data[hit.index - 1].y;
+    tipEl.textContent = `${Math.round(roundScore)} points in round ${round}`;
     tipEl.style.display = 'block';
     tipEl.style.left = hit.element.x + 'px';
     tipEl.style.top = hit.element.y + 'px';

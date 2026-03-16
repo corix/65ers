@@ -76,6 +76,13 @@ export function computeStats(games) {
   return { lowScore, highWinScore, mostTunks, mostTinks, leaderboard };
 }
 
+export function median(arr) {
+  if (!arr.length) return 0;
+  const sorted = [...arr].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
 export function linearRegression(points) {
   const n = points.length;
   let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
