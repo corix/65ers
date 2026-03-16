@@ -94,6 +94,9 @@ function syncSelectedPlayers(wrapper) {
   wrapper.querySelector('#start-game-btn').disabled = selectedPlayers.length < 2;
 
   const pillCount = container?.querySelectorAll('.pill:not(.pill-add)').length ?? 0;
+  if (selectedPlayers.length === 0 && pillCount > 0) {
+    resetPillOrderToOriginal(container);
+  }
   const actionsSpan = wrapper.querySelector('.players-actions');
   if (actionsSpan) actionsSpan.hidden = pillCount === 0;
 
@@ -141,28 +144,38 @@ function updatePillIcons(wrapper) {
   });
 }
 
+function resetPillOrderToOriginal(pillsContainer) {
+  const originalOrder = JSON.parse(pillsContainer.dataset.originalOrder || '[]');
+  const pills = [...pillsContainer.querySelectorAll('.pill:not(.pill-add)')];
+  if (pills.length === 0) return;
+  const pillByPlayer = new Map(pills.map((p) => [p.dataset.player.toLowerCase(), p]));
+  const addBtn = pillsContainer.querySelector('.pill-add');
+  const seen = new Set();
+  for (const name of originalOrder) {
+    const pill = pillByPlayer.get(name.toLowerCase());
+    if (pill) {
+      pillsContainer.insertBefore(pill, addBtn);
+      seen.add(pill);
+    }
+  }
+  for (const pill of pills) {
+    if (!seen.has(pill)) pillsContainer.insertBefore(pill, addBtn);
+  }
+}
+
 function getInsertBeforeForNewlySelected(pillsContainer, pill) {
   const pills = [...pillsContainer.querySelectorAll('.pill:not(.pill-add)')];
   const idx = pills.indexOf(pill);
   const otherSelected = pills.filter((p) => p !== pill && p.classList.contains('selected'));
-  const hasSelectedBefore = pills.slice(0, idx).some((p) => p.classList.contains('selected'));
-  const hasSelectedAfter = pills.slice(idx + 1).some((p) => p.classList.contains('selected'));
+  const addBtn = pillsContainer.querySelector('.pill-add');
 
-  if (otherSelected.length === 0) {
-    return pills[0] || pillsContainer.querySelector('.pill-add');
-  }
-  const selectedIndices = otherSelected.map((p) => pills.indexOf(p));
-  const firstIdx = Math.min(...selectedIndices);
-  const lastIdx = Math.max(...selectedIndices);
-  const hasGaps = lastIdx - firstIdx + 1 !== selectedIndices.length;
-  if (!hasGaps) {
-    return pills[0] || pillsContainer.querySelector('.pill-add');
-  }
-  if (hasSelectedBefore && hasSelectedAfter) return null;
-  const lastSelected = [...pills].reverse().find((p) => p.classList.contains('selected'));
-  return lastSelected
-    ? (lastSelected.nextElementSibling || pillsContainer.querySelector('.pill-add'))
-    : pillsContainer.querySelector('.pill-add');
+  const hasSelectedAfter = pills.slice(idx + 1).some((p) => p.classList.contains('selected'));
+  if (hasSelectedAfter) return null;
+
+  if (otherSelected.length === 0) return pills[0] && pill !== pills[0] ? pills[0] : null;
+  const lastSelected = otherSelected[otherSelected.length - 1];
+  const insertBefore = lastSelected.nextElementSibling || addBtn;
+  return insertBefore && pill !== insertBefore ? insertBefore : null;
 }
 
 function bindSetupEvents(wrapper) {
