@@ -78,15 +78,11 @@ function isLocalGame(gameId) {
 }
 
 export function isSupabaseDisabled() {
-  return localStorage.getItem(SUPABASE_DISABLED_KEY) === '1';
+  return localStorage.getItem(SUPABASE_DISABLED_KEY) !== '0';
 }
 
 export function setSupabaseDisabled(disabled) {
-  if (disabled) {
-    localStorage.setItem(SUPABASE_DISABLED_KEY, '1');
-  } else {
-    localStorage.removeItem(SUPABASE_DISABLED_KEY);
-  }
+  localStorage.setItem(SUPABASE_DISABLED_KEY, disabled ? '1' : '0');
 }
 
 export function isExportedDataEnabled() {
@@ -94,11 +90,7 @@ export function isExportedDataEnabled() {
 }
 
 export function setExportedDataEnabled(enabled) {
-  if (enabled) {
-    localStorage.setItem(EXPORTED_DATA_ENABLED_KEY, '1');
-  } else {
-    localStorage.removeItem(EXPORTED_DATA_ENABLED_KEY);
-  }
+  localStorage.setItem(EXPORTED_DATA_ENABLED_KEY, enabled ? '1' : '0');
 }
 
 export function clearLocalData() {

@@ -82,10 +82,12 @@ async function buildSetupHTML(draft = null) {
         </div>
         <div class="game-setup-actions">
           <button type="button" id="start-game-btn" class="primary-btn">Start Scoresheet</button>
-          <button type="button" class="scratch-entry-btn" title="Dev: generate test scoresheet (unsaved)">Scratch entry</button>
         </div>
       </div>
     </section>
+    <div class="game-setup-scratch-wrap">
+      <button type="button" class="scratch-entry-btn" title="Dev: generate test scoresheet (unsaved)">Scratch entry</button>
+    </div>
     <section id="scoresheet-area"></section>
   `;
 }
@@ -729,6 +731,8 @@ function restoreDraft(wrapper, draft) {
   }
 
   recalcTotals(table, draft.players || []);
+  const container = wrapper.querySelector('#scoresheet-area');
+  if (container) updateFillSheetButtonState(container);
   wrapper.dispatchEvent(new CustomEvent('scoresheet-restored', { bubbles: true }));
 }
 
@@ -739,6 +743,23 @@ function getPlayersFromTable(table) {
 function getTunkPlayerForRound(table, round) {
   const input = table.querySelector(`.score-input[data-round="${round}"].tunk-locked`);
   return input?.dataset.player || null;
+}
+
+function scoresheetHasFilledFields(container) {
+  const table = container.querySelector('.scoresheet-table');
+  if (!table) return false;
+  const hasScore = [...table.querySelectorAll('.score-input')].some((input) => input.value?.trim() !== '');
+  const hasTunk = table.querySelector('.score-input.tunk-locked') != null;
+  const hasPenalty = container.querySelector('.penalty-list [data-penalty]') != null;
+  return hasScore || hasTunk || hasPenalty;
+}
+
+function updateFillSheetButtonState(container) {
+  const btn = container.querySelector('.fill-sheet-btn');
+  if (!btn) return;
+  const filled = scoresheetHasFilledFields(container);
+  btn.textContent = filled ? 'Clear sheet' : 'Fill sheet';
+  btn.title = filled ? 'Dev: clear all scores and tunks' : 'Dev: fill with realistic scores and tunks';
 }
 
 function bindColumnReorder(table, wrapper) {
@@ -885,6 +906,8 @@ function persistDraft(wrapper) {
   persistDraftTimer = setTimeout(() => {
     const draft = getDraftFromForm(wrapper);
     if (draft) saveDraft(draft);
+    const container = wrapper.querySelector('#scoresheet-area');
+    if (container?.querySelector('.scoresheet')) updateFillSheetButtonState(container);
   }, 300);
 }
 
@@ -916,9 +939,21 @@ function bindScoresheetEvents(container, date, players) {
   const fillSheetBtn = container.querySelector('.fill-sheet-btn');
   if (fillSheetBtn) {
     fillSheetBtn.addEventListener('click', async () => {
-      const draft = await buildFillDraft(players, date, formatDate(date, true));
-      restoreDraft(wrapper, draft);
+      const filled = scoresheetHasFilledFields(container);
+      if (filled) {
+        table.querySelectorAll('.score-input').forEach(input => {
+          input.value = '';
+          input.classList.remove('tunk-locked', 'magic-65');
+        });
+        container.querySelectorAll('.penalty-list [data-penalty]').forEach(li => li.remove());
+        recalcTotals(table, players);
+        clearDraft();
+      } else {
+        const draft = await buildFillDraft(players, date, formatDate(date, true));
+        restoreDraft(wrapper, draft);
+      }
       persistDraft(wrapper);
+      updateFillSheetButtonState(container);
     });
   }
 
@@ -933,6 +968,7 @@ function bindScoresheetEvents(container, date, players) {
       recalcTotals(table, players);
       clearDraft();
       persistDraft(wrapper);
+      updateFillSheetButtonState(container);
     });
   }
 
@@ -1094,6 +1130,7 @@ function bindScoresheetEvents(container, date, players) {
       if (isTunkShortcut) {
         input.classList.remove('magic-65');
         setTunk(table, round, player, players);
+        persistDraft(wrapper);
         return;
       }
 
@@ -1249,6 +1286,7 @@ function bindScoresheetEvents(container, date, players) {
   })();
 
   recalcTotals(table, players);
+  updateFillSheetButtonState(container);
 }
 
 function getPenalties(table) {

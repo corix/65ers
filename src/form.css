@@ -556,6 +556,16 @@ input[type="text"]::placeholder {
   display: none;
 }
 
+.game-setup.collapsed + .game-setup-scratch-wrap {
+  display: none;
+}
+
+.game-setup-scratch-wrap {
+  margin-top: 0.5rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
 /* Score inputs */
 
 input.score-input {
