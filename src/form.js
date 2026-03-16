@@ -1,5 +1,5 @@
 import { getPlayerRowsAndCustom, getAllPlayerNames, addCustomPlayer, removeCustomPlayer, saveGame, saveDraft, loadDraft, clearDraft, loadGames } from './api.js';
-import { formatDate, todayShort, todayISO } from './utils.js';
+import { formatDate } from './utils.js';
 import { ROUNDS, SUITS, PILL_COLOR } from './constants.js';
 
 const PILL_TRASH_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
@@ -23,6 +23,7 @@ export async function renderForm(container) {
   if (draft?.players?.length >= 2) {
     const raw = wrapper.querySelector('#game-date').value;
     const date = parseShortDate(raw) || draft.date;
+    if (!date) return;
     const displayDate = date ? formatDate(date, true) : (draft.displayDate ?? '');
     renderScoresheet(wrapper.querySelector('#scoresheet-area'), date, displayDate, draft.players);
     wrapper.querySelector('.game-setup')?.classList.add('collapsed');
@@ -47,7 +48,7 @@ function pillHTML(name, selected, _colorIndex, isCustom = false) {
 
 async function buildSetupHTML(draft = null) {
   const { players, customPlayers } = await getPlayerRowsAndCustom();
-  const initialDate = draft?.date ?? todayISO();
+  const initialDate = '';
   const selectedSet = draft?.players?.length ? new Set(draft.players) : new Set();
   const pillOrder = draft?.players?.length
     ? [...draft.players, ...players.filter(p => !selectedSet.has(p))]
@@ -91,7 +92,9 @@ function syncSelectedPlayers(wrapper) {
   const container = wrapper.querySelector('.player-pills');
 
   selectedPlayers = [...container.querySelectorAll('.pill.selected')].map(p => p.dataset.player);
-  wrapper.querySelector('#start-game-btn').disabled = selectedPlayers.length < 2;
+  const dateInput = wrapper.querySelector('#game-date');
+  const hasDate = dateInput && parseShortDate(dateInput.value?.trim() || '');
+  wrapper.querySelector('#start-game-btn').disabled = selectedPlayers.length < 2 || !hasDate;
 
   const pillCount = container?.querySelectorAll('.pill:not(.pill-add)').length ?? 0;
   if (selectedPlayers.length === 0 && pillCount > 0) {
@@ -506,9 +509,17 @@ function bindSetupEvents(wrapper) {
     persistDraft(wrapper);
   });
 
-  wrapper.querySelector('#game-date')?.addEventListener('change', () => {
+  const dateInput = wrapper.querySelector('#game-date');
+  const updateDateInputState = () => {
+    dateInput?.classList.toggle('has-value', !!dateInput?.value?.trim());
+  };
+  dateInput?.addEventListener('change', () => {
+    updateDateInputState();
+    syncSelectedPlayers(wrapper);
     if (!wrapper.querySelector('.scoresheet')) persistDraft(wrapper);
   });
+  dateInput?.addEventListener('input', updateDateInputState);
+  updateDateInputState();
 }
 
 function renderScoresheet(container, date, displayDate, players) {

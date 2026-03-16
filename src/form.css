@@ -38,6 +38,18 @@ input[type="text"] {
   max-width: 160px;
 }
 
+#game-date::-webkit-datetime-edit {
+  color: transparent;
+}
+#game-date:focus::-webkit-datetime-edit,
+#game-date.has-value::-webkit-datetime-edit {
+  color: inherit;
+}
+
+input[type="text"]::placeholder {
+  color: var(--text-muted-2);
+}
+
 .hint {
   font-weight: 400;
   color: var(--text-muted-2);
