@@ -422,6 +422,12 @@ nav[data-active-view="stats"] .nav-slider {
   color: var(--text-muted-2);
 }
 
+#download-backup-caption {
+  font-size: 0.65rem;
+  margin-top: 0.25rem;
+  line-height: 1.4;
+}
+
 .status-indicator {
   display: inline-flex;
   align-items: center;
@@ -514,6 +520,11 @@ html[data-theme="dark"] .header-kebab-option--demo-mode .toggle-slider--on .togg
 }
 .demo-controls-only.demo-controls-visible {
   display: block !important;
+}
+
+/* Download backup: shown when NOT in demo mode, hidden when Demo Mode is on */
+.header-nav-kebab[data-demo-mode="true"] .download-backup-only {
+  display: none !important;
 }
 
 .test-data-link {

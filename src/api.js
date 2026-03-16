@@ -4,6 +4,8 @@ import exportedData from '../fixtures/exported-games.json';
 
 const DRAFT_KEY = '65ers_draft';
 const EXPORTED_DATA_ENABLED_KEY = '65ers_read_exported_data';
+const LAST_SAVE_KEY = '65ers_last_save';
+const LAST_EXPORTED_AT_KEY = '65ers_last_exported_at';
 const LOCAL_GAMES_KEY = '65ers_local_games';
 const HIDDEN_GAME_IDS_KEY = '65ers_hidden_game_ids';
 const GAME_OVERRIDES_KEY = '65ers_game_overrides';
@@ -93,8 +95,17 @@ export function setExportedDataEnabled(enabled) {
   localStorage.setItem(EXPORTED_DATA_ENABLED_KEY, enabled ? '1' : '0');
 }
 
+export function getLastExportedAt() {
+  return localStorage.getItem(LAST_EXPORTED_AT_KEY);
+}
+
+export function setLastExportedAt() {
+  localStorage.setItem(LAST_EXPORTED_AT_KEY, new Date().toISOString());
+}
+
 export function clearLocalData() {
   localStorage.removeItem(DRAFT_KEY);
+  localStorage.removeItem(LAST_SAVE_KEY);
   localStorage.removeItem(LOCAL_GAMES_KEY);
   localStorage.removeItem(HIDDEN_GAME_IDS_KEY);
   localStorage.removeItem(GAME_OVERRIDES_KEY);
@@ -116,6 +127,7 @@ export async function saveGame(game) {
     };
     localGames.push(row);
     setLocalGames(localGames);
+    localStorage.setItem(LAST_SAVE_KEY, new Date().toISOString());
   } else {
     const playerNames = game.players ?? [];
     for (const name of playerNames) {
@@ -135,6 +147,7 @@ export async function saveGame(game) {
     const { error } = await supabase.from('games').insert(row);
     if (error) throw error;
   }
+  localStorage.setItem(LAST_SAVE_KEY, new Date().toISOString());
 }
 
 export async function loadGames() {
@@ -183,6 +196,14 @@ export async function loadGames() {
   const merged = [...supabaseGames, ...exportedGames, ...localForMerge];
   merged.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   return merged;
+}
+
+/** Returns { total, backedUp } for the Download archive caption. */
+export async function getDownloadBackupCounts() {
+  const fixtureGames = exportedData?.games ?? [];
+  const fixtureIds = new Set(fixtureGames.map((g) => g.id).filter(Boolean));
+  const allResult = await supabase.from('games').select('*', { count: 'exact', head: true });
+  return { total: allResult.count ?? 0, backedUp: fixtureIds.size };
 }
 
 export async function deleteGame(gameId, playersInGame = []) {
@@ -250,8 +271,11 @@ export async function updateGame(gameId, updates) {
 }
 
 export async function getExportData() {
-  const allGames = await loadGames();
-  return { games: allGames };
+  const [allGames, players] = await Promise.all([
+    loadGames(),
+    getAllPlayerNames(),
+  ]);
+  return { games: allGames, players };
 }
 
 export function saveDraft(draft) {

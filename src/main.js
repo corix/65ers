@@ -5,7 +5,8 @@ import { initDemoModeFromUrl, isDemoMode, setDemoMode } from './demo-mode.js';
 initDemoModeFromUrl();
 
 import './shared.css';
-import { isSupabaseDisabled, setSupabaseDisabled, isExportedDataEnabled, setExportedDataEnabled, clearLocalData, loadGames, getPlayerRowsAndCustom } from './api.js';
+import { isSupabaseDisabled, setSupabaseDisabled, isExportedDataEnabled, setExportedDataEnabled, clearLocalData, loadGames, getPlayerRowsAndCustom, getExportData, getDownloadBackupCounts, getLastExportedAt, setLastExportedAt } from './api.js';
+import { formatDurationAgo } from './utils.js';
 import { renderForm } from './form.js';
 import { renderArchive } from './archive.js';
 import { renderStats } from './stats.js';
@@ -197,6 +198,7 @@ if (kebabBtn && kebabMenu) {
     document.title = on ? 'The 65 Almanac [DEMO]' : 'The 65 Almanac';
     const badge = document.getElementById('demo-mode-badge');
     if (badge) badge.hidden = !on;
+    if (headerKebab) headerKebab.dataset.demoMode = on ? 'true' : '';
     document.querySelectorAll('.demo-controls-only').forEach((el) => {
       el.classList.toggle('demo-controls-visible', on);
     });
@@ -226,6 +228,46 @@ if (kebabBtn && kebabMenu) {
     }
   }
 
+  async function updateDownloadBackupCaption() {
+    if (isDemoMode()) return;
+    const caption = document.getElementById('download-backup-caption');
+    const titleEl = document.getElementById('download-backup-title');
+    if (!caption) return;
+    const { total, backedUp } = await getDownloadBackupCounts();
+    if (titleEl) titleEl.textContent = `Download archive (${total})`;
+    let duration = formatDurationAgo(getLastExportedAt());
+    if (!duration) {
+      const buildMtime =
+        typeof __EXPORTED_GAMES_MTIME__ !== 'undefined' &&
+        __EXPORTED_GAMES_MTIME__ !== 'null' &&
+        __EXPORTED_GAMES_MTIME__
+          ? __EXPORTED_GAMES_MTIME__
+          : null;
+      duration = formatDurationAgo(buildMtime);
+    }
+    if (!duration) {
+      try {
+        const res = await fetch(new URL('/exported-games.json', window.location.origin), {
+          cache: 'no-store',
+        });
+        const lastMod = res.ok && res.headers.get('Last-Modified');
+        if (lastMod) duration = formatDurationAgo(new Date(lastMod).toISOString());
+      } catch (_) {}
+    }
+    if (total === 0) {
+      caption.textContent = 'No games yet';
+      caption.setAttribute('aria-label', 'No games yet');
+    } else {
+      const hasHistory = getLastExportedAt() != null;
+      const line1 = hasHistory && duration
+        ? `Last saved ${duration}`
+        : null;
+      const line2 = `${backedUp} backed up`;
+      caption.innerHTML = line1 ? `${line1}<br>${line2}` : line2;
+      caption.setAttribute('aria-label', line1 ? `${line1}. ${line2}.` : `${line2}.`);
+    }
+  }
+
   updateThemeToggleUI();
   updateDemoModeUI();
   kebabBtn.addEventListener('click', async (e) => {
@@ -237,6 +279,7 @@ if (kebabBtn && kebabMenu) {
       updateDemoModeUI();
       updateLocalOnlyCaption();
       updateExportedDataCaption();
+      updateDownloadBackupCaption();
       document.addEventListener('click', () => { kebabMenu.hidden = true; }, { once: true });
     }
   });
@@ -292,5 +335,18 @@ if (kebabBtn && kebabMenu) {
     clearLocalData();
     viewContainers[currentView].innerHTML = '';
     await showView(currentView, { animateNav: false });
+  });
+  headerKebab.querySelector('.header-kebab-option[data-action="download-backup"]')?.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    kebabMenu.hidden = true;
+    const data = await getExportData();
+    setLastExportedAt();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const date = new Date().toISOString().slice(0, 10);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `65_Almanac_Backup_${date}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
   });
 }

@@ -539,15 +539,29 @@ input[type="text"]::placeholder {
 
 .add-player-row button {
   padding: 0.4rem 0.8rem;
-  border: 1px solid var(--border);
-  border-radius: calc(var(--radius) - 2px);
-  background: var(--card-bg);
+  border: none;
+  border-radius: var(--radius);
+  background: var(--primary-btn-bg);
+  color: var(--primary-btn-color);
   font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
+  transition: background 0.15s;
 }
 
 .add-player-row button:hover {
-  background: var(--icon-btn-bg);
+  background: var(--primary-btn-bg-hover);
+}
+
+/* Dark mode: add player input matches page styles */
+html[data-theme="dark"] .add-player-row input {
+  background: var(--card-bg);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+html[data-theme="dark"] .add-player-row input::placeholder {
+  color: var(--text-muted-2);
 }
 
 /* Game setup collapsed */
