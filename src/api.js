@@ -1,8 +1,8 @@
 import { supabase } from './supabase.js';
+import { isDemoMode, setDemoMode } from './demo-mode.js';
 import exportedData from '../fixtures/exported-games.json';
 
 const DRAFT_KEY = '65ers_draft';
-const SUPABASE_DISABLED_KEY = '65ers_supabase_disabled';
 const EXPORTED_DATA_ENABLED_KEY = '65ers_read_exported_data';
 const LOCAL_GAMES_KEY = '65ers_local_games';
 const HIDDEN_GAME_IDS_KEY = '65ers_hidden_game_ids';
@@ -73,16 +73,16 @@ function rowToGame(row) {
   };
 }
 
-function isLocalGame(gameId) {
+export function isLocalGame(gameId) {
   return getLocalGames().some((g) => g.id === gameId);
 }
 
 export function isSupabaseDisabled() {
-  return localStorage.getItem(SUPABASE_DISABLED_KEY) !== '0';
+  return isDemoMode();
 }
 
 export function setSupabaseDisabled(disabled) {
-  localStorage.setItem(SUPABASE_DISABLED_KEY, disabled ? '1' : '0');
+  setDemoMode(disabled);
 }
 
 export function isExportedDataEnabled() {
@@ -103,18 +103,38 @@ export function clearLocalData() {
 }
 
 export async function saveGame(game) {
-  const localGames = getLocalGames();
-  const row = {
-    id: game.id,
-    date: game.date,
-    players: game.players,
-    winner: game.winner,
-    totals: game.totals ?? {},
-    rounds: game.rounds ?? [],
-    source: game.source ?? null,
-  };
-  localGames.push(row);
-  setLocalGames(localGames);
+  if (isDemoMode()) {
+    const localGames = getLocalGames();
+    const row = {
+      id: game.id,
+      date: game.date,
+      players: game.players,
+      winner: game.winner,
+      totals: game.totals ?? {},
+      rounds: game.rounds ?? [],
+      source: game.source ?? null,
+    };
+    localGames.push(row);
+    setLocalGames(localGames);
+  } else {
+    const playerNames = game.players ?? [];
+    for (const name of playerNames) {
+      const trimmed = String(name).trim();
+      if (!trimmed) continue;
+      await supabase.from('players').upsert({ name: trimmed }, { onConflict: 'name', ignoreDuplicates: true });
+    }
+    const row = {
+      id: game.id,
+      date: game.date,
+      players: game.players,
+      winner: game.winner,
+      totals: game.totals ?? {},
+      rounds: game.rounds ?? [],
+      source: game.source ?? null,
+    };
+    const { error } = await supabase.from('games').insert(row);
+    if (error) throw error;
+  }
 }
 
 export async function loadGames() {
@@ -125,7 +145,7 @@ export async function loadGames() {
   ]);
 
   let supabaseGames = [];
-  if (!isSupabaseDisabled()) {
+  if (!isDemoMode()) {
     const supabaseResult = await supabase
       .from('games')
       .select('id, date, players, winner, totals, rounds, source')
@@ -141,7 +161,7 @@ export async function loadGames() {
   }
 
   let exportedGames = [];
-  if (isExportedDataEnabled() && exportedData?.games?.length) {
+  if (isDemoMode() && isExportedDataEnabled() && exportedData?.games?.length) {
     exportedGames = exportedData.games
       .filter((g) => g.id && !hiddenIds.has(g.id))
       .map((g) => ({
@@ -159,17 +179,34 @@ export async function loadGames() {
       });
   }
 
-  const merged = [...supabaseGames, ...exportedGames, ...localGames];
+  const localForMerge = isDemoMode() ? localGames : [];
+  const merged = [...supabaseGames, ...exportedGames, ...localForMerge];
   merged.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   return merged;
 }
 
-export async function deleteGame(gameId) {
-  if (isLocalGame(gameId)) {
-    const localGames = getLocalGames().filter((g) => g.id !== gameId);
-    setLocalGames(localGames);
+export async function deleteGame(gameId, playersInGame = []) {
+  if (isDemoMode()) {
+    if (isLocalGame(gameId)) {
+      const localGames = getLocalGames().filter((g) => g.id !== gameId);
+      setLocalGames(localGames);
+    } else {
+      addHiddenGameId(gameId);
+    }
   } else {
-    addHiddenGameId(gameId);
+    const { error } = await supabase.from('games').delete().eq('id', gameId);
+    if (error) throw error;
+    const remainingGames = await loadGames();
+    const playersStillInGames = new Set(
+      remainingGames.flatMap((g) => (g.players ?? []).map((p) => String(p).trim().toLowerCase()))
+    );
+    for (const name of playersInGame) {
+      const trimmed = String(name).trim();
+      if (!trimmed) continue;
+      if (playersStillInGames.has(trimmed.toLowerCase())) continue;
+      const { data: row } = await supabase.from('players').select('id').ilike('name', trimmed).maybeSingle();
+      if (row) await supabase.from('players').delete().eq('id', row.id);
+    }
   }
 
   const remainingGames = await loadGames();
@@ -187,15 +224,28 @@ export async function deleteGame(gameId) {
 }
 
 export async function updateGame(gameId, updates) {
-  if (isLocalGame(gameId)) {
-    const localGames = getLocalGames();
-    const idx = localGames.findIndex((g) => g.id === gameId);
-    if (idx >= 0) {
-      localGames[idx] = { ...localGames[idx], ...updates };
-      setLocalGames(localGames);
+  if (isDemoMode()) {
+    if (isLocalGame(gameId)) {
+      const localGames = getLocalGames();
+      const idx = localGames.findIndex((g) => g.id === gameId);
+      if (idx >= 0) {
+        localGames[idx] = { ...localGames[idx], ...updates };
+        setLocalGames(localGames);
+      }
+    } else {
+      setGameOverride(gameId, updates);
     }
   } else {
-    setGameOverride(gameId, updates);
+    const row = {};
+    if (updates.date != null) row.date = updates.date;
+    if (updates.players != null) row.players = updates.players;
+    if (updates.winner != null) row.winner = updates.winner;
+    if (updates.totals != null) row.totals = updates.totals;
+    if (updates.rounds != null) row.rounds = updates.rounds;
+    if (updates.source != null) row.source = updates.source;
+    if (Object.keys(row).length === 0) return;
+    const { error } = await supabase.from('games').update(row).eq('id', gameId);
+    if (error) throw error;
   }
 }
 
@@ -286,7 +336,7 @@ export async function getCustomPlayers() {
   ]);
 
   let fromSupabase = [];
-  if (!isSupabaseDisabled()) {
+  if (!isDemoMode()) {
     const supabaseResult = await supabase.from('players').select('name').order('name');
     if (supabaseResult.error) throw supabaseResult.error;
     fromSupabase = (supabaseResult.data ?? [])
@@ -295,7 +345,7 @@ export async function getCustomPlayers() {
   }
 
   let fromExported = [];
-  if (isExportedDataEnabled() && exportedData?.players?.length) {
+  if (isDemoMode() && isExportedDataEnabled() && exportedData?.players?.length) {
     fromExported = (exportedData.players ?? [])
       .map((n) => String(n).trim())
       .filter((n) => n && !hiddenNames.has(n.toLowerCase()));

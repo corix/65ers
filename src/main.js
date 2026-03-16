@@ -1,6 +1,9 @@
 // Remove critical-theme style after first paint so shared.css transitions apply
 requestAnimationFrame(() => { document.getElementById('critical-theme')?.remove(); });
 
+import { initDemoModeFromUrl, isDemoMode, setDemoMode } from './demo-mode.js';
+initDemoModeFromUrl();
+
 import './shared.css';
 import { isSupabaseDisabled, setSupabaseDisabled, isExportedDataEnabled, setExportedDataEnabled, clearLocalData, loadGames, getPlayerRowsAndCustom } from './api.js';
 import { renderForm } from './form.js';
@@ -162,16 +165,22 @@ function setTheme(theme) {
     document.documentElement.removeAttribute('data-theme');
     localStorage.setItem(THEME_KEY, 'light');
   }
-  updateThemeToggleLabel();
+  updateThemeToggleUI();
   setTimeout(() => {
     document.documentElement.classList.remove('theme-switching');
   }, 380);
   window.dispatchEvent(new CustomEvent('theme-change', { detail: { theme } }));
 }
 
-function updateThemeToggleLabel() {
-  const label = document.getElementById('theme-toggle-label');
-  if (label) label.textContent = getTheme() === 'dark' ? 'Light mode' : 'Dark mode';
+function updateThemeToggleUI() {
+  const isDark = getTheme() === 'dark';
+  const toggle = document.getElementById('theme-toggle');
+  if (toggle) toggle.classList.toggle('toggle-slider--on', isDark);
+  const label = document.querySelector('.header-kebab-option[data-action="theme"] .header-kebab-option-title');
+  if (label) label.textContent = isDark ? 'Dark mode' : 'Light mode';
+  const themeOption = document.querySelector('.header-kebab-option[data-action="theme"]');
+  if (themeOption) themeOption.setAttribute('aria-label', isDark ? 'Dark mode toggle' : 'Light mode toggle');
+  if (themeOption) themeOption.setAttribute('aria-pressed', String(isDark));
 }
 
 function toggleTheme() {
@@ -183,6 +192,20 @@ const headerKebab = document.getElementById('header-nav-kebab');
 const kebabBtn = headerKebab?.querySelector('.header-kebab-btn');
 const kebabMenu = headerKebab?.querySelector('.header-kebab-menu');
 if (kebabBtn && kebabMenu) {
+  function updateDemoModeUI() {
+    const on = isDemoMode();
+    document.title = on ? 'The 65 Almanac [DEMO]' : 'The 65 Almanac';
+    const badge = document.getElementById('demo-mode-badge');
+    if (badge) badge.hidden = !on;
+    document.querySelectorAll('.demo-controls-only').forEach((el) => {
+      el.classList.toggle('demo-controls-visible', on);
+    });
+    const toggle = document.getElementById('demo-mode-toggle');
+    if (toggle) toggle.classList.toggle('toggle-slider--on', on);
+    const demoOption = headerKebab?.querySelector('.header-kebab-option[data-action="demo-mode"]');
+    if (demoOption) demoOption.setAttribute('aria-pressed', String(on));
+  }
+
   function updateLocalOnlyCaption() {
     const caption = document.getElementById('local-only-caption');
     if (caption) {
@@ -203,21 +226,52 @@ if (kebabBtn && kebabMenu) {
     }
   }
 
-  updateThemeToggleLabel();
+  updateThemeToggleUI();
+  updateDemoModeUI();
   kebabBtn.addEventListener('click', async (e) => {
     e.stopPropagation();
     const isOpen = !kebabMenu.hidden;
     kebabMenu.hidden = isOpen;
     if (!kebabMenu.hidden) {
+      updateThemeToggleUI();
+      updateDemoModeUI();
       updateLocalOnlyCaption();
       updateExportedDataCaption();
       document.addEventListener('click', () => { kebabMenu.hidden = true; }, { once: true });
     }
   });
-  headerKebab.querySelector('.header-kebab-option[data-action="theme"]')?.addEventListener('click', (e) => {
+  const demoModeOption = headerKebab.querySelector('.header-kebab-option[data-action="demo-mode"]');
+  demoModeOption?.addEventListener('click', async (e) => {
     e.stopPropagation();
-    kebabMenu.hidden = true;
+    const turningOn = !isDemoMode();
+    setDemoMode(turningOn);
+    if (turningOn) {
+      setSupabaseDisabled(true);
+      setExportedDataEnabled(false);
+    }
+    updateDemoModeUI();
+    updateLocalOnlyCaption();
+    updateExportedDataCaption();
+    viewContainers[currentView].innerHTML = '';
+    await showView(currentView, { animateNav: false });
+  });
+  demoModeOption?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      demoModeOption.click();
+    }
+  });
+  const themeOption = headerKebab.querySelector('.header-kebab-option[data-action="theme"]');
+  themeOption?.addEventListener('click', (e) => {
+    e.stopPropagation();
     toggleTheme();
+    updateThemeToggleUI();
+  });
+  themeOption?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      themeOption.click();
+    }
   });
   headerKebab.querySelector('.header-kebab-option[data-action="local-only"]')?.addEventListener('click', async (e) => {
     e.stopPropagation();

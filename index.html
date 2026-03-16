@@ -23,7 +23,7 @@
         });
       })();
     </script>
-    <title>The 65 Almanac [DEMO]</title>
+    <title>The 65 Almanac</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -32,7 +32,7 @@
   </head>
   <body>
     <header>
-      <h1 class="header-title"><span class="dev-mode-badge">DEMO</span>The 65 Almanac</h1>
+      <h1 class="header-title"><span class="demo-mode-badge" id="demo-mode-badge" hidden>DEMO</span>The 65 Almanac</h1>
       <nav>
         <span class="nav-slider"></span>
         <button class="nav-btn active" data-view="entry">New Game</button>
@@ -42,21 +42,35 @@
       <div class="header-nav-kebab" id="header-nav-kebab">
         <button type="button" class="header-kebab-btn" aria-label="Options"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg></button>
         <div class="header-kebab-menu" hidden>
-          <button type="button" class="header-kebab-option" data-action="theme" id="theme-toggle-btn">
-            <span class="header-kebab-option-title" id="theme-toggle-label">Dark mode</span>
-          </button>
+          <div class="header-kebab-option header-kebab-option--theme" data-action="theme" role="button" tabindex="0" aria-pressed="false" aria-label="Dark mode toggle">
+            <span class="header-kebab-option-title">Dark mode</span>
+            <span class="toggle-slider" id="theme-toggle" aria-hidden="true">
+              <span class="toggle-slider-track">
+                <span class="toggle-slider-knob"></span>
+              </span>
+            </span>
+          </div>
           <span class="header-kebab-option-divider"></span>
-          <button type="button" class="header-kebab-option" data-action="local-only">
-            <span class="header-kebab-option-title">Read Supabase</span>
+          <div class="header-kebab-option header-kebab-option--demo-mode" data-action="demo-mode" role="button" tabindex="0" aria-pressed="false" aria-label="Demo toggle">
+            <span class="header-kebab-option-title">Demo</span>
+            <span class="toggle-slider" id="demo-mode-toggle" aria-hidden="true">
+              <span class="toggle-slider-track">
+                <span class="toggle-slider-knob"></span>
+              </span>
+            </span>
+          </div>
+          <span class="header-kebab-option-divider demo-controls-only" id="demo-controls-divider"></span>
+          <button type="button" class="header-kebab-option demo-controls-only" data-action="local-only">
+            <span class="header-kebab-option-title">Supabase data</span>
             <span class="header-kebab-option-caption status-indicator" id="local-only-caption" data-status="on" aria-label="On">On</span>
           </button>
-          <button type="button" class="header-kebab-option" data-action="exported-data">
-            <span class="header-kebab-option-title">Read backup</span>
+          <button type="button" class="header-kebab-option demo-controls-only" data-action="exported-data">
+            <span class="header-kebab-option-title">Backup data</span>
             <span class="header-kebab-option-caption status-indicator" id="exported-data-caption" data-status="off" aria-label="Off">Off</span>
           </button>
-          <span class="header-kebab-option-divider"></span>
-          <button type="button" class="header-kebab-option header-kebab-option--danger" data-action="clear-local">
-            <span class="header-kebab-option-title">Clear local</span>
+          <span class="header-kebab-option-divider demo-controls-only"></span>
+          <button type="button" class="header-kebab-option header-kebab-option--danger demo-controls-only" data-action="clear-local">
+            <span class="header-kebab-option-title">Clear localStorage</span>
           </button>
         </div>
       </div>

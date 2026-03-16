@@ -1,3 +1,4 @@
+import { isDemoMode } from './demo-mode.js';
 import { getPlayerRowsAndCustom, getAllPlayerNames, addCustomPlayer, removeCustomPlayer, saveGame, saveDraft, loadDraft, clearDraft, loadGames } from './api.js';
 import { createScratchDraftInNewGame, buildFillDraft } from './scratch.js';
 import { formatDate, todayShort, todayISO } from './utils.js';
@@ -85,9 +86,9 @@ async function buildSetupHTML(draft = null) {
         </div>
       </div>
     </section>
-    <div class="game-setup-scratch-wrap">
-      <button type="button" class="scratch-entry-btn" title="Dev: generate test scoresheet (unsaved)">Scratch entry</button>
-    </div>
+    ${isDemoMode() ? `<div class="game-setup-scratch-wrap">
+      <button type="button" class="scratch-entry-btn" title="Generate test scoresheet (unsaved)">Scratch entry</button>
+    </div>` : ''}
     <section id="scoresheet-area"></section>
   `;
 }

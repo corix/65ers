@@ -1,5 +1,6 @@
 import './archive.css';
-import { loadGames, deleteGame, updateGame, cleanOrphanedPlayers, loadDraft } from './api.js';
+import { isDemoMode } from './demo-mode.js';
+import { loadGames, deleteGame, updateGame, cleanOrphanedPlayers, loadDraft, isLocalGame } from './api.js';
 import { createScratchGameInArchive } from './scratch.js';
 import { formatDate } from './utils.js';
 import { ROUNDS, SUITS } from './constants.js';
@@ -83,7 +84,7 @@ export async function renderArchive(container, { runCleanup = false } = {}) {
     emptyDiv.innerHTML = `
       <div class="card empty-state">
         <p>No games saved yet. Go to <strong>New Game</strong> to add one.</p>
-        <button type="button" class="scratch-entry-btn" title="Dev: generate test game">Scratch entry</button>
+        ${isDemoMode() ? '<button type="button" class="scratch-entry-btn" title="Generate test game">Scratch entry</button>' : ''}
       </div>
     `;
     const scratchBtn = emptyDiv.querySelector('.scratch-entry-btn');
@@ -100,9 +101,9 @@ export async function renderArchive(container, { runCleanup = false } = {}) {
 
   const toolbar = document.createElement('div');
   toolbar.className = 'archive-toolbar';
-  toolbar.innerHTML = `
-    <button type="button" class="scratch-entry-btn" title="Dev: generate test game">Scratch entry</button>
-  `;
+  toolbar.innerHTML = isDemoMode() ? `
+    <button type="button" class="scratch-entry-btn" title="Generate test game">Scratch entry</button>
+  ` : '';
   const scratchToolbarBtn = toolbar.querySelector('.scratch-entry-btn');
   if (scratchToolbarBtn) {
     scratchToolbarBtn.addEventListener('click', async () => {
@@ -111,7 +112,7 @@ export async function renderArchive(container, { runCleanup = false } = {}) {
       await renderArchive(container);
     });
   }
-  container.appendChild(toolbar);
+  if (isDemoMode()) container.appendChild(toolbar);
 
   const list = document.createElement('div');
   list.className = 'archive-list';
@@ -136,7 +137,7 @@ export async function renderArchive(container, { runCleanup = false } = {}) {
   games.forEach(game => {
     const canDelete = !!game.id;
     const item = document.createElement('div');
-    item.className = 'archive-item card';
+    item.className = 'archive-item card' + (isDemoMode() && isLocalGame(game.id) ? ' local-storage-entry' : '');
     item.dataset.gameId = game.id || '';
     item.innerHTML = `
       <div class="archive-header-row" ${canDelete ? 'data-can-delete' : ''}>
@@ -207,7 +208,7 @@ export async function renderArchive(container, { runCleanup = false } = {}) {
         e.stopPropagation();
         hideAllReveals();
         showDeleteConfirmModal(container, game.id, async () => {
-          await deleteGame(game.id);
+          await deleteGame(game.id, game.players ?? []);
           container.innerHTML = '';
           await renderArchive(container, { runCleanup: true });
         }, item);

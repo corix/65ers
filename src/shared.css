@@ -211,6 +211,13 @@ html.theme-switching *::after {
   transition-delay: 0s !important;
 }
 
+/* Preserve toggle slider knob animation during theme switch */
+html.theme-switching .toggle-slider-knob {
+  transition-property: transform !important;
+  transition-duration: 0.2s !important;
+  transition-timing-function: ease !important;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -242,7 +249,7 @@ header h1.header-title {
   position: relative;
 }
 
-.dev-mode-badge {
+.demo-mode-badge {
   position: absolute;
   top: -0.5em;
   right: 0.4em;
@@ -375,7 +382,7 @@ nav[data-active-view="stats"] .nav-slider {
   border-radius: var(--radius);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   padding: 0.25rem;
-  width: max-content;
+  width: 11rem;
   z-index: 20;
 }
 
@@ -439,6 +446,74 @@ nav[data-active-view="stats"] .nav-slider {
 
 .header-kebab-option--danger .header-kebab-option-title {
   color: var(--red);
+}
+
+.header-kebab-option--theme {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.header-kebab-option--demo-mode {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.toggle-slider {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.toggle-slider-track {
+  display: block;
+  width: 2.25rem;
+  height: 1.15rem;
+  background: var(--border);
+  border-radius: 999px;
+  position: relative;
+  transition: background 0.2s ease;
+}
+
+.toggle-slider-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 0.9rem;
+  height: 0.9rem;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease;
+}
+
+.toggle-slider--on .toggle-slider-track {
+  background: var(--accent, #4a6ad9);
+}
+
+.toggle-slider--on .toggle-slider-knob {
+  transform: translateX(1.1rem);
+}
+
+/* Demo toggle: amber when on */
+.header-kebab-option--demo-mode .toggle-slider--on .toggle-slider-track {
+  background: #ffeb3b;
+}
+
+html[data-theme="dark"] .header-kebab-option--demo-mode .toggle-slider--on .toggle-slider-track {
+  background: #b8a730;
+}
+
+/* Demo controls: hidden by default, shown only when Demo Mode is on */
+.demo-controls-only {
+  display: none !important;
+}
+.demo-controls-only.demo-controls-visible {
+  display: block !important;
 }
 
 .test-data-link {

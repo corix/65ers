@@ -76,6 +76,10 @@
   gap: 0.5rem;
 }
 
+.archive-item.local-storage-entry {
+  border-left: 3px solid var(--red, #c62828);
+}
+
 .archive-item {
   padding: 0;
   container-type: inline-size;
