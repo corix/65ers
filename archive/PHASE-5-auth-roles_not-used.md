@@ -1,13 +1,17 @@
+> **Deprecated.** This plan (3-password, role-based access) has been superseded by [PHASE-5.md](../PHASE-5.md), which uses email login and admin invites. Kept for reference.
+
+---
+
 # Phase 5: Auth and Role-Based Access Control
 
 One plan to add password protection and role-based access. Implement in order — later phases depend on earlier ones.
 
 ## Overview
 
-- **Goal:** Admin has full write access; Editor can create/update but not delete games; Demo has read-only Supabase access plus Dev Mode to play with the UI via localStorage.
-- **Current state:** main branch uses full Supabase read/write with anon key. dev-mode branch (separate codebase) has read-only Supabase, write-only localStorage, and dev controls. The two diverge in 7 files.
+- **Goal:** Admin has full write access; Editor can create/update but not delete games; Demo has read-only Supabase access plus Demo Mode to play with the UI via localStorage.
+- **Current state:** main branch uses full Supabase read/write with anon key. demo-mode branch (separate codebase) has read-only Supabase, write-only localStorage, and dev controls. The two diverge in 7 files.
 - **Approach:**
-  1. Merge dev-mode into main as a runtime toggle
+  1. Merge demo-mode into main as a runtime toggle
   2. Add Supabase Auth
   3. Add roles (admin, editor, demo) via RLS and Auth Hook
   4. Gate UI by role
@@ -24,38 +28,38 @@ One plan to add password protection and role-based access. Implement in order �
 
 ---
 
-## Phase 5.1 — Dev Mode Runtime Toggle
+## Phase 5.1 — Demo Mode Runtime Toggle
 
-Prerequisite for Demo users. Merge dev-mode logic so it can be toggled at runtime instead of requiring a separate branch.
+Prerequisite for Demo users. Merge demo-mode logic so it can be toggled at runtime instead of requiring a separate branch.
 
 ### Approach
 
-Introduce `isDevMode()` that switches behavior. When ON: hybrid data (read Supabase + backup, write localStorage) and dev controls. When OFF: full Supabase read/write.
+Introduce `isDemoMode()` that switches behavior. When ON: hybrid data (read Supabase + backup, write localStorage) and dev controls. When OFF: full Supabase read/write.
 
 ### Tasks
 
-- **5.1.1** Create [src/dev-mode.js](src/dev-mode.js):
-  - `isDevMode()`, `setDevMode(on)`, `initDevModeFromUrl()` (check `?dev=1` / `?dev=0`)
-  - Persist in localStorage (`65ers_dev_mode`)
+- **5.1.1** Create [src/demo-mode.js](src/demo-mode.js):
+  - `isDemoMode()`, `setDemoMode(on)`, `initDemoModeFromUrl()` (check `?demo=1` / `?demo=0`)
+  - Persist in localStorage (`65ers_demo_mode`)
   - Hidden gesture (triple-click header) to toggle
-- **5.1.2** Refactor [src/api.js](src/api.js) to branch on `isDevMode()`:
+- **5.1.2** Refactor [src/api.js](src/api.js) to branch on `isDemoMode()`:
   - Production = Supabase
   - Dev = localStorage writes, merged reads (Supabase optional + exported backup + local games)
   - Merge helpers: `getLocalGames`, `setLocalGames`, `isSupabaseDisabled`, `setSupabaseDisabled`, `isExportedDataEnabled`, `setExportedDataEnabled`, `clearLocalData`
 - **5.1.3** Update [src/main.js](src/main.js):
-  - Call `initDevModeFromUrl()` on load
+  - Call `initDemoModeFromUrl()` on load
   - Build kebab menu dynamically
-  - Add dev-mode gesture
+  - Add demo-mode gesture
   - Re-render on toggle
 - **5.1.4** Update [src/archive.js](src/archive.js) and [src/form.js](src/form.js):
-  - Render Scratch entry, Fill sheet only when `isDevMode()`
+  - Render Scratch entry, Fill sheet only when `isDemoMode()`
   - Import from [src/scratch.js](src/scratch.js)
-- **5.1.5** Merge dev-mode styles into [src/shared.css](src/shared.css) and [src/archive.css](src/archive.css):
-  - `.dev-mode-badge`, `.scratch-entry-btn`, `.archive-toolbar`
+- **5.1.5** Merge demo-mode styles into [src/shared.css](src/shared.css) and [src/archive.css](src/archive.css):
+  - `.demo-mode-badge`, `.scratch-entry-btn`, `.archive-toolbar`
 
 ### Files
 
-- New: `src/dev-mode.js`
+- New: `src/demo-mode.js`
 - Modify: `api.js`, `main.js`, `archive.js`, `form.js`, `shared.css`, `archive.css`
 
 ---
@@ -98,9 +102,9 @@ Add `user_roles` table, Auth Hook, and role-based RLS policies.
 
 | Role       | Supabase                                                              | UI                                                                           |
 | ---------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| **Admin**  | Full read/write (SELECT, INSERT, UPDATE, DELETE) on games and players | All features: New Game, Archive (delete, date edit), Stats, Export, Dev Mode |
+| **Admin**  | Full read/write (SELECT, INSERT, UPDATE, DELETE) on games and players | All features: New Game, Archive (delete, date edit), Stats, Export, Demo Mode |
 | **Editor** | SELECT, INSERT, UPDATE only (no DELETE on games)                      | New Game, Archive (date edit only, no delete), Stats, Export                 |
-| **Demo**   | SELECT only                                                           | Archive, Stats (read-only). Dev Mode toggle to play with UI via localStorage |
+| **Demo**   | SELECT only                                                           | Archive, Stats (read-only). Demo Mode toggle to play with UI via localStorage |
 
 ### Tasks
 
@@ -135,7 +139,7 @@ Wire role into views. Decode role from JWT (`jwt-decode`).
 - **5.4.3** [src/form.js](src/form.js): `canCreateGame` = admin or editor (hide New Game for demo)
 - **5.4.4** [src/main.js](src/main.js) kebab:
   - `canExport` = admin or editor
-  - `canToggleDevMode` = demo only (or all roles). Show Dev Mode toggle for Demo
+  - `canToggleDemoMode` = demo only (or all roles). Show Demo Mode toggle for Demo
 - **5.4.5** Unauthenticated: no access. Redirect to login
 
 ### Files
@@ -161,7 +165,7 @@ Bootstrap the 3 shared accounts and verify.
     ('<editor-uuid>', 'editor'),
     ('<demo-uuid>', 'demo');
   ```
-- **5.5.3** Test: enter each password, verify role restrictions (admin full access, editor no delete, demo read-only + Dev Mode)
+- **5.5.3** Test: enter each password, verify role restrictions (admin full access, editor no delete, demo read-only + Demo Mode)
 
 ---
 
@@ -180,11 +184,11 @@ Only if you want per-user accounts instead of shared passwords.
 
 ## Reference
 
-### Dev Mode Toggle
+### Demo Mode Toggle
 
-- Query param: `?dev=1` / `?dev=0`
+- Query param: `?demo=1` / `?demo=0`
 - Hidden gesture: triple-click "The 65 Almanac" in header
-- Persistence: localStorage `65ers_dev_mode`
+- Persistence: localStorage `65ers_demo_mode`
 
 ### Auth Hook (excerpt)
 
@@ -219,8 +223,8 @@ const role = session?.access_token ? jwtDecode(session.access_token).user_role :
 
 | File                                     | Phase      | Action                                      |
 | ---------------------------------------- | ---------- | ------------------------------------------- |
-| `src/dev-mode.js`                        | 5.1        | New                                         |
-| `src/api.js`                             | 5.1        | Merge dev-mode logic                        |
+| `src/demo-mode.js`                        | 5.1        | New                                         |
+| `src/api.js`                             | 5.1        | Merge demo-mode logic                        |
 | `src/main.js`                            | 5.1, 5.2, 5.4 | Dev toggle, auth gate, role-aware kebab |
 | `src/archive.js`                         | 5.1, 5.4   | Scratch entry, role-based delete/edit       |
 | `src/form.js`                            | 5.1, 5.4   | Scratch entry, role-based New Game          |
@@ -228,6 +232,6 @@ const role = session?.access_token ? jwtDecode(session.access_token).user_role :
 | `supabase/functions/auth-with-password/` | 5.2        | New: validate password, sign in, return session |
 | `supabase/migrations/*_auth_roles.sql`   | 5.3        | New: user_roles, Auth Hook                  |
 | `supabase/migrations/*_rls_policies.sql` | 5.3        | New: role-based RLS                         |
-| `src/shared.css`, `src/archive.css`      | 5.1        | Merge dev-mode styles                       |
+| `src/shared.css`, `src/archive.css`      | 5.1        | Merge demo-mode styles                       |
 | `index.html`                             | 5.2        | Auth container                              |
 | `package.json`                           | 5.4        | Add `jwt-decode`                            |

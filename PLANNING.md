@@ -132,14 +132,14 @@ These are the building stages for this project.
 
 ### 5. Phase 5 — Password protection and auth  👉  WE ARE HERE
 
-See `PHASE-5-Perms.md`
+See `PHASE-5.md`
 
 - Password protection (Supabase Auth)
 - Optionally explore login credentials
 
 ### 6. Phase 6 — Explore more features
 
-See `PHASE-6-OCR.md`
+See `PHASE-6.md`
 
 - More player stats metrics and chart visualizations
 - Player vs player matchups

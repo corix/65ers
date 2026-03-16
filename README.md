@@ -16,7 +16,7 @@ Extras:
 ## Branches
 
 - **main** — Production. Full Supabase read/write.
-- **dev-mode** — Testing. Read-only Supabase, write-only localStorage. Dev controls: Read Supabase, Read backup, Clear local, Scratch entry, Fill sheet.
+- **dev-mode** — Testing. Read-only Supabase, write-only localStorage. Demo controls: Read Supabase, Read backup, Clear local, Scratch entry, Fill sheet.
 
 ## Tech stack
 
