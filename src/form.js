@@ -546,7 +546,7 @@ function renderScoresheet(container, date, displayDate, players) {
               <tr><td class="shortcut-desc">Magic 65</td><td><kbd>65</kbd> or <kbd>!</kbd></td></tr>
               <tr><td class="shortcut-desc">Edit date</td><td>Double-click the date</td></tr>
               <tr><td class="shortcut-desc">Remove a player</td><td>Double-click the name</td></tr>
-              <tr><td class="shortcut-desc">Next cell</td><td><kbd>Tab</kbd> to move right<br /><kbd>Enter</kbd> to move down</td></tr>
+              <tr><td class="shortcut-desc">Next cell</td><td><kbd>Tab</kbd> to move right<br /><kbd>Enter</kbd> to move down<br />(from round K: next player's round 3)</td></tr>
               <tr><td class="shortcut-desc">Previous cell</td><td><kbd>Shift</kbd>+<kbd>Tab</kbd> to move left<br /><kbd>Shift</kbd>+<kbd>Enter</kbd> to move up</td></tr>
             </tbody>
           </table>
@@ -1148,10 +1148,19 @@ function bindScoresheetEvents(container, date, players) {
         const prevInput = table.querySelector(`.score-input[data-round="${prevRound}"][data-player="${player}"]`);
         if (prevInput) prevInput.focus();
       } else {
-        if (roundIdx >= ROUNDS.length - 1) return;
-        const nextRound = ROUNDS[roundIdx + 1];
-        const nextInput = table.querySelector(`.score-input[data-round="${nextRound}"][data-player="${player}"]`);
-        if (nextInput) nextInput.focus();
+        if (roundIdx >= ROUNDS.length - 1) {
+          // On round K: move to round 3 in next column (wrap to first player if last)
+          const currentPlayers = getPlayersFromTable(table);
+          const playerIdx = currentPlayers.indexOf(player);
+          const nextPlayerIdx = (playerIdx + 1) % currentPlayers.length;
+          const nextPlayer = currentPlayers[nextPlayerIdx];
+          const nextInput = table.querySelector(`.score-input[data-round="3"][data-player="${nextPlayer}"]`);
+          if (nextInput) nextInput.focus();
+        } else {
+          const nextRound = ROUNDS[roundIdx + 1];
+          const nextInput = table.querySelector(`.score-input[data-round="${nextRound}"][data-player="${player}"]`);
+          if (nextInput) nextInput.focus();
+        }
       }
     });
   });
