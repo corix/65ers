@@ -215,7 +215,7 @@ const kebabMenu = headerKebab?.querySelector('.header-kebab-menu');
 
 function updateDemoModeUI() {
   const on = isDemoMode();
-  document.title = on ? 'The 65 Almanac [DEMO]' : 'The 65 Almanac';
+  document.title = on ? 'The 65 Almanac | DEMO' : 'The 65 Almanac';
   const badge = document.getElementById('demo-mode-badge');
   if (badge) badge.hidden = !on;
   if (headerKebab) headerKebab.dataset.demoMode = on ? 'true' : '';
