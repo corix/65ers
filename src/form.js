@@ -1,4 +1,5 @@
-import { isDemoMode } from './demo-mode.js';
+import { isDemoMode, setDemoMode } from './demo-mode.js';
+import { getSession } from './auth.js';
 import { getPlayerRowsAndCustom, getAllPlayerNames, addCustomPlayer, removeCustomPlayer, saveGame, saveDraft, loadDraft, clearDraft, loadGames } from './api.js';
 import { createScratchDraftInNewGame, buildFillDraft } from './scratch.js';
 import { formatDate, todayShort, todayISO } from './utils.js';
@@ -11,13 +12,43 @@ const KEBAB_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="1
 let selectedPlayers = [];
 
 export async function renderForm(container) {
+  const myRenderId = container.dataset.formRenderId;
   container.innerHTML = '';
   selectedPlayers = [];
 
+  const { data } = await getSession();
+  if (container.dataset.formRenderId !== myRenderId) return;
+  if (!data?.session && !isDemoMode()) {
+    const emptyDiv = document.createElement('div');
+    emptyDiv.innerHTML = `
+      <div class="card empty-state">
+        <img src="/hands-with-cards.svg" alt="" class="empty-state-illustration" width="280" height="200">
+        <h2>Welcome to Cori’s family almanac!</h2>
+        <p>Check out the Archive and Stats for real games.<br>
+        Use Demo mode to try out the UI and save your own games.</p>
+        <div class="empty-state-actions">
+          <button type="button" class="scratch-entry-btn turn-on-demo-btn" title="Try the UI with local data">Try the Demo</button>
+          <button type="button" class="auth-gate-sign-in-link empty-state-sign-in-btn">Sign in</button>
+        </div>
+      </div>
+    `;
+    emptyDiv.querySelector('.auth-gate-sign-in-link')?.addEventListener('click', () => {
+      window.dispatchEvent(new CustomEvent('open-sign-in-modal'));
+    });
+    emptyDiv.querySelector('.turn-on-demo-btn')?.addEventListener('click', () => {
+      setDemoMode(true);
+      window.dispatchEvent(new CustomEvent('navigate-to-view', { detail: { view: 'entry' } }));
+    });
+    container.appendChild(emptyDiv);
+    return;
+  }
+
   const draft = loadDraft();
+  if (container.dataset.formRenderId !== myRenderId) return;
   const wrapper = document.createElement('div');
   wrapper.className = 'form-view';
   wrapper.innerHTML = await buildSetupHTML(draft);
+  if (container.dataset.formRenderId !== myRenderId) return;
   container.appendChild(wrapper);
 
   bindSetupEvents(wrapper);
@@ -87,7 +118,7 @@ async function buildSetupHTML(draft = null) {
       </div>
     </section>
     ${isDemoMode() ? `<div class="game-setup-scratch-wrap">
-      <button type="button" class="scratch-entry-btn" title="Generate test scoresheet (unsaved)">Scratch entry</button>
+      <button type="button" class="scratch-entry-btn" title="Generate test scoresheet (unsaved)">Quick add</button>
     </div>` : ''}
     <section id="scoresheet-area"></section>
   `;
@@ -550,7 +581,7 @@ function renderScoresheet(container, date, displayDate, players) {
       <div class="scoresheet-header">
         <h2>Scoresheet &mdash; <span class="scoresheet-date" data-date="${date || ''}" role="button" tabindex="0" aria-label="Game date (double-click to edit)">${displayDate || (date ? formatDate(date, true) : '')}</span> <button type="button" class="scoresheet-shortcuts-btn" aria-label="Keyboard shortcuts">ℹ</button></h2>
         <div class="scoresheet-header-actions">
-          <button type="button" class="fill-sheet-btn scratch-entry-btn" title="Dev: fill with realistic scores and tunks">Fill sheet</button>
+          ${isDemoMode() ? '<button type="button" class="fill-sheet-btn scratch-entry-btn" title="Dev: fill with realistic scores and tunks">Fill sheet</button>' : ''}
           <button type="button" class="scoresheet-clear-btn text-btn icon-btn" aria-label="Clear scores"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
           <div class="start-over-wrap">
             <div class="start-over-tooltip" id="start-over-tooltip" hidden>Click to start over</div>
@@ -917,6 +948,17 @@ function persistDraft(wrapper) {
     const container = wrapper.querySelector('#scoresheet-area');
     if (container?.querySelector('.scoresheet')) updateFillSheetButtonState(container);
   }, 300);
+}
+
+/** Flush any pending draft and save to storage. Call before destroying the form (e.g. demo mode toggle). */
+export function flushDraftToStorage(entryContainer) {
+  if (!entryContainer) return;
+  clearTimeout(persistDraftTimer);
+  persistDraftTimer = null;
+  const wrapper = entryContainer.querySelector('.form-view');
+  if (!wrapper) return;
+  const draft = getDraftFromForm(wrapper);
+  if (draft) saveDraft(draft);
 }
 
 function bindScoresheetEvents(container, date, players) {
@@ -1553,7 +1595,7 @@ async function handleSave(container, date, players) {
 
       preview.querySelector('.save-success-archive-btn')?.addEventListener('click', () => {
         runFadeOut(() => {
-          window.dispatchEvent(new CustomEvent('navigate-to-view', { detail: { view: 'archive', animateNav: true, animateContent: true } }));
+          window.dispatchEvent(new CustomEvent('navigate-to-view', { detail: { view: 'archive', animateNav: true, animateContent: true, openGameId: game.id } }));
         });
       });
 

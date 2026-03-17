@@ -102,6 +102,12 @@ export function setExportedDataEnabled(enabled) {
   localStorage.setItem(EXPORTED_DATA_ENABLED_KEY, enabled ? '1' : '0');
 }
 
+/** Set live source and backup to off (for when user has been out of demo mode for a while). */
+export function resetDemoDataSourcesToOff() {
+  localStorage.setItem(READ_SUPABASE_KEY, '0');
+  localStorage.setItem(EXPORTED_DATA_ENABLED_KEY, '0');
+}
+
 export function getLastExportedAt() {
   return localStorage.getItem(LAST_EXPORTED_AT_KEY);
 }

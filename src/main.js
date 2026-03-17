@@ -2,17 +2,19 @@
 requestAnimationFrame(() => { document.getElementById('critical-theme')?.remove(); });
 
 import { initDemoModeFromUrl, isDemoMode, setDemoMode } from './demo-mode.js';
+import { getSession, signOut, onAuthStateChange, renderSignInForm } from './auth.js';
 initDemoModeFromUrl();
 
 import './shared.css';
-import { isSupabaseDisabled, setSupabaseDisabled, isExportedDataEnabled, setExportedDataEnabled, hasLocalData, clearLocalData, clearLocalPlayerData, clearDraft, getSupabaseGameCount, getExportedGameCount, getLocalGameCount, loadGames, getPlayerRowsAndCustom, getExportData, getDownloadBackupCounts, getLastExportedAt, setLastExportedAt } from './api.js';
+import { isSupabaseDisabled, setSupabaseDisabled, isExportedDataEnabled, setExportedDataEnabled, resetDemoDataSourcesToOff, hasLocalData, clearLocalData, clearLocalPlayerData, clearDraft, getSupabaseGameCount, getExportedGameCount, getLocalGameCount, loadGames, getPlayerRowsAndCustom, getExportData, getDownloadBackupCounts, getLastExportedAt, setLastExportedAt } from './api.js';
 import { formatDurationAgo } from './utils.js';
-import { renderForm } from './form.js';
+import { renderForm, flushDraftToStorage } from './form.js';
 import { renderArchive } from './archive.js';
 import { renderStats } from './stats.js';
 
 const VIEW_KEY = '65ers_view';
 const VALID_VIEWS = ['entry', 'archive', 'stats'];
+const DEMO_DATA_RESET_DELAY_MS = 5 * 60 * 1000; // 5 minutes
 
 const app = document.getElementById('app');
 const nav = document.querySelector('nav');
@@ -20,6 +22,8 @@ const navBtns = document.querySelectorAll('.nav-btn');
 const navSlider = document.querySelector('.nav-slider');
 
 let currentView = 'entry';
+let formRenderId = 0;
+let demoDataResetTimeout = null;
 
 function getStoredView() {
   const stored = localStorage.getItem(VIEW_KEY);
@@ -60,7 +64,7 @@ function updateNavSlider(animate = false) {
   }
 }
 
-async function showView(view, { animateNav = false, animateContent = false } = {}) {
+async function showView(view, { animateNav = false, animateContent = false, openGameId } = {}) {
   currentView = view;
   localStorage.setItem(VIEW_KEY, view);
   nav?.setAttribute('data-active-view', view);
@@ -75,7 +79,7 @@ async function showView(view, { animateNav = false, animateContent = false } = {
   if (view === 'archive' || view === 'stats') {
     container.innerHTML = '';
     if (view === 'archive') {
-      await renderArchive(container);
+      await renderArchive(container, { openGameId });
       if (animateContent && container.children.length > 0) {
         const wrapper = document.createElement('div');
         wrapper.className = 'archive-view archive-entering';
@@ -92,14 +96,16 @@ async function showView(view, { animateNav = false, animateContent = false } = {
     }
   } else if (view === 'entry') {
     container.innerHTML = '';
+    formRenderId += 1;
+    container.dataset.formRenderId = String(formRenderId);
     await renderForm(container);
   }
 }
 
 window.addEventListener('navigate-to-view', (e) => {
-  const { view, animateNav = false, animateContent = false } = e.detail || {};
+  const { view, animateNav = false, animateContent = false, openGameId } = e.detail || {};
   if (view && VALID_VIEWS.includes(view)) {
-    showView(view, { animateNav, animateContent });
+    showView(view, { animateNav, animateContent, openGameId });
   }
 });
 
@@ -195,28 +201,31 @@ function toggleTheme() {
 const headerKebab = document.getElementById('header-nav-kebab');
 const kebabBtn = headerKebab?.querySelector('.header-kebab-btn');
 const kebabMenu = headerKebab?.querySelector('.header-kebab-menu');
-if (kebabBtn && kebabMenu) {
-  function updateDemoModeUI() {
-    const on = isDemoMode();
-    document.title = on ? 'The 65 Almanac [DEMO]' : 'The 65 Almanac';
-    const badge = document.getElementById('demo-mode-badge');
-    if (badge) badge.hidden = !on;
-    if (headerKebab) headerKebab.dataset.demoMode = on ? 'true' : '';
-    document.querySelectorAll('.demo-controls-only').forEach((el) => {
-      el.classList.toggle('demo-controls-visible', on);
-    });
-    const toggle = document.getElementById('demo-mode-toggle');
-    if (toggle) toggle.classList.toggle('toggle-slider--on', on);
-    const demoOption = headerKebab?.querySelector('.header-kebab-option[data-action="demo-mode"]');
-    if (demoOption) demoOption.setAttribute('aria-pressed', String(on));
-  }
 
+function updateDemoModeUI() {
+  const on = isDemoMode();
+  document.title = on ? 'The 65 Almanac [DEMO]' : 'The 65 Almanac';
+  const badge = document.getElementById('demo-mode-badge');
+  if (badge) badge.hidden = !on;
+  if (headerKebab) headerKebab.dataset.demoMode = on ? 'true' : '';
+  document.querySelectorAll('.demo-controls-only').forEach((el) => {
+    el.classList.toggle('demo-controls-visible', on);
+  });
+  const toggle = document.getElementById('demo-mode-toggle');
+  if (toggle) toggle.classList.toggle('toggle-slider--on', on);
+  const demoOption = headerKebab?.querySelector('.header-kebab-option[data-action="demo-mode"]');
+  if (demoOption) demoOption.setAttribute('aria-pressed', String(on));
+}
+
+window.addEventListener('demo-mode-change', updateDemoModeUI);
+
+if (kebabBtn && kebabMenu) {
   async function updateLocalOnlyCaption() {
     const titleEl = headerKebab?.querySelector('.header-kebab-option[data-action="local-only"] .header-kebab-option-title');
     const caption = document.getElementById('local-only-caption');
     if (titleEl) {
       const count = await getSupabaseGameCount();
-      titleEl.textContent = count > 0 ? `Supabase data (${count})` : 'Supabase data';
+      titleEl.textContent = count > 0 ? `Live source data (${count})` : 'Live source data';
     }
     if (caption) {
       const on = !isSupabaseDisabled();
@@ -299,8 +308,69 @@ if (kebabBtn && kebabMenu) {
     }
   }
 
+  function updateSignInSignOutUI() {
+    getSession().then(({ data }) => {
+      const authenticated = !!data?.session;
+      document.querySelectorAll('.sign-in-only').forEach((el) => {
+        el.classList.toggle('sign-in-visible', !authenticated);
+      });
+      document.querySelectorAll('.sign-out-only').forEach((el) => {
+        el.classList.toggle('sign-out-visible', authenticated);
+      });
+      const showDownload = authenticated && !isDemoMode();
+      document.querySelectorAll('.download-backup-only').forEach((el) => {
+        el.classList.toggle('download-backup-visible', showDownload);
+      });
+    });
+  }
+
+  function showSignInModal() {
+    const modal = document.createElement('div');
+    modal.className = 'sign-in-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', 'sign-in-modal-title');
+    modal.innerHTML = `
+      <div class="sign-in-modal-backdrop"></div>
+      <div class="sign-in-modal-content">
+        <div id="sign-in-modal-form-container"></div>
+      </div>
+    `;
+    const container = modal.querySelector('#sign-in-modal-form-container');
+    const backdrop = modal.querySelector('.sign-in-modal-backdrop');
+    const close = () => modal.remove();
+    renderSignInForm(container, {
+      onSuccess: () => {
+        close();
+        // Optimistically show Download button immediately (user just signed in)
+        document.querySelectorAll('.sign-in-only').forEach((el) => {
+          el.classList.toggle('sign-in-visible', false);
+        });
+        document.querySelectorAll('.sign-out-only').forEach((el) => {
+          el.classList.toggle('sign-out-visible', true);
+        });
+        if (!isDemoMode()) {
+          document.querySelectorAll('.download-backup-only').forEach((el) => {
+            el.classList.add('download-backup-visible');
+          });
+        }
+        updateSignInSignOutUI();
+      },
+    });
+    container.querySelector('h3')?.setAttribute('id', 'sign-in-modal-title');
+    backdrop.addEventListener('click', close);
+    modal.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') close();
+    });
+    document.body.appendChild(modal);
+    container.querySelector('#auth-email')?.focus();
+  }
+
+  window.addEventListener('open-sign-in-modal', showSignInModal);
+
   updateThemeToggleUI();
   updateDemoModeUI();
+  updateSignInSignOutUI();
   kebabBtn.addEventListener('click', async (e) => {
     e.stopPropagation();
     const isOpen = !kebabMenu.hidden;
@@ -308,6 +378,7 @@ if (kebabBtn && kebabMenu) {
     if (!kebabMenu.hidden) {
       updateThemeToggleUI();
       updateDemoModeUI();
+      updateSignInSignOutUI();
       await updateLocalOnlyCaption();
       updateExportedDataCaption();
       updateClearDataVisibility();
@@ -320,18 +391,32 @@ if (kebabBtn && kebabMenu) {
     e.stopPropagation();
     const turningOn = !isDemoMode();
     if (!turningOn) {
+      if (demoDataResetTimeout) {
+        clearTimeout(demoDataResetTimeout);
+        demoDataResetTimeout = null;
+      }
       clearLocalPlayerData();
-      clearDraft();
-    }
-    setDemoMode(turningOn);
-    if (turningOn) {
-      setSupabaseDisabled(true);
-      setExportedDataEnabled(false);
+      // Don't clear draft — preserve scoresheet in progress when switching out of demo
+      setDemoMode(turningOn);
+      // Schedule reset of live source/backup to both off if user stays out of demo mode
+      demoDataResetTimeout = setTimeout(() => {
+        demoDataResetTimeout = null;
+        if (!isDemoMode()) {
+          resetDemoDataSourcesToOff();
+        }
+      }, DEMO_DATA_RESET_DELAY_MS);
+    } else {
+      if (demoDataResetTimeout) {
+        clearTimeout(demoDataResetTimeout);
+        demoDataResetTimeout = null;
+      }
+      setDemoMode(turningOn);
     }
     updateDemoModeUI();
     await updateLocalOnlyCaption();
     updateExportedDataCaption();
     updateClearDataVisibility();
+    if (currentView === 'entry') flushDraftToStorage(viewContainers.entry);
     viewContainers[currentView].innerHTML = '';
     await showView(currentView, { animateNav: false });
   });
@@ -357,6 +442,7 @@ if (kebabBtn && kebabMenu) {
     e.stopPropagation();
     setSupabaseDisabled(!isSupabaseDisabled());
     await updateLocalOnlyCaption();
+    if (currentView === 'entry') flushDraftToStorage(viewContainers.entry);
     viewContainers[currentView].innerHTML = '';
     await showView(currentView, { animateNav: false });
   });
@@ -364,6 +450,7 @@ if (kebabBtn && kebabMenu) {
     e.stopPropagation();
     setExportedDataEnabled(!isExportedDataEnabled());
     updateExportedDataCaption();
+    if (currentView === 'entry') flushDraftToStorage(viewContainers.entry);
     viewContainers[currentView].innerHTML = '';
     await showView(currentView, { animateNav: false });
   });
@@ -387,4 +474,38 @@ if (kebabBtn && kebabMenu) {
     a.click();
     URL.revokeObjectURL(a.href);
   });
+  headerKebab.querySelector('.header-kebab-option[data-action="sign-in"]')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    kebabMenu.hidden = true;
+    showSignInModal();
+  });
+  headerKebab.querySelector('.header-kebab-option[data-action="sign-out"]')?.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    kebabMenu.hidden = true;
+    await signOut();
+    updateSignInSignOutUI();
+    if (currentView === 'entry') flushDraftToStorage(viewContainers.entry);
+    viewContainers[currentView].innerHTML = '';
+    await showView(currentView, { animateNav: false });
+  });
 }
+
+onAuthStateChange(async () => {
+  const { data } = await getSession();
+  const authenticated = !!data?.session;
+  document.querySelectorAll('.sign-in-only').forEach((el) => {
+    el.classList.toggle('sign-in-visible', !authenticated);
+  });
+  document.querySelectorAll('.sign-out-only').forEach((el) => {
+    el.classList.toggle('sign-out-visible', authenticated);
+  });
+  const showDownload = authenticated && !isDemoMode();
+  document.querySelectorAll('.download-backup-only').forEach((el) => {
+    el.classList.toggle('download-backup-visible', showDownload);
+  });
+  if (viewContainers[currentView]) {
+    if (currentView === 'entry') flushDraftToStorage(viewContainers.entry);
+    viewContainers[currentView].innerHTML = '';
+    await showView(currentView, { animateNav: false });
+  }
+});

@@ -70,7 +70,7 @@ function showDeleteConfirmModal(container, gameId, onConfirm, gameItem) {
   requestAnimationFrame(() => input.focus());
 }
 
-export async function renderArchive(container, { runCleanup = false } = {}) {
+export async function renderArchive(container, { runCleanup = false, openGameId } = {}) {
   container.innerHTML = '<div class="archive-loading"><p>Loading…</p></div>';
   const games = await loadGames();
   if (runCleanup) {
@@ -84,7 +84,7 @@ export async function renderArchive(container, { runCleanup = false } = {}) {
     emptyDiv.innerHTML = `
       <div class="card empty-state">
         <p>No games saved yet. Go to <strong>New Game</strong> to add one.</p>
-        ${isDemoMode() ? '<button type="button" class="scratch-entry-btn" title="Generate test game">Scratch entry</button>' : ''}
+        ${isDemoMode() ? '<button type="button" class="scratch-entry-btn" title="Generate test game">Quick add</button>' : ''}
       </div>
     `;
     const scratchBtn = emptyDiv.querySelector('.scratch-entry-btn');
@@ -102,7 +102,7 @@ export async function renderArchive(container, { runCleanup = false } = {}) {
   const toolbar = document.createElement('div');
   toolbar.className = 'archive-toolbar';
   toolbar.innerHTML = isDemoMode() ? `
-    <button type="button" class="scratch-entry-btn" title="Generate test game">Scratch entry</button>
+    <button type="button" class="scratch-entry-btn" title="Generate test game">Quick add</button>
   ` : '';
   const scratchToolbarBtn = toolbar.querySelector('.scratch-entry-btn');
   if (scratchToolbarBtn) {
@@ -326,6 +326,23 @@ export async function renderArchive(container, { runCleanup = false } = {}) {
   });
 
   container.appendChild(list);
+
+  if (openGameId) {
+    const item = container.querySelector(`.archive-item[data-game-id="${openGameId}"]`);
+    if (item) {
+      const header = item.querySelector('.archive-header');
+      const body = item.querySelector('.archive-body');
+      if (header && body) {
+        list.querySelectorAll('.archive-item').forEach((other) => {
+          other.querySelector('.archive-header')?.setAttribute('aria-expanded', 'false');
+          other.querySelector('.archive-body')?.setAttribute('hidden', '');
+        });
+        header.setAttribute('aria-expanded', 'true');
+        body.removeAttribute('hidden');
+        item.scrollIntoView({ behavior: 'auto', block: 'start' });
+      }
+    }
+  }
 }
 
 function buildArchiveTable(game) {

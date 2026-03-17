@@ -6,6 +6,7 @@ export function isDemoMode() {
 
 export function setDemoMode(on) {
   localStorage.setItem(DEMO_MODE_KEY, on ? '1' : '0');
+  window.dispatchEvent(new CustomEvent('demo-mode-change'));
 }
 
 export function initDemoModeFromUrl() {
