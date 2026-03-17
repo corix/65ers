@@ -2,12 +2,14 @@
 
 Plan for auth and write access. Implement in order — later phases depend on earlier ones.
 
+**Status: Complete**
+
 *(The previous 3-password, role-based plan is archived at [archive/PHASE-5-auth-roles_not-used.md](archive/PHASE-5-auth-roles_not-used.md).)*
 
 ## Overview
 
 - **Goal:** Invited users get full write access via email + password login. Unauthenticated users get read-only access, or can toggle Demo Mode to write to localStorage.
-- **Current state:** main uses anon key; `dev-mode` branch has read-only Supabase + localStorage writes.
+- **Current state:** Demo Mode runtime toggle; Supabase Auth (email + password); RLS gates writes to authenticated users; UI gating by auth state.
 - **Approach:**
   1. Merge `dev-mode` into main as a runtime toggle (branch stays after merge; optionally rename to `demo-mode` for consistency)
   2. Add Supabase Auth (email + password sign-in)
@@ -23,7 +25,7 @@ Plan for auth and write access. Implement in order — later phases depend on ea
 
 ---
 
-## Phase 5.1 — Demo Mode Runtime Toggle
+## Phase 5.1 — Demo Mode Runtime Toggle (Done)
 
 Merge demo-mode logic so it can be toggled at runtime. 
 
@@ -32,21 +34,21 @@ Merge demo-mode logic so it can be toggled at runtime.
 
 ### Tasks
 
-- **5.1.1** Create [src/demo-mode.js](src/demo-mode.js):
+- **5.1.1** Create [src/demo-mode.js](../src/demo-mode.js):
   - `isDemoMode()`, `setDemoMode(on)`, `initDemoModeFromUrl()` (check `?demo=1` / `?demo=0`)
   - Persist in localStorage (`65ers_demo_mode`)
-- **5.1.2** Refactor [src/api.js](src/api.js) to branch on `isDemoMode()`:
+- **5.1.2** Refactor [src/api.js](../src/api.js) to branch on `isDemoMode()`:
   - Production = Supabase
   - Demo = localStorage writes, merged reads (Supabase optional + exported backup + local games)
   - Merge helpers: `getLocalGames`, `setLocalGames`, `isSupabaseDisabled`, `setSupabaseDisabled`, `isExportedDataEnabled`, `setExportedDataEnabled`, `clearLocalData`
-- **5.1.3** Update [src/main.js](src/main.js):
+- **5.1.3** Update [src/main.js](../src/main.js):
   - Call `initDemoModeFromUrl()` on load
   - Build kebab menu dynamically; add Demo Mode toggle to kebab menu
   - Re-render on toggle
-- **5.1.4** Update [src/archive.js](src/archive.js) and [src/form.js](src/form.js):
+- **5.1.4** Update [src/archive.js](../src/archive.js) and [src/form.js](../src/form.js):
   - Render Scratch entry, Fill sheet only when `isDemoMode()`
-  - Import from [src/scratch.js](src/scratch.js)
-- **5.1.5** Merge demo-mode styles into [src/shared.css](src/shared.css) and [src/archive.css](src/archive.css):
+  - Import from [src/scratch.js](../src/scratch.js)
+- **5.1.5** Merge demo-mode styles into [src/shared.css](../src/shared.css) and [src/archive.css](../src/archive.css):
   - `.demo-mode-badge`, `.scratch-entry-btn`, `.archive-toolbar`
   - `.local-storage-entry`: red left border on entry cards for games saved to localStorage (Demo Mode)
 
@@ -57,25 +59,25 @@ Merge demo-mode logic so it can be toggled at runtime.
 
 ---
 
-## Phase 5.2 — Supabase Auth (Email + Password)
+## Phase 5.2 — Supabase Auth (Email + Password) (Done)
 
 Use Supabase Auth for sign-in. 
 
 ### Supabase Setup
 
-- **5.2.0** Disable self-signup in Supabase Dashboard:
+- **5.2.0** Disable self-signup in Supabase Dashboard: Done
   - Authentication > Providers > Email: ensure "Enable Email Signup" is OFF (or use Auth settings to restrict signups)
   - Users can only be added via invite
 
 ### Tasks
 
-- **5.2.1** Create [src/auth.js](src/auth.js):
+- **5.2.1** Create [src/auth.js](../src/auth.js):
   - Email + password sign-in form
   - `signIn(email, password)` via `supabase.auth.signInWithPassword`
   - `signOut()`, `onAuthStateChange` listener
   - Gate app: no session → render login form; session → render main app
-- **5.2.2** Update [src/main.js](src/main.js): check session before rendering; pass session to views
-- **5.2.3** Update [index.html](index.html): add auth container or keep single app div for auth/main swap
+- **5.2.2** Update [src/main.js](../src/main.js): check session before rendering; pass session to views
+- **5.2.3** Update [index.html](../index.html): add auth container or keep single app div for auth/main swap
 
 ### Files
 
@@ -84,7 +86,7 @@ Use Supabase Auth for sign-in.
 
 ---
 
-## Phase 5.3 — RLS
+## Phase 5.3 — RLS (Done)
 
 Add role-based policies. No `user_roles` table; authenticated vs. anon only.
 
@@ -101,22 +103,22 @@ Add role-based policies. No `user_roles` table; authenticated vs. anon only.
 
 ---
 
-## Phase 5.4 — UI Gating
+## Phase 5.4 — UI Gating (Done)
 
 Gate write actions by auth state. Demo Mode available to everyone.
 
 ### Tasks
 
 - **5.4.1** Single check: `isAuthenticated` (has session).
-- **5.4.2** [src/archive.js](src/archive.js):
+- **5.4.2** [src/archive.js](../src/archive.js):
   - When not authenticated and not Demo Mode: hide Edit, Delete
   - When Demo Mode: show Scratch entry, allow localStorage writes
   - Apply `.local-storage-entry` class to entry cards for games from localStorage (red left border)
-- **5.4.3** [src/form.js](src/form.js):
+- **5.4.3** [src/form.js](../src/form.js):
   - When not authenticated and not Demo Mode: show sign-in form and instructions to turn on Demo Mode (instead of New Game)
   - Include a text link in the instructions that calls `setDemoMode(true)` so users can enable Demo Mode without opening the kebab menu
   - When Demo Mode: allow new entries (saved to localStorage)
-- **5.4.4** [src/main.js](src/main.js) kebab:
+- **5.4.4** [src/main.js](../src/main.js) kebab:
   - Demo Mode toggle available to all (signed in or not)
   - Export: admin/authenticated only (or all if read-only export is fine)
   - Sign Out: visible for authenticated users only; calls `signOut()` and returns to read-only view
@@ -132,14 +134,14 @@ Gate write actions by auth state. Demo Mode available to everyone.
 
 ---
 
-## Phase 5.5 — Admin Setup and Testing
+## Phase 5.5 — Admin Setup and Testing (Done)
 
 ### Tasks
 
-- **5.5.1** Invite a test user via Supabase Dashboard:
+- **5.5.1** Invite a test user via Supabase Dashboard: Skipped (admin has access)
   - Authentication > Users > Invite user
   - Enter email; user receives invite, sets password
-- **5.5.2** Test flows:
+- **5.5.2** Test flows: Done
   - Unauthenticated: read-only Archive/Stats; Demo Mode toggle works, localStorage writes work
   - Authenticated: full write access (New Game, Edit, Delete)
 
@@ -183,4 +185,3 @@ const isAuthenticated = !!session?.data?.session;
 - `jwt-decode` dependency
 - Role-based UI distinctions
 - Custom password Edge Function
-
