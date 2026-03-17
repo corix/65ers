@@ -1,5 +1,6 @@
 import './archive.css';
 import { isDemoMode } from './demo-mode.js';
+import { getSession } from './auth.js';
 import { loadGames, deleteGame, updateGame, cleanOrphanedPlayers, loadDraft, isLocalGame } from './api.js';
 import { createScratchGameInArchive } from './scratch.js';
 import { formatDate } from './utils.js';
@@ -73,6 +74,8 @@ function showDeleteConfirmModal(container, gameId, onConfirm, gameItem) {
 export async function renderArchive(container, { runCleanup = false, openGameId } = {}) {
   container.innerHTML = '<div class="archive-loading"><p>Loading…</p></div>';
   const games = await loadGames();
+  const { data } = await getSession();
+  const canWrite = !!data?.session || isDemoMode();
   if (runCleanup) {
     await cleanOrphanedPlayers(loadDraft()?.players ?? []);
   }
@@ -136,14 +139,15 @@ export async function renderArchive(container, { runCleanup = false, openGameId 
 
   games.forEach(game => {
     const canDelete = !!game.id;
+    const showEditDelete = canDelete && canWrite;
     const item = document.createElement('div');
     item.className = 'archive-item card' + (isDemoMode() && isLocalGame(game.id) ? ' local-storage-entry' : '');
     item.dataset.gameId = game.id || '';
     item.innerHTML = `
-      <div class="archive-header-row" ${canDelete ? 'data-can-delete' : ''}>
+      <div class="archive-header-row" ${showEditDelete ? 'data-can-delete' : ''}>
         <div class="archive-header" role="button" tabindex="0" aria-expanded="false">
           <span class="archive-date">${formatDate(game.date)}</span>
-          ${canDelete ? `
+          ${showEditDelete ? `
             <span class="archive-edit-wrap">
               <button type="button" class="archive-edit-btn" aria-label="Edit date" title="Edit date">${PENCIL_ICON}</button>
             </span>
@@ -154,7 +158,7 @@ export async function renderArchive(container, { runCleanup = false, openGameId 
             <span class="archive-chevron" aria-hidden="true">&#9662;</span>
           </span>
         </div>
-        ${canDelete ? `
+        ${showEditDelete ? `
           <div class="archive-delete-wrap">
             <button type="button" class="archive-delete-btn" aria-label="Delete game" title="Delete game">${TRASH_ICON}</button>
           </div>
@@ -165,7 +169,7 @@ export async function renderArchive(container, { runCleanup = false, openGameId 
       </div>
     `;
 
-    if (canDelete) {
+    if (showEditDelete) {
       const headerRow = item.querySelector('.archive-header-row');
       const deleteWrap = item.querySelector('.archive-delete-wrap');
       const deleteBtn = item.querySelector('.archive-delete-btn');
