@@ -483,16 +483,22 @@ if (kebabBtn && kebabMenu) {
     e.stopPropagation();
     kebabMenu.hidden = true;
     await signOut();
+    setDemoMode(false);
     updateSignInSignOutUI();
+    updateDemoModeUI();
     if (currentView === 'entry') flushDraftToStorage(viewContainers.entry);
-    viewContainers[currentView].innerHTML = '';
-    await showView(currentView, { animateNav: false });
+    viewContainers.entry.innerHTML = '';
+    await showView('entry', { animateNav: false });
   });
 }
 
-onAuthStateChange(async () => {
+onAuthStateChange(async ({ event }) => {
   const { data } = await getSession();
   const authenticated = !!data?.session;
+  if (event === 'SIGNED_OUT') {
+    setDemoMode(false);
+    updateDemoModeUI();
+  }
   document.querySelectorAll('.sign-in-only').forEach((el) => {
     el.classList.toggle('sign-in-visible', !authenticated);
   });
@@ -503,9 +509,10 @@ onAuthStateChange(async () => {
   document.querySelectorAll('.download-backup-only').forEach((el) => {
     el.classList.toggle('download-backup-visible', showDownload);
   });
-  if (viewContainers[currentView]) {
+  if (viewContainers.entry) {
     if (currentView === 'entry') flushDraftToStorage(viewContainers.entry);
-    viewContainers[currentView].innerHTML = '';
-    await showView(currentView, { animateNav: false });
+    const viewToShow = authenticated ? currentView : 'entry';
+    viewContainers[viewToShow].innerHTML = '';
+    await showView(viewToShow, { animateNav: false });
   }
 });
