@@ -358,9 +358,40 @@ nav[data-active-view="stats"] .nav-slider {
   color: var(--text-on-color);
 }
 
+/* Header right: bug icon + kebab */
+.header-nav-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.header-bug-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--text-on-color);
+  cursor: pointer;
+  font-family: inherit;
+  border-radius: 4px;
+}
+
+.header-bug-btn:hover {
+  color: var(--text-on-color);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.header-bug-btn svg {
+  display: block;
+}
+
 /* Header kebab (Archive options) */
 .header-nav-kebab {
-  margin-left: auto;
   position: relative;
 }
 
@@ -559,6 +590,14 @@ html[data-theme="dark"] .header-kebab-option--demo-mode .toggle-slider--on .togg
 }
 .header-nav-kebab[data-demo-mode="true"] .download-backup-only {
   display: none !important;
+}
+
+/* Bugs: hidden by default, shown when authenticated */
+.bugs-only {
+  display: none !important;
+}
+.bugs-only.bugs-visible {
+  display: block !important;
 }
 
 .test-data-link {

@@ -39,7 +39,9 @@
         <button class="nav-btn" data-view="archive">Archive</button>
         <button class="nav-btn" data-view="stats">Stats</button>
       </nav>
-      <div class="header-nav-kebab" id="header-nav-kebab">
+      <div class="header-nav-right" id="header-nav-right">
+        <button type="button" class="header-bug-btn" id="header-bug-btn" aria-label="Leave feedback"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9v-1a3 3 0 0 1 6 0v1"/><path d="M8 9h8a6 6 0 0 1 1 3v3a5 5 0 0 1 -10 0v-3a6 6 0 0 1 1 -3"/><path d="M3 13l4 0"/><path d="M17 13l4 0"/><path d="M12 20l0 -6"/><path d="M4 19l3.35 -2"/><path d="M20 19l-3.35 -2"/><path d="M4 7l3.75 2.4"/><path d="M20 7l-3.75 2.4"/></svg></button>
+        <div class="header-nav-kebab" id="header-nav-kebab">
         <button type="button" class="header-kebab-btn" aria-label="Options"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg></button>
         <div class="header-kebab-menu" hidden>
           <div class="header-kebab-option header-kebab-option--theme" data-action="theme" role="button" tabindex="0" aria-pressed="false" aria-label="Dark mode toggle">
@@ -75,15 +77,20 @@
           <button type="button" class="header-kebab-option sign-in-only" data-action="sign-in">
             <span class="header-kebab-option-title">Sign in</span>
           </button>
-          <span class="header-kebab-option-divider sign-out-only" id="sign-out-divider"></span>
-          <button type="button" class="header-kebab-option sign-out-only" data-action="sign-out">
-            <span class="header-kebab-option-title">Sign out</span>
-          </button>
           <span class="header-kebab-option-divider download-backup-only" id="download-backup-divider"></span>
           <button type="button" class="header-kebab-option download-backup-only" data-action="download-backup">
             <span class="header-kebab-option-title" id="download-backup-title">Download archive</span>
             <span class="header-kebab-option-caption" id="download-backup-caption"></span>
           </button>
+          <span class="header-kebab-option-divider bugs-only" id="bugs-divider"></span>
+          <button type="button" class="header-kebab-option bugs-only" data-action="view-bugs">
+            <span class="header-kebab-option-title" id="bugs-title">Feedback</span>
+          </button>
+          <span class="header-kebab-option-divider sign-out-only" id="sign-out-divider"></span>
+          <button type="button" class="header-kebab-option header-kebab-option--danger sign-out-only" data-action="sign-out">
+            <span class="header-kebab-option-title">Sign out</span>
+          </button>
+        </div>
         </div>
       </div>
     </header>

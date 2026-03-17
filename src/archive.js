@@ -54,6 +54,9 @@ function showDeleteConfirmModal(container, gameId, onConfirm, gameItem) {
     if (e.key === 'Escape') {
       e.preventDefault();
       close();
+    } else if (e.key === 'Enter' && !submitBtn.disabled) {
+      e.preventDefault();
+      submitBtn.click();
     }
   });
 

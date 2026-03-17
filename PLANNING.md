@@ -93,6 +93,21 @@ Data insights and visualizations (display order):
 
 These are the building stages for this project.
 
+
+| Phase | Name                           | Status  |
+| ----- | ------------------------------ | ------- |
+| 1     | Prototype web form             | done    |
+| 2     | Test data insights             | done    |
+| 3     | Deploy to Netlify              | done    |
+| 4     | Integrate Supabase             | done    |
+| 5     | Auth + Demo mode               | done    |
+| (5.5) | Bug Tracker (collect feedback) | done    |
+| 6     | Scan Paper Scoresheet (OCR)    | planned |
+| 7     | Stats 2.0                      | planned |
+
+
+---
+
 ### 1. Phase 1 — Prototype web form 🟢 complete
 
 - Web form with player pill selection, scoresheet grid, tunk/penalty shortcuts, and auto-computed totals
@@ -130,7 +145,7 @@ These are the building stages for this project.
 | Document             | Document fixture behavior (decisions and failsafes) | dev-mode branch configured for migration to Demo mode                                                                                                      | 🟢 Fallback behavior documented                      |
 
 
-### 5. Phase 5 — Add Auth state (Email Login + Demo Mode) 🟢 complete
+### 5. Phase 5 — Auth + Demo mode 🟢 complete
 
 See [archive/PHASE-5_DONE.md](archive/PHASE-5_DONE.md)
 
@@ -144,7 +159,21 @@ See [archive/PHASE-5_DONE.md](archive/PHASE-5_DONE.md)
 | Admin QA         | Restrict signups; verify flows            | - Disable Email Signup in Supabase - Test unauthenticated (read-only, Demo) and authenticated (full write) flows                                                                                                                                                  | 🟢 Done   |
 
 
-### 6. Phase 6 — Scan Paper Scoresheet (OCR) 👉 WE ARE HERE
+### 5.5. Phase 5.5 — Bug Tracker 🟢 complete
+
+See [BUGS.md](BUGS.md)
+
+
+| Todo               | Purpose                        | Task(s)                                                                                                              | Status  |
+| ------------------ | ------------------------------ | -------------------------------------------------------------------------------------------------------------------- | ------- |
+| Supabase schema    | Store bugs and gate access     | bugs table + RLS                                                                                                     | 🟢 Done |
+| Report entry point | Let users submit feedback      | Bug icon in header (all users); kebab "Feedback (N)" when signed in                                                  | 🟢 Done |
+| Bug report modal   | Collect description and author | showBugReportModal; description + name (anon only); device_info capture; toast on success                            | 🟢 Done |
+| Bugs page          | View and manage feedback       | renderBugs; compact cards; author/time, description (truncate 500 chars), details; right-click trash; delete confirm | 🟢 Done |
+| API (bugs.js)      | Persistence and counts         | submitBug, loadBugs, getBugCount, deleteBug                                                                          | 🟢 Done |
+
+
+### 6. Phase 6 — Scan Paper Scoresheet (OCR)
 
 See [PHASE-6.md](PHASE-6.md)
 

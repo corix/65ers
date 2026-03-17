@@ -11,9 +11,10 @@ import { formatDurationAgo } from './utils.js';
 import { renderForm, flushDraftToStorage } from './form.js';
 import { renderArchive } from './archive.js';
 import { renderStats } from './stats.js';
+import { showBugReportModal, renderBugs, getBugCount } from './bugs.js';
 
 const VIEW_KEY = '65ers_view';
-const VALID_VIEWS = ['entry', 'archive', 'stats'];
+const VALID_VIEWS = ['entry', 'archive', 'stats', 'bugs'];
 const DEMO_DATA_RESET_DELAY_MS = 5 * 60 * 1000; // 5 minutes
 
 const app = document.getElementById('app');
@@ -32,7 +33,7 @@ function getStoredView() {
 
 const viewContainers = {};
 const initialView = getStoredView();
-['entry', 'archive', 'stats'].forEach(view => {
+['entry', 'archive', 'stats', 'bugs'].forEach(view => {
   const el = document.createElement('div');
   el.id = `view-${view}`;
   el.className = 'view-container';
@@ -65,6 +66,13 @@ function updateNavSlider(animate = false) {
 }
 
 async function showView(view, { animateNav = false, animateContent = false, openGameId } = {}) {
+  if (view === 'bugs') {
+    const { data } = await getSession();
+    if (!data?.session) {
+      return showView('entry', { animateNav, animateContent, openGameId });
+    }
+  }
+
   currentView = view;
   localStorage.setItem(VIEW_KEY, view);
   nav?.setAttribute('data-active-view', view);
@@ -76,7 +84,10 @@ async function showView(view, { animateNav = false, animateContent = false, open
   });
 
   const container = viewContainers[view];
-  if (view === 'archive' || view === 'stats') {
+  if (view === 'bugs') {
+    container.innerHTML = '';
+    await renderBugs(container);
+  } else if (view === 'archive' || view === 'stats') {
     container.innerHTML = '';
     if (view === 'archive') {
       await renderArchive(container, { openGameId });
@@ -268,6 +279,19 @@ if (kebabBtn && kebabMenu) {
     if (prevDivider?.classList.contains('header-kebab-option-divider')) prevDivider.hidden = hidden;
   }
 
+  async function updateBugsCaption() {
+    const { data } = await getSession();
+    if (!data?.session) return;
+    const titleEl = document.getElementById('bugs-title');
+    if (!titleEl) return;
+    try {
+      const count = await getBugCount();
+      titleEl.textContent = `Feedback (${count})`;
+    } catch (_) {
+      titleEl.textContent = 'Feedback';
+    }
+  }
+
   async function updateDownloadBackupCaption() {
     if (isDemoMode()) return;
     const caption = document.getElementById('download-backup-caption');
@@ -321,8 +345,14 @@ if (kebabBtn && kebabMenu) {
       document.querySelectorAll('.download-backup-only').forEach((el) => {
         el.classList.toggle('download-backup-visible', showDownload);
       });
+      const showBugs = authenticated;
+      document.querySelectorAll('.bugs-only').forEach((el) => {
+        el.classList.toggle('bugs-visible', showBugs);
+      });
     });
   }
+
+  window.addEventListener('demo-mode-change', updateSignInSignOutUI);
 
   function showSignInModal() {
     const modal = document.createElement('div');
@@ -354,7 +384,12 @@ if (kebabBtn && kebabMenu) {
             el.classList.add('download-backup-visible');
           });
         }
+        document.querySelectorAll('.bugs-only').forEach((el) => {
+          el.classList.add('bugs-visible');
+        });
         updateSignInSignOutUI();
+        updateBugsCaption();
+        if (!isDemoMode()) updateDownloadBackupCaption();
       },
     });
     container.querySelector('h3')?.setAttribute('id', 'sign-in-modal-title');
@@ -382,6 +417,7 @@ if (kebabBtn && kebabMenu) {
       await updateLocalOnlyCaption();
       updateExportedDataCaption();
       updateClearDataVisibility();
+      updateBugsCaption();
       updateDownloadBackupCaption();
       document.addEventListener('click', () => { kebabMenu.hidden = true; }, { once: true });
     }
@@ -413,6 +449,7 @@ if (kebabBtn && kebabMenu) {
       setDemoMode(turningOn);
     }
     updateDemoModeUI();
+    updateSignInSignOutUI();
     await updateLocalOnlyCaption();
     updateExportedDataCaption();
     updateClearDataVisibility();
@@ -474,11 +511,43 @@ if (kebabBtn && kebabMenu) {
     a.click();
     URL.revokeObjectURL(a.href);
   });
+  document.getElementById('header-bug-btn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    showBugReportModal({
+      onBugSubmitted: async () => {
+        if (currentView === 'bugs') {
+          await renderBugs(viewContainers.bugs);
+        }
+      },
+    });
+  });
+  headerKebab.querySelector('.header-kebab-option[data-action="view-bugs"]')?.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    kebabMenu.hidden = true;
+    await showView('bugs', { animateNav: true });
+  });
   headerKebab.querySelector('.header-kebab-option[data-action="sign-in"]')?.addEventListener('click', (e) => {
     e.stopPropagation();
     kebabMenu.hidden = true;
     showSignInModal();
   });
+  // Preload caption data in background when authenticated (so kebab opens with data ready)
+  function preloadCaptions() {
+    getSession().then(({ data }) => {
+      if (data?.session) {
+        updateBugsCaption();
+        if (!isDemoMode()) updateDownloadBackupCaption();
+      }
+    });
+  }
+  preloadCaptions();
+  onAuthStateChange(({ session }) => {
+    if (session) {
+      updateBugsCaption();
+      if (!isDemoMode()) updateDownloadBackupCaption();
+    }
+  });
+
   headerKebab.querySelector('.header-kebab-option[data-action="sign-out"]')?.addEventListener('click', async (e) => {
     e.stopPropagation();
     kebabMenu.hidden = true;
@@ -508,6 +577,10 @@ onAuthStateChange(async ({ event }) => {
   const showDownload = authenticated && !isDemoMode();
   document.querySelectorAll('.download-backup-only').forEach((el) => {
     el.classList.toggle('download-backup-visible', showDownload);
+  });
+  const showBugs = authenticated;
+  document.querySelectorAll('.bugs-only').forEach((el) => {
+    el.classList.toggle('bugs-visible', showBugs);
   });
   if (viewContainers.entry) {
     if (currentView === 'entry') flushDraftToStorage(viewContainers.entry);

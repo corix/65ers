@@ -45,13 +45,168 @@
   margin-bottom: 0.3rem;
 }
 
-.auth-sign-in-field input {
+.required-asterisk {
+  color: var(--red);
+}
+
+.auth-sign-in-field input,
+.auth-sign-in-field textarea {
   width: 100%;
   padding: 0.45rem 0.6rem;
   border: 1px solid var(--border);
   border-radius: calc(var(--radius) - 2px);
   font-size: 0.95rem;
   font-family: inherit;
+  color: var(--text);
+}
+
+.auth-sign-in-field textarea {
+  resize: vertical;
+  min-height: 4em;
+}
+
+/* Bug report toast */
+.bug-report-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(1rem);
+  padding: 0.6rem 1.25rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 101;
+}
+
+.bug-report-toast.bug-report-toast--visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Sign-in and bug report modals: transparent inputs in dark mode */
+html[data-theme="dark"] .sign-in-modal .auth-sign-in-field input,
+html[data-theme="dark"] .sign-in-modal .auth-sign-in-field textarea {
+  background: transparent;
+  color: var(--text);
+}
+
+/* Override browser autofill white background in dark mode */
+html[data-theme="dark"] .sign-in-modal .auth-sign-in-field input:-webkit-autofill,
+html[data-theme="dark"] .sign-in-modal .auth-sign-in-field input:-webkit-autofill:hover,
+html[data-theme="dark"] .sign-in-modal .auth-sign-in-field input:-webkit-autofill:focus,
+html[data-theme="dark"] .sign-in-modal .auth-sign-in-field input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--card-bg) inset;
+  -webkit-text-fill-color: var(--text);
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Bugs list page */
+.bugs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.bugs-card.card {
+  position: relative;
+  padding: 0.35rem 0.5rem;
+  margin-bottom: 0;
+}
+
+.bugs-card .bugs-delete-wrap {
+  position: absolute !important;
+  top: 0.2rem;
+  right: 0.2rem;
+  width: auto !important;
+  margin: 0 !important;
+  overflow: visible !important;
+}
+
+.bugs-card .bugs-delete-wrap:not(.archive-delete-wrap--revealed) {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.bugs-card .bugs-delete-wrap.archive-delete-wrap--revealed {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.bugs-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+
+.bugs-card-description {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.bugs-card-description-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.bugs-card-description-toggle:hover {
+  color: var(--accent-hover, var(--accent));
+}
+
+.bugs-card-meta {
+  font-size: 0.65rem;
+  color: var(--text-muted-2);
+}
+
+.bugs-card-details {
+  font-size: 0.65rem;
+  margin-top: 0.2rem;
+}
+
+.bugs-card-details summary {
+  cursor: pointer;
+  color: var(--accent);
+  padding: 0;
+}
+
+.bugs-card-details-content {
+  margin-top: 0.25rem;
+}
+
+.bugs-card-details-content .bugs-card-id {
+  font-family: ui-monospace, monospace;
+  margin-bottom: 0.15rem;
+}
+
+.bugs-card-details-content .bugs-card-device-summary {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 0.15rem;
+}
+
+.bugs-card-device-json {
+  margin: 0.15rem 0 0;
+  padding: 0.25rem;
+  background: var(--surface);
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 0.6rem;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 
 .auth-error {
