@@ -1030,24 +1030,53 @@ function bindScoresheetEvents(container, date, players) {
   const roundsAccordion = container.querySelector('.rounds-accordion');
   const roundsToggle = container.querySelector('.rounds-toggle');
   if (roundsAccordion && roundsToggle) {
-    let roundsPinStartY = null;
-
-    const computeRoundsPinStart = () => {
-      roundsAccordion.classList.remove('rounds-toggle-fixed');
-      roundsPinStartY = roundsToggle.getBoundingClientRect().top + window.scrollY;
-    };
+    let roundsPinRafPending = false;
+    let roundsPinned = false;
+    let roundsPinTriggerScrollY = null;
 
     const updateRoundsTogglePinned = () => {
       const mobile = window.matchMedia('(max-width: 540px)').matches;
       const expanded = roundsAccordion.dataset.collapsed !== 'true';
       if (!mobile || !expanded) {
         roundsAccordion.classList.remove('rounds-toggle-fixed');
+        roundsPinned = false;
+        roundsPinTriggerScrollY = null;
         return;
       }
+
       const headerOffset = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-offset')) || 0;
-      if (roundsPinStartY == null) computeRoundsPinStart();
-      const shouldPin = (window.scrollY + headerOffset) >= roundsPinStartY;
-      roundsAccordion.classList.toggle('rounds-toggle-fixed', shouldPin);
+
+      // Once pinned, the toggle becomes `position: fixed` so its rect no longer
+      // reflects scroll; unstick using the stored trigger scrollY.
+      if (roundsPinned) {
+        const shouldUnpin = window.scrollY < (roundsPinTriggerScrollY ?? 0);
+        if (shouldUnpin) {
+          roundsAccordion.classList.remove('rounds-toggle-fixed');
+          roundsPinned = false;
+          roundsPinTriggerScrollY = null;
+        }
+        return;
+      }
+
+      // Pin when the toggle reaches (or crosses) the current bottom of the shrunken header.
+      const toggleTop = roundsToggle.getBoundingClientRect().top;
+      const shouldPin = toggleTop <= headerOffset;
+      if (shouldPin) {
+        roundsAccordion.classList.add('rounds-toggle-fixed');
+        roundsPinned = true;
+        roundsPinTriggerScrollY = window.scrollY;
+      } else {
+        roundsAccordion.classList.remove('rounds-toggle-fixed');
+      }
+    };
+
+    const scheduleUpdateRoundsTogglePinned = () => {
+      if (roundsPinRafPending) return;
+      roundsPinRafPending = true;
+      requestAnimationFrame(() => {
+        roundsPinRafPending = false;
+        updateRoundsTogglePinned();
+      });
     };
 
     roundsToggle.addEventListener('click', () => {
@@ -1056,13 +1085,16 @@ function bindScoresheetEvents(container, date, players) {
       roundsToggle.setAttribute('aria-expanded', String(collapsed));
       const toggleHeight = roundsToggle.getBoundingClientRect().height || 0;
       roundsAccordion.style.setProperty('--rounds-toggle-height', `${Math.ceil(toggleHeight)}px`);
-      if (collapsed) computeRoundsPinStart();
+
+      roundsPinned = false;
+      roundsPinTriggerScrollY = null;
+      roundsAccordion.classList.remove('rounds-toggle-fixed');
+
       updateRoundsTogglePinned();
     });
 
-    window.addEventListener('scroll', updateRoundsTogglePinned, { passive: true });
+    window.addEventListener('scroll', scheduleUpdateRoundsTogglePinned, { passive: true });
     window.addEventListener('resize', () => {
-      if (roundsAccordion.dataset.collapsed !== 'true') computeRoundsPinStart();
       updateRoundsTogglePinned();
     });
   }

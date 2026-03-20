@@ -1748,8 +1748,8 @@ html[data-theme="dark"] input.score-input:not(.tunk-locked):not(.magic-65):not(.
   .scoresheet-table .total-cell {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
+    justify-content: flex-start;
+    gap: 0.15rem;
     padding: 0.3rem 0;
     border: none;
     min-height: 36px;
@@ -1796,42 +1796,53 @@ html[data-theme="dark"] input.score-input:not(.tunk-locked):not(.magic-65):not(.
   }
 
   .scoresheet-table .cumulative-value {
-    position: absolute;
-    left: calc((6rem - 30px) + 42px + 6px);
-    right: auto;
-    top: 50%;
-    transform: translateY(-50%);
-    margin-left: 0;
+    order: 3;
+    position: static;
+    transform: none;
+    margin-left: 0.1rem;
     padding-left: 0;
     text-align: left;
+    /* Reserve space so input-to-tunk distance doesn't change with digit count. */
+    min-width: 4ch;
+    max-width: 4ch;
+    flex: 0 0 4ch;
+  }
+
+  /* Keep the totals "slot" width reserved in row 3 even when empty. */
+  .scoresheet-table .cumulative-value[hidden] {
+    display: inline-block !important;
+    visibility: hidden;
   }
 
   .scoresheet-table .score-input-wrap {
-    position: absolute;
-    left: calc(6rem - 30px);
-    top: 50%;
-    transform: translateY(-50%);
-    order: 1;
-    margin-left: 0;
-    width: 42px; /* keep consistent alignment with the fixed-width input */
+    order: 2;
+    margin-left: auto;
+    width: auto;
+    position: static;
+    transform: none;
   }
 
   .scoresheet-table .score-cell.has-penalty .score-input-wrap {
-    /* Override the desktop "centered" rule so inputs stay aligned vertically. */
-    position: absolute;
-    left: calc(6rem - 30px);
-    top: 50%;
-    transform: translateY(-50%);
+    position: static;
+    transform: none;
+    margin-left: auto;
   }
 
   .scoresheet-table .score-quick-actions {
-    order: 3;
-    margin-left: 0.3rem;
+    order: 4;
+    margin-left: 0;
+  }
+
+  .scoresheet-table .score-input {
+    /* Keep fixed width so input and button columns align consistently. */
+    width: 42px;
+    min-width: 42px;
   }
 
   .scoresheet-table .total-cell .total-value {
     font-weight: 700;
     margin-left: auto;
+    text-align: left;
   }
 
   .scoresheet-table .totals-row .round-label {

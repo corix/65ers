@@ -23,6 +23,165 @@ const navBtns = document.querySelectorAll('.nav-btn');
 const navSlider = document.querySelector('.nav-slider');
 const headerEl = document.querySelector('header');
 
+function bindMobileNavAutoHide() {
+  if (!nav) return;
+
+  let lastY = window.scrollY;
+  let ticking = false;
+  let navHiddenPx = 0;
+  let maxHiddenPx = nav.getBoundingClientRect().height || 0;
+
+  const reset = () => {
+    navHiddenPx = 0;
+    nav.classList.remove('nav-hidden');
+    nav.style.transform = '';
+    nav.style.opacity = '';
+    nav.style.pointerEvents = '';
+  };
+
+  const updateMax = () => {
+    maxHiddenPx = nav.getBoundingClientRect().height || 0;
+    navHiddenPx = Math.min(navHiddenPx, maxHiddenPx);
+  };
+
+  const onScroll = () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      ticking = false;
+      const isMobile = window.matchMedia('(max-width: 540px)').matches;
+      const y = window.scrollY;
+      const dy = y - lastY;
+
+      if (!isMobile) {
+        reset();
+        lastY = y;
+        return;
+      }
+
+      if (maxHiddenPx <= 0) updateMax();
+      if (maxHiddenPx <= 0) {
+        lastY = y;
+        return;
+      }
+
+      // Move nav at the same rate as the page scroll delta.
+      navHiddenPx = Math.min(maxHiddenPx, Math.max(0, navHiddenPx + dy));
+      const translateY = -navHiddenPx;
+      nav.style.transform = `translateY(${translateY}px)`;
+      nav.style.opacity = String(1 - navHiddenPx / maxHiddenPx);
+      nav.style.pointerEvents = navHiddenPx >= maxHiddenPx ? 'none' : 'auto';
+
+      lastY = y;
+    });
+  };
+
+  updateMax();
+  reset();
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', () => {
+    updateMax();
+    const isMobile = window.matchMedia('(max-width: 540px)').matches;
+    if (!isMobile) reset();
+  });
+}
+
+function bindMobileHeaderCollapse() {
+  if (!headerEl || !app) return;
+
+  let lastY = window.scrollY;
+  let ticking = false;
+  let maxHeight = headerEl.getBoundingClientRect().height;
+  const minHeight = 60;
+  let collapsedPx = 0; // 0 = fully expanded, (maxHeight-minHeight) = fully collapsed
+  let basePaddingTop = parseFloat(getComputedStyle(headerEl).paddingTop) || 0;
+  let basePaddingBottom = parseFloat(getComputedStyle(headerEl).paddingBottom) || 0;
+
+  const clampCollapsed = () => {
+    const maxCollapsed = Math.max(0, maxHeight - minHeight);
+    collapsedPx = Math.min(maxCollapsed, Math.max(0, collapsedPx));
+  };
+
+  const apply = () => {
+    const currentHeight = Math.max(minHeight, maxHeight - collapsedPx);
+    // Shrink header height; title + right controls are pinned via mobile CSS.
+    headerEl.style.clipPath = '';
+    headerEl.style.webkitClipPath = '';
+    headerEl.style.height = `${currentHeight}px`;
+    app.style.paddingTop = `${currentHeight}px`;
+    // Keep sticky elements (e.g. Rounds) aligned under the current header height.
+    document.documentElement.style.setProperty('--header-offset', `${currentHeight}px`);
+  };
+
+  const reset = () => {
+    maxHeight = headerEl.getBoundingClientRect().height;
+    basePaddingTop = parseFloat(getComputedStyle(headerEl).paddingTop) || 0;
+    basePaddingBottom = parseFloat(getComputedStyle(headerEl).paddingBottom) || 0;
+    collapsedPx = 0;
+    headerEl.style.clipPath = '';
+    headerEl.style.webkitClipPath = '';
+    headerEl.style.height = '';
+    app.style.paddingTop = '';
+    document.documentElement.style.setProperty('--header-offset', `${maxHeight}px`);
+  };
+
+  const onScroll = () => {
+    if (ticking) return;
+    ticking = true;
+
+    requestAnimationFrame(() => {
+      ticking = false;
+      const isMobile = window.matchMedia('(max-width: 540px)').matches;
+      if (!isMobile) {
+        reset();
+        lastY = window.scrollY;
+        return;
+      }
+
+      if (maxHeight < minHeight) maxHeight = minHeight;
+
+      const y = window.scrollY;
+      const dy = y - lastY;
+
+      // Scroll down => dy>0 => collapse; scroll up => dy<0 => expand.
+      collapsedPx += dy;
+      clampCollapsed();
+      apply();
+
+      lastY = y;
+    });
+  };
+
+  const onResize = () => {
+    const isMobile = window.matchMedia('(max-width: 540px)').matches;
+    if (!isMobile) {
+      reset();
+      return;
+    }
+    // Re-measure and keep current collapse ratio relative to new maxHeight.
+    const prevMax = maxHeight;
+    maxHeight = headerEl.getBoundingClientRect().height;
+    basePaddingTop = parseFloat(getComputedStyle(headerEl).paddingTop) || 0;
+    basePaddingBottom = parseFloat(getComputedStyle(headerEl).paddingBottom) || 0;
+    if (prevMax > 0 && maxHeight > 0) {
+      const ratio = prevMax > minHeight ? (collapsedPx / (prevMax - minHeight)) : 0;
+      collapsedPx = ratio * Math.max(0, maxHeight - minHeight);
+    }
+    clampCollapsed();
+    apply();
+  };
+
+  // Init on load
+  reset();
+  maxHeight = headerEl.getBoundingClientRect().height;
+  collapsedPx = 0;
+  clampCollapsed();
+  apply();
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onResize);
+}
+
 let currentView = 'entry';
 let formRenderId = 0;
 let demoDataResetTimeout = null;
@@ -178,6 +337,9 @@ window.addEventListener('resize', () => {
   updateHeaderOffsetVar();
   requestAnimationFrame(() => { resizeTicking = false; });
 });
+
+bindMobileNavAutoHide();
+bindMobileHeaderCollapse();
 
 const THEME_KEY = '65ers_theme';
 

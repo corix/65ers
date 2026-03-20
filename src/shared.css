@@ -430,7 +430,7 @@ nav[data-active-view="stats"] .nav-slider {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   padding: 0.25rem;
   width: 11rem;
-  z-index: 20;
+  z-index: 200;
 }
 
 .header-kebab-option {
@@ -627,10 +627,43 @@ html[data-theme="dark"] .header-kebab-option--demo-mode .toggle-slider--on .togg
 @media (max-width: 540px) {
   header {
     padding: 0.75rem 0.75rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    overflow: visible;
+    align-items: flex-start;
+  }
+
+  header h1 {
+    font-size: 0.81rem; /* 60% of the default 1.35rem */
   }
 
   #app {
-    padding: 0.75rem 0;
+    /* Keep content from scrolling under the fixed header */
+    padding: calc(max(var(--header-offset, 64px), 64px)) 0 0.75rem 0;
+  }
+
+  nav {
+    transition: none !important;
+  }
+
+  nav.nav-hidden {
+    transform: translateY(-120%);
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+/* Extra coverage for slightly wider "mobile" widths */
+@media (max-width: 600px) {
+  header {
+    top: env(safe-area-inset-top);
+  }
+
+  #app {
+    padding-top: calc(max(var(--header-offset, 64px), 64px) + env(safe-area-inset-top));
   }
 }
 
