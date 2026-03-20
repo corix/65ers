@@ -634,6 +634,28 @@ html[data-theme="dark"] .header-kebab-option--demo-mode .toggle-slider--on .togg
     z-index: 100;
     overflow: visible;
     align-items: flex-start;
+    /* Allow extending the painted header background independently of height. */
+    isolation: isolate;
+    background: transparent;
+  }
+
+  /* Painted background layer that can extend beyond the header's current height
+     (used to keep the header background visible behind the absolute-positioned nav). */
+  header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--header-bg-extent, var(--header-offset, 64px));
+    background: var(--header-bg);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  header > * {
+    position: relative;
+    z-index: 1;
   }
 
   header h1 {

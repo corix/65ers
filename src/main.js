@@ -22,6 +22,7 @@ const nav = document.querySelector('nav');
 const navBtns = document.querySelectorAll('.nav-btn');
 const navSlider = document.querySelector('.nav-slider');
 const headerEl = document.querySelector('header');
+let mobileHeaderCurrentHeightPx = headerEl?.getBoundingClientRect().height || 0;
 
 function bindMobileNavAutoHide() {
   if (!nav) return;
@@ -30,6 +31,9 @@ function bindMobileNavAutoHide() {
   let ticking = false;
   let navHiddenPx = 0;
   let maxHiddenPx = nav.getBoundingClientRect().height || 0;
+  let headerTopPx = headerEl?.getBoundingClientRect().top || 0;
+  // nav vertical position relative to header top when fully visible (translateY = 0)
+  let navBottomAtRestPx = nav.getBoundingClientRect().bottom - headerTopPx;
 
   const reset = () => {
     navHiddenPx = 0;
@@ -37,6 +41,10 @@ function bindMobileNavAutoHide() {
     nav.style.transform = '';
     nav.style.opacity = '';
     nav.style.pointerEvents = '';
+    headerTopPx = headerEl?.getBoundingClientRect().top || 0;
+    navBottomAtRestPx = nav.getBoundingClientRect().bottom - headerTopPx;
+    const extentPx = Math.max(mobileHeaderCurrentHeightPx, navBottomAtRestPx);
+    document.documentElement.style.setProperty('--header-bg-extent', `${extentPx}px`);
   };
 
   const updateMax = () => {
@@ -65,12 +73,29 @@ function bindMobileNavAutoHide() {
         return;
       }
 
+      // Smooth the first few frames of scroll by limiting how far nav can move
+      // per rAF tick (prevents a "big first jump").
+      const minNavScrollDeltaPx = 4;
+      const maxDyPerFrame = 35;
+      if (Math.abs(dy) < minNavScrollDeltaPx) {
+        lastY = y;
+        return;
+      }
+      const clampedDy = Math.max(-maxDyPerFrame, Math.min(maxDyPerFrame, dy));
+
       // Move nav at the same rate as the page scroll delta.
-      navHiddenPx = Math.min(maxHiddenPx, Math.max(0, navHiddenPx + dy));
+      navHiddenPx = Math.min(maxHiddenPx, Math.max(0, navHiddenPx + clampedDy));
       const translateY = -navHiddenPx;
       nav.style.transform = `translateY(${translateY}px)`;
       nav.style.opacity = String(1 - navHiddenPx / maxHiddenPx);
       nav.style.pointerEvents = navHiddenPx >= maxHiddenPx ? 'none' : 'auto';
+
+      // Continuously adjust the painted header background height behind the nav.
+      // Otherwise header-collapse may overwrite it mid-transition.
+      const extentPx = navHiddenPx >= maxHiddenPx - 0.5
+        ? mobileHeaderCurrentHeightPx
+        : Math.max(mobileHeaderCurrentHeightPx, navBottomAtRestPx - navHiddenPx);
+      document.documentElement.style.setProperty('--header-bg-extent', `${extentPx}px`);
 
       lastY = y;
     });
@@ -83,6 +108,11 @@ function bindMobileNavAutoHide() {
     updateMax();
     const isMobile = window.matchMedia('(max-width: 540px)').matches;
     if (!isMobile) reset();
+    else {
+      // Recompute geometry for more stable background sizing.
+      headerTopPx = headerEl?.getBoundingClientRect().top || 0;
+      navBottomAtRestPx = nav.getBoundingClientRect().bottom - headerTopPx;
+    }
   });
 }
 
@@ -92,8 +122,12 @@ function bindMobileHeaderCollapse() {
   let ticking = false;
   let maxHeight = headerEl.getBoundingClientRect().height;
   const minHeight = 60;
+  // Prevent tiny scroll "wiggles" from immediately triggering header resizing.
+  // (Acts as a deadzone: header updates only after the user moves at least this far.)
+  const minScrollDeltaPx = 10;
   // 0 = fully expanded, (maxHeight-minHeight) = fully collapsed
   let collapsedPx = 0;
+  let lastHeaderUpdateY = window.scrollY;
 
   const setCollapsedFromScroll = () => {
     // Use scrollTop directly instead of integrating dy. The header height affects
@@ -105,6 +139,7 @@ function bindMobileHeaderCollapse() {
 
   const apply = () => {
     const currentHeight = Math.max(minHeight, maxHeight - collapsedPx);
+    mobileHeaderCurrentHeightPx = currentHeight;
     // Shrink header height; title + right controls are pinned via mobile CSS.
     headerEl.style.clipPath = '';
     headerEl.style.webkitClipPath = '';
@@ -117,6 +152,8 @@ function bindMobileHeaderCollapse() {
   const reset = () => {
     maxHeight = headerEl.getBoundingClientRect().height;
     collapsedPx = 0;
+    mobileHeaderCurrentHeightPx = maxHeight;
+    lastHeaderUpdateY = window.scrollY;
     headerEl.style.clipPath = '';
     headerEl.style.webkitClipPath = '';
     headerEl.style.height = '';
@@ -138,8 +175,12 @@ function bindMobileHeaderCollapse() {
 
       if (maxHeight < minHeight) maxHeight = minHeight;
 
-      setCollapsedFromScroll();
-      apply();
+      const y = window.scrollY;
+      if (Math.abs(y - lastHeaderUpdateY) >= minScrollDeltaPx) {
+        lastHeaderUpdateY = y;
+        setCollapsedFromScroll();
+        apply();
+      }
     });
   };
 
@@ -152,6 +193,7 @@ function bindMobileHeaderCollapse() {
 
     // Re-measure and recompute collapse amount for the new maxHeight.
     maxHeight = headerEl.getBoundingClientRect().height;
+    lastHeaderUpdateY = window.scrollY;
     setCollapsedFromScroll();
     apply();
   };
