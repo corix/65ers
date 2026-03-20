@@ -89,17 +89,18 @@ function bindMobileNavAutoHide() {
 function bindMobileHeaderCollapse() {
   if (!headerEl || !app) return;
 
-  let lastY = window.scrollY;
   let ticking = false;
   let maxHeight = headerEl.getBoundingClientRect().height;
   const minHeight = 60;
-  let collapsedPx = 0; // 0 = fully expanded, (maxHeight-minHeight) = fully collapsed
-  let basePaddingTop = parseFloat(getComputedStyle(headerEl).paddingTop) || 0;
-  let basePaddingBottom = parseFloat(getComputedStyle(headerEl).paddingBottom) || 0;
+  // 0 = fully expanded, (maxHeight-minHeight) = fully collapsed
+  let collapsedPx = 0;
 
-  const clampCollapsed = () => {
+  const setCollapsedFromScroll = () => {
+    // Use scrollTop directly instead of integrating dy. The header height affects
+    // layout (we update `#app` padding), which can otherwise desync an "accumulate"
+    // approach and prevent the header from fully expanding again.
     const maxCollapsed = Math.max(0, maxHeight - minHeight);
-    collapsedPx = Math.min(maxCollapsed, Math.max(0, collapsedPx));
+    collapsedPx = Math.min(maxCollapsed, Math.max(0, window.scrollY));
   };
 
   const apply = () => {
@@ -115,8 +116,6 @@ function bindMobileHeaderCollapse() {
 
   const reset = () => {
     maxHeight = headerEl.getBoundingClientRect().height;
-    basePaddingTop = parseFloat(getComputedStyle(headerEl).paddingTop) || 0;
-    basePaddingBottom = parseFloat(getComputedStyle(headerEl).paddingBottom) || 0;
     collapsedPx = 0;
     headerEl.style.clipPath = '';
     headerEl.style.webkitClipPath = '';
@@ -134,21 +133,13 @@ function bindMobileHeaderCollapse() {
       const isMobile = window.matchMedia('(max-width: 540px)').matches;
       if (!isMobile) {
         reset();
-        lastY = window.scrollY;
         return;
       }
 
       if (maxHeight < minHeight) maxHeight = minHeight;
 
-      const y = window.scrollY;
-      const dy = y - lastY;
-
-      // Scroll down => dy>0 => collapse; scroll up => dy<0 => expand.
-      collapsedPx += dy;
-      clampCollapsed();
+      setCollapsedFromScroll();
       apply();
-
-      lastY = y;
     });
   };
 
@@ -158,24 +149,17 @@ function bindMobileHeaderCollapse() {
       reset();
       return;
     }
-    // Re-measure and keep current collapse ratio relative to new maxHeight.
-    const prevMax = maxHeight;
+
+    // Re-measure and recompute collapse amount for the new maxHeight.
     maxHeight = headerEl.getBoundingClientRect().height;
-    basePaddingTop = parseFloat(getComputedStyle(headerEl).paddingTop) || 0;
-    basePaddingBottom = parseFloat(getComputedStyle(headerEl).paddingBottom) || 0;
-    if (prevMax > 0 && maxHeight > 0) {
-      const ratio = prevMax > minHeight ? (collapsedPx / (prevMax - minHeight)) : 0;
-      collapsedPx = ratio * Math.max(0, maxHeight - minHeight);
-    }
-    clampCollapsed();
+    setCollapsedFromScroll();
     apply();
   };
 
   // Init on load
   reset();
   maxHeight = headerEl.getBoundingClientRect().height;
-  collapsedPx = 0;
-  clampCollapsed();
+  setCollapsedFromScroll();
   apply();
 
   window.addEventListener('scroll', onScroll, { passive: true });
