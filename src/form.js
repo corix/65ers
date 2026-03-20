@@ -635,8 +635,13 @@ function renderScoresheet(container, date, displayDate, players) {
                         data-round="${round}" data-player="${p}"
                         inputmode="numeric">
                       <span class="penalty-suffix" hidden>+65</span>
-                      <span class="cumulative-value" aria-hidden="true"></span>
                     </span>
+                    <span class="score-quick-actions" aria-label="Quick score actions">
+                      <button type="button" class="score-quick-btn" data-quick-action="tunk" aria-label="Set tunk for ${p}" title="Tunk">★</button>
+                      <button type="button" class="score-quick-btn" data-quick-action="tink" aria-label="Set tink for ${p}" title="Tink">0</button>
+                      <button type="button" class="score-quick-btn score-quick-btn-ft" data-quick-action="false-tunk" aria-label="Set false tunk for ${p}" title="False tunk">☠</button>
+                    </span>
+                    <span class="cumulative-value" aria-hidden="true"></span>
                   </td>
                 `).join('')}
               </tr>
@@ -1025,10 +1030,40 @@ function bindScoresheetEvents(container, date, players) {
   const roundsAccordion = container.querySelector('.rounds-accordion');
   const roundsToggle = container.querySelector('.rounds-toggle');
   if (roundsAccordion && roundsToggle) {
+    let roundsPinStartY = null;
+
+    const computeRoundsPinStart = () => {
+      roundsAccordion.classList.remove('rounds-toggle-fixed');
+      roundsPinStartY = roundsToggle.getBoundingClientRect().top + window.scrollY;
+    };
+
+    const updateRoundsTogglePinned = () => {
+      const mobile = window.matchMedia('(max-width: 540px)').matches;
+      const expanded = roundsAccordion.dataset.collapsed !== 'true';
+      if (!mobile || !expanded) {
+        roundsAccordion.classList.remove('rounds-toggle-fixed');
+        return;
+      }
+      const headerOffset = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-offset')) || 0;
+      if (roundsPinStartY == null) computeRoundsPinStart();
+      const shouldPin = (window.scrollY + headerOffset) >= roundsPinStartY;
+      roundsAccordion.classList.toggle('rounds-toggle-fixed', shouldPin);
+    };
+
     roundsToggle.addEventListener('click', () => {
       const collapsed = roundsAccordion.dataset.collapsed === 'true';
       roundsAccordion.dataset.collapsed = String(!collapsed);
       roundsToggle.setAttribute('aria-expanded', String(collapsed));
+      const toggleHeight = roundsToggle.getBoundingClientRect().height || 0;
+      roundsAccordion.style.setProperty('--rounds-toggle-height', `${Math.ceil(toggleHeight)}px`);
+      if (collapsed) computeRoundsPinStart();
+      updateRoundsTogglePinned();
+    });
+
+    window.addEventListener('scroll', updateRoundsTogglePinned, { passive: true });
+    window.addEventListener('resize', () => {
+      if (roundsAccordion.dataset.collapsed !== 'true') computeRoundsPinStart();
+      updateRoundsTogglePinned();
     });
   }
 
@@ -1134,6 +1169,47 @@ function bindScoresheetEvents(container, date, players) {
         row.setAttribute('aria-expanded', 'true');
         btn.setAttribute('aria-expanded', 'true');
       }
+    });
+  });
+
+  table.querySelectorAll('.score-quick-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.quickAction;
+      const cell = btn.closest('.score-cell');
+      if (!action || !cell) return;
+      const input = cell.querySelector('.score-input');
+      if (!input) return;
+      const round = input.dataset.round;
+      const player = input.dataset.player;
+      const key = `${round}::${player}`;
+      const penaltyLi = container.querySelector(`.penalty-list [data-penalty="${key}"]`);
+
+      if (action === 'tunk') {
+        if (penaltyLi) penaltyLi.remove();
+        input.classList.remove('magic-65');
+        setTunk(table, round, player, players);
+      } else if (action === 'tink') {
+        if (input.classList.contains('tunk-locked')) {
+          input.classList.remove('tunk-locked');
+        }
+        if (penaltyLi) penaltyLi.remove();
+        input.value = '0';
+        input.classList.remove('magic-65');
+      } else if (action === 'false-tunk') {
+        if (input.classList.contains('tunk-locked')) {
+          input.classList.remove('tunk-locked');
+          if (input.value === '\u2605') input.value = '';
+        }
+        input.classList.remove('magic-65');
+        if (penaltyLi) {
+          penaltyLi.remove();
+        } else {
+          addPenalty(container, table, round, player, players);
+        }
+      }
+
+      recalcTotals(table, players);
+      persistDraft(wrapper);
     });
   });
 

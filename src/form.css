@@ -856,6 +856,10 @@ input.score-input {
   font-family: inherit;
 }
 
+html[data-theme="dark"] input.score-input:not(.tunk-locked):not(.magic-65):not(.tink) {
+  background: inherit; /* match the row/card background in dark mode */
+}
+
 .score-input:focus {
   outline: 1px solid var(--focus-outline);
   outline-offset: 1px;
@@ -885,6 +889,44 @@ input.score-input {
   position: relative;
 }
 
+.score-quick-actions {
+  display: none;
+  align-items: center;
+  gap: 0.22rem;
+}
+
+.score-quick-btn {
+  inline-size: 1.45rem;
+  block-size: 1.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--text-muted-2);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+}
+
+.score-quick-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.score-quick-btn-ft {
+  color: var(--red);
+}
+
+.score-quick-btn-ft:hover {
+  border-color: var(--red);
+  color: var(--red-hover);
+}
+
 .penalty-suffix {
   font-size: 0.8em;
   line-height: 1.2;
@@ -904,10 +946,7 @@ input.score-input {
 }
 
 .cumulative-value {
-  position: absolute;
-  left: 100%;
-  top: 50%;
-  transform: translateY(-50%);
+  display: inline-block;
   margin-left: 0.35rem;
   font-size: 0.8em;
   color: var(--text-muted-2);
@@ -1542,6 +1581,25 @@ input.score-input {
     text-align: left;
   }
 
+  .scoresheet .rounds-toggle[aria-expanded="true"] {
+    position: sticky;
+    top: var(--header-offset, 0px);
+    z-index: 9;
+  }
+
+  .scoresheet .rounds-accordion.rounds-toggle-fixed {
+    padding-top: var(--rounds-toggle-height, 40px);
+  }
+
+  .scoresheet .rounds-accordion.rounds-toggle-fixed .rounds-toggle[aria-expanded="true"] {
+    position: fixed;
+    top: var(--header-offset, 0px);
+    left: 0;
+    right: 0;
+    z-index: 12;
+    border-radius: 0;
+  }
+
   .rounds-toggle::after {
     content: "▾";
     font-size: 0.85em;
@@ -1558,11 +1616,12 @@ input.score-input {
   }
 
   .table-wrap {
-    margin: 0 -1rem;
-    padding: 0 1rem;
+    margin: 0 -0.5rem;
+    padding: 0;
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
+    overflow: visible;
   }
 
   .scoresheet-table {
@@ -1595,7 +1654,7 @@ input.score-input {
   .scoresheet-table tbody tr,
   .scoresheet-table tfoot tr {
     display: block;
-    padding: 0.5rem 0.75rem;
+    padding: 0.45rem 0.6rem;
     margin-bottom: 0.35rem;
     background: var(--surface-alt);
     border: 1px solid var(--border);
@@ -1696,6 +1755,10 @@ input.score-input {
     min-height: 36px;
   }
 
+  .scoresheet-table .score-cell {
+    position: relative;
+  }
+
   .scoresheet-table .score-cell:not(:last-child) {
     border-bottom: 1px solid var(--border);
   }
@@ -1705,19 +1768,65 @@ input.score-input {
     font-weight: 500;
     color: var(--text-muted);
     flex-shrink: 0;
+    min-width: 0;
+    max-width: 5.4rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .scoresheet-table .score-quick-actions {
+    display: inline-flex;
+    margin-left: auto;
   }
 
   .scoresheet-table .score-input {
-    width: 48px;
-    min-width: 48px;
+    width: 42px;
+    min-width: 42px;
     min-height: 36px;
     padding: 0.35rem 0.5rem;
     font-size: 0.95rem;
-    margin-left: auto;
+    margin-left: 0;
   }
 
   .scoresheet-table .score-cell.has-penalty .score-input {
     margin-left: 0;
+    width: 42px !important;
+    min-width: 42px;
+  }
+
+  .scoresheet-table .cumulative-value {
+    position: absolute;
+    left: calc((6rem - 30px) + 42px + 6px);
+    right: auto;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 0;
+    padding-left: 0;
+    text-align: left;
+  }
+
+  .scoresheet-table .score-input-wrap {
+    position: absolute;
+    left: calc(6rem - 30px);
+    top: 50%;
+    transform: translateY(-50%);
+    order: 1;
+    margin-left: 0;
+    width: 42px; /* keep consistent alignment with the fixed-width input */
+  }
+
+  .scoresheet-table .score-cell.has-penalty .score-input-wrap {
+    /* Override the desktop "centered" rule so inputs stay aligned vertically. */
+    position: absolute;
+    left: calc(6rem - 30px);
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .scoresheet-table .score-quick-actions {
+    order: 3;
+    margin-left: 0.3rem;
   }
 
   .scoresheet-table .total-cell .total-value {

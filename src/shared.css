@@ -626,11 +626,11 @@ html[data-theme="dark"] .header-kebab-option--demo-mode .toggle-slider--on .togg
 
 @media (max-width: 540px) {
   header {
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 0.75rem;
   }
 
   #app {
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 0;
   }
 }
 
@@ -646,7 +646,10 @@ html[data-theme="dark"] .header-kebab-option--demo-mode .toggle-slider--on .togg
 
 @media (max-width: 540px) {
   .card {
-    padding: 1rem;
+    padding: 0.65rem;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
   }
 }
 

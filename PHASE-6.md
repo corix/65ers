@@ -32,6 +32,8 @@ flowchart LR
     A --> B --> C --> D --> E --> F --> G
 ```
 
+
+
 ---
 
 ## Phase 6.1 — OCR and Parsing
@@ -53,8 +55,10 @@ Add Tesseract.js and a scan module that converts an image into a draft object.
   - Use `Tesseract.recognize(image, 'eng', { logger: m => {} })` and access `data.words`
   - Parse bboxes: group by approximate Y (rows), sort by X (columns)
   - Map first column to rounds (validate against `ROUNDS`), first row to players, grid to scores
-  - Recognize tunk (★ or `*`), tink (0), magic 65 (65 in rounds 5–K), penalty (FT)
-- **6.1.3** Handle edge cases: missing date (leave blank for user), unknown player names (add to players list), ambiguous cells (prefer numeric; flag low confidence if desired)
+  - Recognize tunk (★ or `*`), tink (0), magic 65 (65 in rounds 5–K)
+  - Detect **false tunk / penalties** by reading **FT** (and common OCR variants) in cells; map to `penalties: ['round::player', ...]`—same semantics as the in-app false tunk (+65 for that player in that round), not by inferring from cumulative score math (OCR errors would make that unreliable)
+  - Match partial or abbreviated player names to the existing roster, or prompt the user to pick or add a player
+- **6.1.3** Handle edge cases: missing date (leave blank for the user; see 6.2.5 for draft persistence), unknown player names (ask user to identify), ambiguous cells (prefer numeric; flag low confidence if desired), human error in arithmetic
 
 ### Files
 
@@ -69,21 +73,21 @@ Wire scan flow into the form. User can capture or upload an image, then see the 
 
 ### Approach
 
-- Add "Scan scoresheet" button in scoresheet header (or setup area if no scoresheet yet)
+- Add "Scan" (with camera icon) button in New Game setup and scoresheet header
 - On tap: show camera (mobile) or file input; accept image
 - Show loading state during OCR (Tesseract can take several seconds)
-- On success: call `restoreDraft(wrapper, parsedDraft)`; optionally expand rounds accordion
+- On success: call `restoreDraft(wrapper, parsedDraft)`; then persist when possible (see 6.2.5); optionally expand rounds accordion
 - On error: show message, allow retry
 
 ### Tasks
 
-- **6.2.1** Add "Scan scoresheet" button to scoresheet header in [src/form.js](src/form.js) (e.g. next to Clear / Start over)
-- **6.2.2** If user hasn't started a game yet: show scan in setup area; on scan success, create scoresheet with parsed players/date and restore draft
+- **6.2.1** Add "Scan scoresheet" control in [src/form.js](src/form.js) in **both** places: scoresheet header actions (e.g. `scoresheet-header-actions`, next to Clear / Start over) **and** the New Game setup surface (behavior when no scoresheet yet in 6.2.2)
+- **6.2.2** If the user hasn't started a game yet: show scan in the setup area; on scan success, create the scoresheet with parsed players/date and call `restoreDraft`
 - **6.2.3** Implement capture flow:
   - Use `<input type="file" accept="image/*" capture="environment">` for mobile camera
   - Fallback: file input without `capture` for upload
 - **6.2.4** Show loading overlay or spinner during `scanImage()`; disable button while processing
-- **6.2.5** On parse success: call `restoreDraft(wrapper, draft)`; persist draft to localStorage
+- **6.2.5** On parse success: `restoreDraft(wrapper, draft)`, then call `persistDraft(wrapper)` **when** a persistable draft exists. **`restoreDraft` does not write localStorage.** Current code: `persistDraft` uses `getDraftFromScoresheet`, which returns `null` if there is no parseable game date ([form.js](src/form.js)); until that is relaxed, require the user to set a date (or default one) before persistence works, or extend `getDraftFromScoresheet` to allow draft-only saves without a date
 - **6.2.6** On parse failure or empty result: show "Could not read scoresheet. Try a clearer photo or enter manually."
 
 ### Files
@@ -105,7 +109,7 @@ Document the expected paper scoresheet layout so parsing heuristics work reliabl
 
 - **6.3.1** Document expected layout in PHASE-6 or a short help tooltip:
   - Rounds in column 1; players across top; scores in cells
-  - Tunk = ★ or *; tink = 0; magic 65 = 65; penalty = FT
+  - Tunk = ★ or *; tink = 0; magic 65 = 65; penalty = **FT** (false tunk; in-app adds +65 for that player in that round—see parser notes in 6.1.2)
 - **6.3.2** (Optional) Add "Scan tips" link or modal with guidance
 
 ### Files
@@ -116,12 +120,14 @@ Document the expected paper scoresheet layout so parsing heuristics work reliabl
 
 ## Challenges and Mitigations
 
-| Challenge | Mitigation |
-|-----------|------------|
+
+| Challenge                                                | Mitigation                                                                                             |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | **Table structure** — Tesseract returns text, not tables | Use bounding boxes to cluster words into rows/columns; round labels and player names anchor the layout |
-| **Handwriting** | OCR works best on printed text. Handwritten scoresheets will need more manual correction |
-| **Special values** — ★, 0, 65*, FT | Teach parser to recognize these; user can fix misreads in the form |
-| **Layout variance** | Start with one common layout; document it; expand later if needed |
+| **Handwriting**                                          | OCR works best on printed text. Handwritten scoresheets will need more manual correction               |
+| **Special values** — ★, 0, magic 65, FT                  | Teach parser to recognize these; user can fix misreads in the form                                     |
+| **Layout variance**                                      | Start with one common layout; document it; expand later if needed                                      |
+
 
 ---
 
@@ -151,15 +157,20 @@ Tesseract.js is a good first step; cloud OCR can be added later if needed.
 }
 ```
 
+**penalties** are false-tunk entries: each key marks that player for that round, and the live form adds +65 (same as choosing FT in the UI). OCR should detect **FT** on paper, not infer penalties from score totals.
+
 ### Rounds
 
 From [src/constants.js](src/constants.js): `['3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']`
 
 ### Files Summary
 
-| File | Phase | Action |
-|------|-------|--------|
-| `src/scan-scoresheet.js` | 6.1 | New: OCR + grid parsing |
-| `package.json` | 6.1 | Add `tesseract.js` |
-| `src/form.js` | 6.2 | Scan button, capture flow, restoreDraft call |
-| `src/form.css` | 6.2 | Button, loading state |
+
+| File                     | Phase | Action                                       |
+| ------------------------ | ----- | -------------------------------------------- |
+| `src/scan-scoresheet.js` | 6.1   | New: OCR + grid parsing                      |
+| `package.json`           | 6.1   | Add `tesseract.js`                           |
+| `src/form.js`            | 6.2   | Scan control, capture flow, `restoreDraft`, `persistDraft` when persistable |
+| `src/form.css`           | 6.2   | Button, loading state                        |
+
+

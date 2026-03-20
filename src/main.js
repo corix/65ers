@@ -21,6 +21,7 @@ const app = document.getElementById('app');
 const nav = document.querySelector('nav');
 const navBtns = document.querySelectorAll('.nav-btn');
 const navSlider = document.querySelector('.nav-slider');
+const headerEl = document.querySelector('header');
 
 let currentView = 'entry';
 let formRenderId = 0;
@@ -142,6 +143,7 @@ window.addEventListener('storage', (e) => {
 (async () => {
   await showView(getStoredView());
   requestAnimationFrame(() => updateNavSlider());
+  updateHeaderOffsetVar();
   // Preload games and players so Archive/Stats/New Game are fast when user navigates
   const stored = getStoredView();
   if (stored !== 'archive' && stored !== 'stats') loadGames();
@@ -158,6 +160,11 @@ function scheduleSliderUpdate() {
   });
 }
 
+function updateHeaderOffsetVar() {
+  const px = headerEl?.offsetHeight || 0;
+  document.documentElement.style.setProperty('--header-offset', `${px}px`);
+}
+
 if (nav) {
   const ro = new ResizeObserver(scheduleSliderUpdate);
   ro.observe(nav);
@@ -168,6 +175,7 @@ window.addEventListener('resize', () => {
   if (resizeTicking) return;
   resizeTicking = true;
   scheduleSliderUpdate();
+  updateHeaderOffsetVar();
   requestAnimationFrame(() => { resizeTicking = false; });
 });
 
