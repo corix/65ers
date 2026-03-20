@@ -36,7 +36,11 @@ function bindMobileNavAutoHide() {
   let navBottomAtRestPx = nav.getBoundingClientRect().bottom - headerTopPx;
   // Nav becomes "one-way" hidden on the first scroll down and only reappears at top.
   const topReappearThresholdPx = 5;
+  // Mobile Safari can generate tiny/bouncy scroll deltas; delay hiding until
+  // there's a meaningful downward scroll.
+  const hideTriggerScrollDownPx = 60;
   let navLockedHidden = false;
+  let cumulativeDownPx = 0;
 
   const reset = () => {
     navHiddenPx = 0;
@@ -45,6 +49,7 @@ function bindMobileNavAutoHide() {
     nav.style.opacity = '';
     nav.style.pointerEvents = '';
     navLockedHidden = false;
+    cumulativeDownPx = 0;
     headerTopPx = headerEl?.getBoundingClientRect().top || 0;
     navBottomAtRestPx = nav.getBoundingClientRect().bottom - headerTopPx;
     const extentPx = Math.max(mobileHeaderCurrentHeightPx, navBottomAtRestPx);
@@ -84,8 +89,12 @@ function bindMobileNavAutoHide() {
         return;
       }
 
-      // Once user scrolls down, keep nav hidden until user returns to the top.
-      if (!navLockedHidden && dy > 0) navLockedHidden = true;
+      // Once user scrolls down meaningfully, keep nav hidden until user returns to the top.
+      if (!navLockedHidden) {
+        if (dy > 0) cumulativeDownPx += dy;
+        else cumulativeDownPx = 0; // require another deliberate downward movement
+        if (cumulativeDownPx >= hideTriggerScrollDownPx) navLockedHidden = true;
+      }
       navHiddenPx = navLockedHidden ? maxHiddenPx : 0;
 
       const translateY = -navHiddenPx;
@@ -136,7 +145,10 @@ function bindMobileHeaderCollapse() {
   const minHeight = 60;
   // Prevent tiny scroll "wiggles" from immediately triggering header resizing.
   // (Acts as a deadzone: header updates only after the user moves at least this far.)
-  const minScrollDeltaPx = 10;
+  const minScrollDeltaPx = 25;
+  // Keep header fully expanded until the user has scrolled some distance.
+  // This reduces Mobile Safari "bounce" triggering frequent resize repaints.
+  const collapseStartScrollYPx = 50;
   // 0 = fully expanded, (maxHeight-minHeight) = fully collapsed
   let collapsedPx = 0;
   let lastHeaderUpdateY = window.scrollY;
@@ -146,7 +158,9 @@ function bindMobileHeaderCollapse() {
     // layout (we update `#app` padding), which can otherwise desync an "accumulate"
     // approach and prevent the header from fully expanding again.
     const maxCollapsed = Math.max(0, maxHeight - minHeight);
-    collapsedPx = Math.min(maxCollapsed, Math.max(0, window.scrollY));
+    const scrollY = window.scrollY;
+    const effectiveScrollY = Math.max(0, scrollY - collapseStartScrollYPx);
+    collapsedPx = Math.min(maxCollapsed, effectiveScrollY);
   };
 
   const apply = () => {

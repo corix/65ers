@@ -669,6 +669,7 @@ html[data-theme="dark"] .header-kebab-option--demo-mode .toggle-slider--on .togg
 
   nav {
     transition: none !important;
+    will-change: transform, opacity;
   }
 
   nav.nav-hidden {
