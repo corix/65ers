@@ -34,6 +34,9 @@ function bindMobileNavAutoHide() {
   let headerTopPx = headerEl?.getBoundingClientRect().top || 0;
   // nav vertical position relative to header top when fully visible (translateY = 0)
   let navBottomAtRestPx = nav.getBoundingClientRect().bottom - headerTopPx;
+  // Nav becomes "one-way" hidden on the first scroll down and only reappears at top.
+  const topReappearThresholdPx = 5;
+  let navLockedHidden = false;
 
   const reset = () => {
     navHiddenPx = 0;
@@ -41,6 +44,7 @@ function bindMobileNavAutoHide() {
     nav.style.transform = '';
     nav.style.opacity = '';
     nav.style.pointerEvents = '';
+    navLockedHidden = false;
     headerTopPx = headerEl?.getBoundingClientRect().top || 0;
     navBottomAtRestPx = nav.getBoundingClientRect().bottom - headerTopPx;
     const extentPx = Math.max(mobileHeaderCurrentHeightPx, navBottomAtRestPx);
@@ -73,22 +77,21 @@ function bindMobileNavAutoHide() {
         return;
       }
 
-      // Smooth the first few frames of scroll by limiting how far nav can move
-      // per rAF tick (prevents a "big first jump").
-      const minNavScrollDeltaPx = 4;
-      const maxDyPerFrame = 35;
-      if (Math.abs(dy) < minNavScrollDeltaPx) {
+      // Reappear only when the user hits (near) the top.
+      if (y <= topReappearThresholdPx) {
+        reset();
         lastY = y;
         return;
       }
-      const clampedDy = Math.max(-maxDyPerFrame, Math.min(maxDyPerFrame, dy));
 
-      // Move nav at the same rate as the page scroll delta.
-      navHiddenPx = Math.min(maxHiddenPx, Math.max(0, navHiddenPx + clampedDy));
+      // Once user scrolls down, keep nav hidden until user returns to the top.
+      if (!navLockedHidden && dy > 0) navLockedHidden = true;
+      navHiddenPx = navLockedHidden ? maxHiddenPx : 0;
+
       const translateY = -navHiddenPx;
-      nav.style.transform = `translateY(${translateY}px)`;
       nav.style.opacity = String(1 - navHiddenPx / maxHiddenPx);
       nav.style.pointerEvents = navHiddenPx >= maxHiddenPx ? 'none' : 'auto';
+      nav.style.transform = navHiddenPx > 0 ? `translateY(${translateY}px)` : '';
 
       // Continuously adjust the painted header background height behind the nav.
       // Otherwise header-collapse may overwrite it mid-transition.
@@ -103,6 +106,15 @@ function bindMobileNavAutoHide() {
 
   updateMax();
   reset();
+  // If page loads already scrolled down, treat it as already "scroll down started".
+  if (window.scrollY > topReappearThresholdPx) {
+    navLockedHidden = true;
+    navHiddenPx = maxHiddenPx;
+    nav.style.opacity = '0';
+    nav.style.pointerEvents = 'none';
+    nav.style.transform = `translateY(${-navHiddenPx}px)`;
+    document.documentElement.style.setProperty('--header-bg-extent', `${mobileHeaderCurrentHeightPx}px`);
+  }
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', () => {
     updateMax();
